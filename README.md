@@ -50,6 +50,24 @@ D:\project\personal-music-stack-data
 
 ## 桌面 App
 
+首次 clone 后先运行 Windows setup：
+
+```powershell
+cd D:\project\personal-music-stack
+.\scripts\setup-windows.ps1
+```
+
+这个脚本会准备：
+
+```text
+bin\node.exe
+bin\yt-dlp.exe
+bin\ffmpeg.exe
+services\navidrome\navidrome.exe
+services\collector\config.json
+D:\project\personal-music-stack-data
+```
+
 开发阶段启动 Electron 桌面窗口：
 
 ```powershell
