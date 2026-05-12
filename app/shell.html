@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Personal Music</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111417;
+      --bar: #171c20;
+      --line: #303941;
+      --text: #f1f4f5;
+      --muted: #9facb5;
+      --accent: #2f9b74;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: 52px 1fr;
+      height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--bar);
+      padding: 0 14px;
+    }
+
+    .brand {
+      font-weight: 750;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button {
+      height: 34px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      padding: 0 12px;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button:hover {
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    button.active {
+      color: #fff;
+      background: var(--accent);
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    main {
+      position: relative;
+      min-height: 0;
+    }
+
+    webview {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+    }
+
+    webview[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">Personal Music</div>
+      <nav aria-label="主导航">
+        <button class="active" data-view="collector" type="button">下载</button>
+        <button data-view="library" type="button">音乐库</button>
+      </nav>
+      <div class="status" id="status">本地服务已启动</div>
+    </header>
+
+    <main>
+      <webview id="collector"></webview>
+      <webview id="library" hidden></webview>
+    </main>
+  </div>
+
+  <script>
+    const buttons = Array.from(document.querySelectorAll("button[data-view]"));
+    const views = {
+      collector: document.querySelector("#collector"),
+      library: document.querySelector("#library")
+    };
+    const statusEl = document.querySelector("#status");
+    const urls = {
+      collector: "http://127.0.0.1:8787",
+      library: "http://127.0.0.1:4533"
+    };
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const target = button.dataset.view;
+        for (const item of buttons) {
+          item.classList.toggle("active", item === button);
+        }
+        for (const [name, view] of Object.entries(views)) {
+          view.hidden = name !== target;
+        }
+      });
+    }
+
+    for (const [name, view] of Object.entries(views)) {
+      view.addEventListener("did-fail-load", (event) => {
+        if (event.errorCode !== -3) {
+          statusEl.textContent = `${name === "collector" ? "下载" : "音乐库"}加载失败：${event.errorDescription}`;
+        }
+      });
+
+      view.addEventListener("did-finish-load", () => {
+        statusEl.textContent = "本地服务已启动";
+      });
+    }
+
+    async function waitFor(url) {
+      for (let attempt = 1; attempt <= 60; attempt += 1) {
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (response.ok || response.status < 500) return true;
+        } catch {
+          statusEl.textContent = `等待本地服务... ${attempt}/60`;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      return false;
+    }
+
+    async function boot() {
+      const collectorReady = await waitFor(`${urls.collector}/api/health`);
+      const libraryReady = await waitFor(urls.library);
+
+      if (!collectorReady) {
+        statusEl.textContent = "下载服务未响应";
+        return;
+      }
+
+      views.collector.src = urls.collector;
+      if (libraryReady) {
+        views.library.src = urls.library;
+      } else {
+        statusEl.textContent = "音乐库服务未响应";
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>

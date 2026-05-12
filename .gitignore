@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+services/collector/node_modules/
+
+# Build outputs
+release/
+dist/
+out/
+
+# Runtime data
+library/
+app.log
+*.log
+*.pid
+services/collector/config.json
+
+# Local generated service data
+services/navidrome/data/
+services/navidrome/navidrome.toml
+
+# User data and cookies must never be committed
+../personal-music-stack-data/
+**/cookies/
+*.cookies
+cookies.txt
+bilibili.txt
+
+# Bundled binaries and third-party executables
+bin/
+services/navidrome/navidrome.exe
+services/navidrome/LICENSE
+
+# Editor and OS files
+.history/
+.vscode/
+.idea/
+Desktop.ini
+Thumbs.db
+.DS_Store
+
+# Environment
+.env
+.env.*

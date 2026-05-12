@@ -1,0 +1,18 @@
+{
+  "host": "0.0.0.0",
+  "port": 8787,
+  "musicDir": "D:\\project\\personal-music-stack-data\\library",
+  "ytdlpPath": "D:\\project\\personal-music-stack\\bin\\yt-dlp.exe",
+  "audioFormat": "mp3",
+  "audioQuality": "0",
+  "maxJobs": 50,
+  "ffmpegPath": "D:\\project\\personal-music-stack\\bin\\ffmpeg.exe",
+  "cookies": {
+    "bilibili": "D:\\project\\personal-music-stack-data\\cookies\\bilibili.txt"
+  },
+  "navidrome": {
+    "baseUrl": "",
+    "username": "",
+    "password": ""
+  }
+}
