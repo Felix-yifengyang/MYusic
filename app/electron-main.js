@@ -1,6 +1,7 @@
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, shell, ipcMain, clipboard } = require("electron");
 const { createRuntime } = require("./runtime");
 
 function logFilePath() {
@@ -39,6 +40,7 @@ const logger = {
 };
 const runtime = createRuntime({ logger });
 let mainWindow;
+let runtimeStatus = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -49,6 +51,7 @@ function createWindow() {
     title: "Personal Music",
     backgroundColor: "#111417",
     webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -70,9 +73,9 @@ app.whenReady().then(async () => {
 
   try {
     logger.log("Electron app starting runtime");
-    const status = await runtime.start();
-    logger.log(`Runtime status: ${JSON.stringify(status)}`);
-    if (status.collectorReady) {
+    runtimeStatus = await runtime.start();
+    logger.log(`Runtime status: ${JSON.stringify(runtimeStatus)}`);
+    if (runtimeStatus.collectorReady) {
       await mainWindow.loadFile(path.join(__dirname, "shell.html"));
       return;
     }
@@ -95,4 +98,70 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   runtime.stop();
+});
+
+function getLanAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+
+  for (const entries of Object.values(interfaces)) {
+    for (const entry of entries || []) {
+      if (entry.family === "IPv4" && !entry.internal) {
+        addresses.push(entry.address);
+      }
+    }
+  }
+
+  return addresses;
+}
+
+function statusPayload() {
+  const paths = runtime.paths;
+  const lanAddresses = getLanAddresses();
+  const firstLan = lanAddresses[0] || "127.0.0.1";
+
+  return {
+    collectorReady: Boolean(runtimeStatus?.collectorReady),
+    navidromeReady: Boolean(runtimeStatus?.navidromeReady),
+    collectorUrl: runtimeStatus?.collectorUrl || "http://127.0.0.1:8787",
+    navidromeUrl: runtimeStatus?.navidromeUrl || "http://127.0.0.1:4533",
+    iphoneUrl: `http://${firstLan}:4533`,
+    lanAddresses,
+    paths: {
+      rootDir: paths.rootDir,
+      dataRootDir: paths.dataRootDir,
+      libraryDir: paths.libraryDir,
+      cookiesDir: paths.cookiesDir,
+      bilibiliCookiesPath: paths.bilibiliCookiesPath,
+      logPath: logFilePath()
+    },
+    exists: {
+      dataRootDir: fs.existsSync(paths.dataRootDir),
+      libraryDir: fs.existsSync(paths.libraryDir),
+      bilibiliCookies: fs.existsSync(paths.bilibiliCookiesPath),
+      logFile: fs.existsSync(logFilePath())
+    }
+  };
+}
+
+ipcMain.handle("app:getStatus", async () => statusPayload());
+
+ipcMain.handle("app:openPath", async (_event, target) => {
+  const allowed = statusPayload().paths;
+  const targetPath = allowed[target];
+  if (!targetPath) {
+    throw new Error(`Unknown path target: ${target}`);
+  }
+
+  if (!fs.existsSync(targetPath)) {
+    fs.mkdirSync(path.extname(targetPath) ? path.dirname(targetPath) : targetPath, { recursive: true });
+  }
+
+  await shell.openPath(targetPath);
+  return true;
+});
+
+ipcMain.handle("app:copyText", async (_event, text) => {
+  clipboard.writeText(String(text || ""));
+  return true;
 });

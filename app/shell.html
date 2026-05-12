@@ -89,17 +89,95 @@
       min-height: 0;
     }
 
-    webview {
+    webview,
+    .settings {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       border: 0;
+    }
+
+    webview {
       background: #fff;
     }
 
-    webview[hidden] {
+    webview[hidden],
+    .settings[hidden] {
       display: none;
+    }
+
+    .settings {
+      overflow: auto;
+      padding: 22px;
+      background: var(--bg);
+    }
+
+    .settings-inner {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bar);
+      padding: 14px;
+    }
+
+    .section h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .item {
+      border: 1px solid #273038;
+      border-radius: 8px;
+      background: #12171b;
+      padding: 10px;
+      min-width: 0;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .value {
+      overflow-wrap: anywhere;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .ok { color: #65d595; }
+    .bad { color: #e48686; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      border-color: var(--line);
+      background: #12171b;
+      color: var(--text);
+    }
+
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      header { gap: 8px; }
+      .brand { display: none; }
     }
   </style>
 </head>
@@ -110,6 +188,7 @@
       <nav aria-label="主导航">
         <button class="active" data-view="collector" type="button">下载</button>
         <button data-view="library" type="button">音乐库</button>
+        <button data-view="settings" type="button">设置</button>
       </nav>
       <div class="status" id="status">本地服务已启动</div>
     </header>
@@ -117,6 +196,64 @@
     <main>
       <webview id="collector"></webview>
       <webview id="library" hidden></webview>
+      <section class="settings" id="settings" hidden>
+        <div class="settings-inner">
+          <section class="section">
+            <h2>状态</h2>
+            <div class="grid">
+              <div class="item">
+                <div class="label">下载服务</div>
+                <div class="value" id="collector-status">-</div>
+              </div>
+              <div class="item">
+                <div class="label">音乐服务</div>
+                <div class="value" id="navidrome-status">-</div>
+              </div>
+              <div class="item">
+                <div class="label">Bilibili Cookie</div>
+                <div class="value" id="cookie-status">-</div>
+              </div>
+              <div class="item">
+                <div class="label">iPhone 连接地址</div>
+                <div class="value" id="iphone-url">-</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>路径</h2>
+            <div class="grid">
+              <div class="item">
+                <div class="label">数据目录</div>
+                <div class="value" id="data-dir">-</div>
+              </div>
+              <div class="item">
+                <div class="label">音乐库</div>
+                <div class="value" id="library-dir">-</div>
+              </div>
+              <div class="item">
+                <div class="label">Cookie 文件</div>
+                <div class="value" id="cookie-file">-</div>
+              </div>
+              <div class="item">
+                <div class="label">日志文件</div>
+                <div class="value" id="log-file">-</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>操作</h2>
+            <div class="actions">
+              <button data-action="open" data-target="dataRootDir" type="button">打开数据目录</button>
+              <button data-action="open" data-target="libraryDir" type="button">打开音乐库</button>
+              <button data-action="open" data-target="cookiesDir" type="button">打开 Cookie 目录</button>
+              <button data-action="open" data-target="logPath" type="button">打开日志</button>
+              <button data-action="copy-iphone" type="button">复制 iPhone 地址</button>
+            </div>
+          </section>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -124,7 +261,8 @@
     const buttons = Array.from(document.querySelectorAll("button[data-view]"));
     const views = {
       collector: document.querySelector("#collector"),
-      library: document.querySelector("#library")
+      library: document.querySelector("#library"),
+      settings: document.querySelector("#settings")
     };
     const statusEl = document.querySelector("#status");
     const urls = {
@@ -146,15 +284,55 @@
 
     for (const [name, view] of Object.entries(views)) {
       view.addEventListener("did-fail-load", (event) => {
+        if (!view.tagName || view.tagName.toLowerCase() !== "webview") return;
         if (event.errorCode !== -3) {
           statusEl.textContent = `${name === "collector" ? "下载" : "音乐库"}加载失败：${event.errorDescription}`;
         }
       });
 
       view.addEventListener("did-finish-load", () => {
+        if (!view.tagName || view.tagName.toLowerCase() !== "webview") return;
         statusEl.textContent = "本地服务已启动";
       });
     }
+
+    function renderBool(element, value) {
+      element.textContent = value ? "运行中" : "未运行";
+      element.className = `value ${value ? "ok" : "bad"}`;
+    }
+
+    async function loadSettings() {
+      if (!window.personalMusic) return;
+      const data = await window.personalMusic.getStatus();
+      renderBool(document.querySelector("#collector-status"), data.collectorReady);
+      renderBool(document.querySelector("#navidrome-status"), data.navidromeReady);
+
+      const cookieStatus = document.querySelector("#cookie-status");
+      cookieStatus.textContent = data.exists.bilibiliCookies ? "已配置" : "未配置";
+      cookieStatus.className = `value ${data.exists.bilibiliCookies ? "ok" : "bad"}`;
+
+      document.querySelector("#iphone-url").textContent = data.iphoneUrl;
+      document.querySelector("#data-dir").textContent = data.paths.dataRootDir;
+      document.querySelector("#library-dir").textContent = data.paths.libraryDir;
+      document.querySelector("#cookie-file").textContent = data.paths.bilibiliCookiesPath;
+      document.querySelector("#log-file").textContent = data.paths.logPath;
+    }
+
+    document.querySelector(".settings").addEventListener("click", async (event) => {
+      const button = event.target.closest("button");
+      if (!button || !window.personalMusic) return;
+
+      if (button.dataset.action === "open") {
+        await window.personalMusic.openPath(button.dataset.target);
+        return;
+      }
+
+      if (button.dataset.action === "copy-iphone") {
+        const text = document.querySelector("#iphone-url").textContent;
+        await window.personalMusic.copyText(text);
+        statusEl.textContent = "已复制 iPhone 地址";
+      }
+    });
 
     async function waitFor(url) {
       for (let attempt = 1; attempt <= 60; attempt += 1) {
@@ -184,6 +362,9 @@
       } else {
         statusEl.textContent = "音乐库服务未响应";
       }
+
+      await loadSettings();
+      setInterval(loadSettings, 5000);
     }
 
     boot();

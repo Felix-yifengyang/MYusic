@@ -42,6 +42,7 @@
       }
     ],
     "win": {
+      "signAndEditExecutable": false,
       "target": [
         "dir"
       ]
