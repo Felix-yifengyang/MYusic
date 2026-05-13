@@ -3,12 +3,14 @@ import fs from "node:fs";
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import Fastify from "fastify";
-import type { DownloadJob, RuntimeStatus } from "@personal-music/shared";
+import type { AppSettings, DownloadJob, RuntimeStatus } from "@personal-music/shared";
 import { createAudioDownloadArgs, decodeProcessOutput } from "@personal-music/downloader";
 import type { ApiConfig } from "./config";
+import { getBlockingDownloadChecks, getDiagnostics } from "./diagnostics";
 import { loadJobs, saveJobs, trimJobs } from "./job-store";
 import { scanLibrary } from "./library";
 import { getLanAddresses } from "./network";
+import { getSettings, updateSettings } from "./settings";
 import { registerStaticRoutes } from "./static";
 
 export interface CreateApiServerOptions {
@@ -57,6 +59,12 @@ export function createApiServer(options: CreateApiServerOptions) {
 
   app.get("/api/library", async () => scanLibrary(config.musicDir));
 
+  app.get("/api/settings", async () => getSettings(config));
+
+  app.patch<{ Body: Partial<AppSettings> }>("/api/settings", async (request) => updateSettings(config, request.body || {}));
+
+  app.get("/api/diagnostics", async () => getDiagnostics(config));
+
   app.get("/api/jobs", async () => jobs.slice().reverse());
 
   app.get("/api/jobs/events", async (_request, reply) => {
@@ -90,6 +98,15 @@ export function createApiServer(options: CreateApiServerOptions) {
     if (!/^https?:\/\//i.test(mediaUrl)) {
       reply.code(400);
       return { error: "Please provide a valid http(s) URL." };
+    }
+
+    const blockingChecks = getBlockingDownloadChecks(config);
+    if (blockingChecks.length) {
+      reply.code(409);
+      return {
+        error: blockingChecks.map((check) => `${check.label}: ${check.message}`).join("; "),
+        checks: blockingChecks
+      };
     }
 
     const job = startDownload(mediaUrl, config, jobs, runningProcesses, () => persistAndBroadcastJobs(config, jobs, jobClients));

@@ -47,3 +47,35 @@ export interface RuntimeStatus {
   }>;
   requestHost: string;
 }
+
+export interface AppSettings {
+  musicDir: string;
+  ytdlpPath: string;
+  ffmpegPath: string;
+  audioFormat: string;
+  audioQuality: string;
+  bilibiliCookiesPath: string;
+  navidromeBaseUrl: string;
+  maxJobs: number;
+}
+
+export interface SettingsSaveResult {
+  settings: AppSettings;
+  restartRequired: boolean;
+  restartReasons: string[];
+}
+
+export type DiagnosticLevel = "ok" | "warning" | "error";
+
+export interface DiagnosticCheck {
+  id: string;
+  label: string;
+  level: DiagnosticLevel;
+  message: string;
+  suggestion?: string;
+}
+
+export interface DiagnosticsReport {
+  ok: boolean;
+  checks: DiagnosticCheck[];
+}

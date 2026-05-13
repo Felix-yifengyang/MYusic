@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { DownloadJob, RuntimeStatus, Track } from "@personal-music/shared";
+import type { AppSettings, DiagnosticCheck, DiagnosticsReport, DownloadJob, RuntimeStatus, Track } from "@personal-music/shared";
 
 type TabName = "download" | "library" | "settings";
 
@@ -8,8 +8,11 @@ export function App() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [settingsMessage, setSettingsMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const activeTabRef = useRef<TabName>("download");
   const navidromeUrl = status?.navidromeUrl || "http://127.0.0.1:4533";
@@ -22,9 +25,11 @@ export function App() {
     void loadStatus();
     void loadJobs();
     void loadLibrary();
+    void loadDiagnostics();
 
     const onFocus = () => {
       if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadStatus();
+      if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadDiagnostics();
       if (activeTabRef.current === "library") void loadLibrary();
     };
 
@@ -40,6 +45,8 @@ export function App() {
     }
     if (activeTab === "settings") {
       void loadStatus();
+      void loadSettings();
+      void loadDiagnostics();
     }
     if (activeTab === "download") {
       void loadJobs();
@@ -75,6 +82,16 @@ export function App() {
     setTracks(await response.json());
   }
 
+  async function loadSettings() {
+    const response = await fetch("/api/settings");
+    setSettings(await response.json());
+  }
+
+  async function loadDiagnostics() {
+    const response = await fetch("/api/diagnostics");
+    setDiagnostics(await response.json());
+  }
+
   async function submitDownload(event: FormEvent) {
     event.preventDefault();
     const mediaUrl = url.trim();
@@ -90,7 +107,10 @@ export function App() {
         body: JSON.stringify({ url: mediaUrl })
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "下载失败");
+      if (!response.ok) {
+        await loadDiagnostics();
+        throw new Error(body.error || "下载失败");
+      }
       setUrl("");
       await loadJobs();
       await loadLibrary();
@@ -114,6 +134,27 @@ export function App() {
   async function clearFinishedJobs() {
     const response = await fetch("/api/jobs", { method: "DELETE" });
     setJobs(await response.json());
+  }
+
+  async function saveSettings(event: FormEvent) {
+    event.preventDefault();
+    if (!settings) return;
+
+    setSettingsMessage("");
+    const response = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(settings)
+    });
+    const body = await response.json();
+    setSettings(body.settings);
+    await loadStatus();
+    await loadDiagnostics();
+    setSettingsMessage(body.restartRequired ? `已保存，需要重启：${body.restartReasons.join("；")}` : "已保存");
+  }
+
+  function updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
+    setSettings((current) => current ? { ...current, [key]: value } : current);
   }
 
   const serviceLabel = useMemo(() => {
@@ -163,6 +204,7 @@ export function App() {
           <aside className="block">
             <h2>当前状态</h2>
             {status ? <QuickStatus status={status} /> : <Empty>正在读取状态</Empty>}
+            {diagnostics && <DiagnosticsList diagnostics={diagnostics} compact />}
           </aside>
         </section>
       )}
@@ -193,11 +235,21 @@ export function App() {
         <section className="grid">
           <section className="block">
             <h2>路径和工具</h2>
-            {status ? <SettingsMain status={status} /> : <Empty>正在读取设置</Empty>}
+            {settings ? (
+              <SettingsForm
+                settings={settings}
+                message={settingsMessage}
+                onChange={updateSetting}
+                onSubmit={saveSettings}
+              />
+            ) : (
+              <Empty>正在读取设置</Empty>
+            )}
           </section>
           <section className="block">
             <h2>手机连接</h2>
             {status ? <LanSettings status={status} /> : <Empty>正在读取局域网地址</Empty>}
+            {diagnostics && <DiagnosticsList diagnostics={diagnostics} />}
           </section>
         </section>
       )}
@@ -225,15 +277,94 @@ function QuickStatus({ status }: { status: RuntimeStatus }) {
   );
 }
 
-function SettingsMain({ status }: { status: RuntimeStatus }) {
+function DiagnosticsList({ diagnostics, compact = false }: { diagnostics: DiagnosticsReport; compact?: boolean }) {
+  const visibleChecks = compact ? diagnostics.checks.filter((check) => check.level !== "ok") : diagnostics.checks;
+
+  if (compact && !visibleChecks.length) {
+    return <div className="diagnostics-summary ok">环境检查正常</div>;
+  }
+
   return (
-    <div className="facts">
-      <Fact label="音乐目录" value={status.musicDir} />
-      <Fact label="音频格式" value={status.audioFormat} />
-      <Fact label="Cookie 文件" value={status.cookies.bilibili.path || "未设置"} />
-      <Fact label="yt-dlp" value={status.tools.ytdlpPath} />
-      <Fact label="ffmpeg" value={status.tools.ffmpegPath || "未设置"} />
+    <div className="diagnostics">
+      {!compact && <div className={`diagnostics-summary ${diagnostics.ok ? "ok" : "error"}`}>{diagnostics.ok ? "环境检查正常" : "环境存在问题"}</div>}
+      {visibleChecks.map((check) => <DiagnosticItem check={check} key={check.id} />)}
     </div>
+  );
+}
+
+function DiagnosticItem({ check }: { check: DiagnosticCheck }) {
+  return (
+    <article className={`diagnostic ${check.level}`}>
+      <div className="row">
+        <strong>{check.label}</strong>
+        <span>{check.level}</span>
+      </div>
+      <div className="value">{check.message}</div>
+      {check.suggestion && <div className="suggestion">{check.suggestion}</div>}
+    </article>
+  );
+}
+
+function SettingsForm({
+  settings,
+  message,
+  onChange,
+  onSubmit
+}: {
+  settings: AppSettings;
+  message: string;
+  onChange: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
+  onSubmit: (event: FormEvent) => void;
+}) {
+  return (
+    <form className="settings-form" onSubmit={onSubmit}>
+      <label>
+        <span>音乐目录</span>
+        <input value={settings.musicDir} onChange={(event) => onChange("musicDir", event.target.value)} />
+      </label>
+      <label>
+        <span>Bilibili Cookie</span>
+        <input value={settings.bilibiliCookiesPath} onChange={(event) => onChange("bilibiliCookiesPath", event.target.value)} />
+      </label>
+      <label>
+        <span>yt-dlp</span>
+        <input value={settings.ytdlpPath} onChange={(event) => onChange("ytdlpPath", event.target.value)} />
+      </label>
+      <label>
+        <span>ffmpeg</span>
+        <input value={settings.ffmpegPath} onChange={(event) => onChange("ffmpegPath", event.target.value)} />
+      </label>
+      <label>
+        <span>音频格式</span>
+        <select value={settings.audioFormat} onChange={(event) => onChange("audioFormat", event.target.value)}>
+          <option value="mp3">mp3</option>
+          <option value="m4a">m4a</option>
+          <option value="opus">opus</option>
+          <option value="flac">flac</option>
+          <option value="wav">wav</option>
+        </select>
+      </label>
+      <label>
+        <span>音频质量</span>
+        <input value={settings.audioQuality} onChange={(event) => onChange("audioQuality", event.target.value)} />
+      </label>
+      <label>
+        <span>Navidrome 地址</span>
+        <input value={settings.navidromeBaseUrl} onChange={(event) => onChange("navidromeBaseUrl", event.target.value)} />
+      </label>
+      <label>
+        <span>最多保留任务</span>
+        <input
+          type="number"
+          min="1"
+          max="500"
+          value={settings.maxJobs}
+          onChange={(event) => onChange("maxJobs", Number(event.target.value))}
+        />
+      </label>
+      <button className="button" type="submit">保存设置</button>
+      {message && <div className="settings-message">{message}</div>}
+    </form>
   );
 }
 

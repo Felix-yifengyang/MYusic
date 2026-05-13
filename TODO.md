@@ -16,6 +16,7 @@
 - [x] Restructure into pnpm workspace with React web, Fastify API, runtime, downloader, and shared packages.
 - [x] Persist download jobs to `D:\project\personal-music-stack-data\collector\jobs.json`.
 - [x] Add cancel / retry / clear finished actions for download jobs.
+- [x] Add diagnostics API and UI for tools, cookie, directories, task store, and Navidrome.
 
 ## Next
 
@@ -25,7 +26,9 @@
 
 ## Product
 
+- [x] Add editable settings UI backed by local `api.json`.
 - [ ] Decide whether the built-in music list should stay file-based or move to Navidrome API.
+- [x] Add first-run diagnostics for local tools and writable data paths.
 - [ ] Add first-run guidance for Bilibili cookies and Navidrome admin account.
 - [ ] Add cookie management UI for Bilibili.
 - [ ] Add yt-dlp update flow.
@@ -43,6 +46,8 @@
 
 ## Cloud
 
+- [ ] Introduce a persistence repository layer so local JSON can be swapped for a server database.
+- [ ] Move settings, download jobs, users, and library metadata to server-side Postgres for cloud deployment.
 - [ ] Add local/cloud mode configuration.
 - [ ] Design cloud API for submitting links and checking download status.
 - [ ] Add HTTPS and authentication plan for remote access.

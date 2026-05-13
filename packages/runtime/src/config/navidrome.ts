@@ -2,10 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import type { RuntimePaths } from "../paths";
 
-export function writeNavidromeConfig(paths: RuntimePaths, ffmpegPath: string) {
+export function writeNavidromeConfig(paths: RuntimePaths, ffmpegPath: string, musicDir = paths.libraryDir) {
   const dataDir = path.join(paths.dataRootDir, "navidrome", "data");
   const lines = [
-    `MusicFolder = "${tomlString(paths.libraryDir)}"`,
+    `MusicFolder = "${tomlString(musicDir)}"`,
     `DataFolder = "${tomlString(dataDir)}"`,
     ffmpegPath ? `FFmpegPath = "${tomlString(ffmpegPath)}"` : "",
     'Address = "0.0.0.0"',

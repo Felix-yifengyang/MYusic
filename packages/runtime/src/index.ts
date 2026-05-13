@@ -28,7 +28,7 @@ export function createRuntime(options: CreateRuntimeOptions = {}) {
   async function start(): Promise<RuntimeStatus> {
     ensureRuntimeFolders(paths);
     const apiConfig = writeApiConfig(paths);
-    writeNavidromeConfig(paths, apiConfig.ffmpegPath);
+    writeNavidromeConfig(paths, apiConfig.ffmpegPath, apiConfig.musicDir);
 
     logger.log(`Runtime root: ${paths.rootDir}`);
     logger.log(`Runtime data: ${paths.dataRootDir}`);
