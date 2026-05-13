@@ -1,149 +1,148 @@
 # Personal Music Stack
 
-一个自用的集成式音乐收集和播放产品。
+一个自用的个人音乐收集和播放服务。
 
-从用户角度看，它是一个整体：
+当前产品形态是本地 Web 控制台，不是桌面 App。启动后在浏览器打开一个页面，集中管理下载、音乐列表和设置。
 
 ```text
-启动产品
-→ 粘贴网页链接下载音频
-→ Navidrome 自动读取音乐库
-→ iPhone 用 Amperfy 播放
+网页链接
+-> API 调用 yt-dlp + ffmpeg 下载音频
+-> 音频进入 D:\project\personal-music-stack-data\library
+-> Navidrome 扫描音乐库
+-> iPhone 用 Amperfy 连接 Navidrome 播放
 ```
 
-内部组件：
+## 技术栈
 
 ```text
-collector  = 网页下载入口，调用 yt-dlp + ffmpeg
-Navidrome  = 音乐库服务
-Amperfy    = iOS 播放器
-yt-dlp     = 网站音频下载
-ffmpeg     = 抽音频、转码、封面和元数据
+apps/web              React + TypeScript + Rsbuild
+packages/api          Fastify + TypeScript
+packages/runtime      本机运行时，负责启动 API + Navidrome
+packages/downloader   yt-dlp 参数和输出处理
+packages/shared       前后端共享类型
+services/navidrome    Navidrome 可执行文件目录
+bin                   yt-dlp / ffmpeg，本机缓存，不提交
+scripts               初始化脚本
 ```
 
 ## 目录结构
 
 ```text
 D:\project\personal-music-stack
-├─ app
-│  ├─ electron-main.js
-│  ├─ launcher.js
-│  ├─ loading.html
-│  └─ runtime.js
+├─ apps
+│  └─ web
+├─ packages
+│  ├─ api
+│  ├─ downloader
+│  ├─ runtime
+│  └─ shared
+├─ services
+│  └─ navidrome
 ├─ bin
-│  ├─ node.exe
 │  ├─ yt-dlp.exe
 │  └─ ffmpeg.exe
-├─ services
-│  ├─ collector
-│  └─ navidrome
+├─ scripts
+│  └─ setup-windows.ps1
 ├─ package.json
-└─ README.md
+├─ pnpm-workspace.yaml
+├─ tsconfig.base.json
+├─ README.md
+└─ TODO.md
 
 D:\project\personal-music-stack-data
+├─ config
+│  └─ api.json
+├─ collector
+│  └─ jobs.json
 ├─ library
 ├─ navidrome
-├─ cookies
-│  └─ bilibili.txt
-└─ app.log
+└─ cookies
+   └─ bilibili.txt
 ```
 
-## 桌面 App
-
-首次 clone 后先运行 Windows setup：
+## 首次安装
 
 ```powershell
 cd D:\project\personal-music-stack
+pnpm install
 .\scripts\setup-windows.ps1
 ```
 
-这个脚本会准备：
+脚本会准备：
 
 ```text
-bin\node.exe
 bin\yt-dlp.exe
 bin\ffmpeg.exe
 services\navidrome\navidrome.exe
-services\collector\config.json
 D:\project\personal-music-stack-data
 ```
 
-开发阶段启动 Electron 桌面窗口：
+这些二进制、cookie、运行时数据都不会提交到 Git。
 
-```powershell
-cd D:\project\personal-music-stack
-pnpm app
-```
-
-它会自动启动本地 collector 和 Navidrome，然后加载下载页面。
-
-## 打包
-
-生成 Windows unpacked 目录版：
-
-```powershell
-cd D:\project\personal-music-stack
-pnpm dist
-```
-
-推荐使用的可运行产物：
-
-```text
-D:\project\personal-music-stack\release\win-unpacked\Personal Music.exe
-```
-
-当前自动化验证通过的是 `win-unpacked\Personal Music.exe`。
-
-## 内置工具
-
-当前包已内置：
-
-```text
-bin\node.exe
-bin\yt-dlp.exe
-bin\ffmpeg.exe
-```
-
-运行时会优先使用这些内置工具。
-
-本地运行需要准备这些二进制文件，但它们不会提交到 Git：
-
-```text
-bin\node.exe
-bin\yt-dlp.exe
-bin\ffmpeg.exe
-services\navidrome\navidrome.exe
-```
-
-collector 的真实配置文件是：
-
-```text
-services\collector\config.json
-```
-
-它由本地运行时同步生成，不提交到 Git。仓库里只保留：
-
-```text
-services\collector\config.example.json
-```
-
-## 命令行启动
-
-不打开桌面窗口，只启动本地服务：
+## 启动
 
 ```powershell
 cd D:\project\personal-music-stack
 pnpm start
 ```
 
-启动后访问：
+启动后打开：
 
 ```text
-collector:  http://127.0.0.1:8787
-Navidrome:  http://127.0.0.1:4533
+http://127.0.0.1:8787
 ```
 
-按 `Ctrl + C` 停止由启动器拉起的服务。
+这个页面包含：
+
+- 下载：粘贴 Bilibili、YouTube 或其他 yt-dlp 支持的网站链接。
+- 下载任务：支持持久化、取消、重试、清空已结束任务。
+- 音乐列表：直接扫描本地音乐目录，并提供 Navidrome 外部入口。
+- 设置：查看音乐目录、cookie 状态、工具路径、局域网地址。
+
+停止服务：
+
+```text
+在启动服务的 PowerShell 窗口按 Ctrl + C
+```
+
+## 常用命令
+
+```powershell
+pnpm build
+pnpm typecheck
+pnpm --filter @personal-music/web build
+pnpm --filter @personal-music/api build
+```
+
+## Bilibili Cookie
+
+如果 Bilibili 下载出现 `HTTP Error 412`，需要导出登录后的 cookies.txt，并保存为：
+
+```text
+D:\project\personal-music-stack-data\cookies\bilibili.txt
+```
+
+启动器会自动把这个路径写入运行时配置。下载 Bilibili 链接时，只要文件存在，就会自动给 yt-dlp 添加：
+
+```text
+--cookies D:\project\personal-music-stack-data\cookies\bilibili.txt
+```
+
+## iPhone
+
+iPhone 端使用 Amperfy 连接 Navidrome。
+
+在本地 Web 控制台的“设置”里查看电脑的局域网 IP，然后在 Amperfy 里填写：
+
+```text
+http://电脑局域网IP:4533
+```
+
+例如：
+
+```text
+http://172.20.10.5:4533
+```
 
 ## 数据目录
 
@@ -153,44 +152,13 @@ Navidrome:  http://127.0.0.1:4533
 D:\project\personal-music-stack-data
 ```
 
-其中音乐库是：
-
-```text
-D:\project\personal-music-stack-data\library
-```
-
-collector 的下载目录和 Navidrome 的扫描目录都会在启动时自动指向这个目录。
-
-## Bilibili Cookie
-
-Bilibili 出现 `HTTP Error 412` 时，需要给 yt-dlp 提供登录 Cookie。
-
-把浏览器导出的 cookies.txt 保存为：
-
-```text
-D:\project\personal-music-stack-data\cookies\bilibili.txt
-```
-
-App 启动时会自动把这个路径写入 collector 配置。下载 Bilibili 链接时，如果这个文件存在，会自动添加：
-
-```text
---cookies D:\project\personal-music-stack-data\cookies\bilibili.txt
-```
-
-如需临时覆盖数据目录，可以设置环境变量：
+如需临时覆盖：
 
 ```powershell
 $env:PERSONAL_MUSIC_DATA_DIR = "D:\PersonalMusicData"
-```
-
-## iPhone
-
-iPhone 用 Amperfy 连接 Navidrome。服务器地址填电脑在当前网络下的 IP，例如：
-
-```text
-http://172.20.10.5:4533
+pnpm start
 ```
 
 ## 云端方向
 
-当前版本用于验证本机核心链路。后续部署到云端时，Electron App 可以改成连接云端服务，不再启动本机 collector/Navidrome。
+当前版本先验证本机核心链路。后续部署到云端时，API 和 Navidrome 可以放到服务器上，电脑和手机都只访问云端 Web 控制台和 Navidrome 服务。

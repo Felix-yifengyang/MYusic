@@ -7,10 +7,8 @@ $ErrorActionPreference = "Stop"
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $BinDir = Join-Path $Root "bin"
-$CollectorDir = Join-Path $Root "services\collector"
-$CollectorConfig = Join-Path $CollectorDir "config.json"
-$CollectorConfigExample = Join-Path $CollectorDir "config.example.json"
 $NavidromeDir = Join-Path $Root "services\navidrome"
+$ConfigDir = Join-Path $DataDir "config"
 $CookiesDir = Join-Path $DataDir "cookies"
 $LibraryDir = Join-Path $DataDir "library"
 
@@ -43,21 +41,9 @@ function Find-CommandPath($Name) {
 Write-Step "Creating folders"
 Ensure-Dir $BinDir
 Ensure-Dir $NavidromeDir
+Ensure-Dir $ConfigDir
 Ensure-Dir $CookiesDir
 Ensure-Dir $LibraryDir
-
-Write-Step "Preparing node.exe"
-$NodeTarget = Join-Path $BinDir "node.exe"
-if (-not (Test-Path $NodeTarget)) {
-  $NodeSource = Find-CommandPath "node.exe"
-  if (-not $NodeSource) {
-    throw "node.exe was not found on PATH. Install Node.js first, then rerun this script."
-  }
-  Copy-Item -LiteralPath $NodeSource -Destination $NodeTarget -Force
-  Write-Host "Copied $NodeSource -> $NodeTarget"
-} else {
-  Write-Host "node.exe already exists"
-}
 
 Write-Step "Preparing yt-dlp.exe"
 $YtDlpTarget = Join-Path $BinDir "yt-dlp.exe"
@@ -104,32 +90,6 @@ if (-not (Test-Path $NavidromeTarget)) {
   Write-Host "navidrome.exe already exists"
 }
 
-Write-Step "Writing collector config"
-if (Test-Path $CollectorConfigExample) {
-  $Config = Get-Content -Raw -LiteralPath $CollectorConfigExample | ConvertFrom-Json
-} else {
-  $Config = [PSCustomObject]@{}
-}
-
-$Config | Add-Member -NotePropertyName host -NotePropertyValue "0.0.0.0" -Force
-$Config | Add-Member -NotePropertyName port -NotePropertyValue 8787 -Force
-$Config | Add-Member -NotePropertyName musicDir -NotePropertyValue $LibraryDir -Force
-$Config | Add-Member -NotePropertyName ytdlpPath -NotePropertyValue $YtDlpTarget -Force
-$Config | Add-Member -NotePropertyName audioFormat -NotePropertyValue "mp3" -Force
-$Config | Add-Member -NotePropertyName audioQuality -NotePropertyValue "0" -Force
-$Config | Add-Member -NotePropertyName maxJobs -NotePropertyValue 50 -Force
-$Config | Add-Member -NotePropertyName ffmpegPath -NotePropertyValue $FfmpegTarget -Force
-$Config | Add-Member -NotePropertyName cookies -NotePropertyValue ([PSCustomObject]@{
-  bilibili = Join-Path $CookiesDir "bilibili.txt"
-}) -Force
-$Config | Add-Member -NotePropertyName navidrome -NotePropertyValue ([PSCustomObject]@{
-  baseUrl = ""
-  username = ""
-  password = ""
-}) -Force
-
-$Config | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $CollectorConfig -Encoding UTF8
-
 if (-not $SkipPnpmInstall) {
   Write-Step "Installing npm dependencies"
   Push-Location $Root
@@ -146,8 +106,8 @@ Write-Step "Done"
 Write-Host "Data directory: $DataDir"
 Write-Host "Bilibili cookies path: $(Join-Path $CookiesDir 'bilibili.txt')"
 Write-Host ""
-Write-Host "Run the desktop app in development:"
-Write-Host "  pnpm app"
+Write-Host "Start the local web console:"
+Write-Host "  pnpm start"
 Write-Host ""
-Write-Host "Build the unpacked app:"
-Write-Host "  pnpm dist"
+Write-Host "Then open:"
+Write-Host "  http://127.0.0.1:8787"

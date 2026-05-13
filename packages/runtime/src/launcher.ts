@@ -1,4 +1,4 @@
-const { createRuntime } = require("./runtime");
+import { createRuntime } from "./index";
 
 const runtime = createRuntime();
 
@@ -15,11 +15,11 @@ async function main() {
 
   console.log("");
   console.log("Personal Music Stack is ready.");
-  console.log("Collector:  " + status.collectorUrl);
-  console.log("Navidrome:  " + status.navidromeUrl);
-  console.log("Library:    " + status.libraryDir);
+  console.log("Web console: " + status.webConsoleUrl);
+  console.log("Navidrome:    " + status.navidromeUrl);
+  console.log("Library:      " + status.libraryDir);
   console.log("");
-  console.log("Press Ctrl+C to stop services started by this launcher.");
+  console.log("Open the web console in your browser. Press Ctrl+C here to stop local services.");
 }
 
 main().catch((error) => {

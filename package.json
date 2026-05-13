@@ -2,50 +2,19 @@
   "name": "personal-music-stack",
   "version": "0.1.0",
   "private": true,
-  "description": "Integrated personal music collector and library runtime.",
-  "main": "app/electron-main.js",
+  "description": "Personal music web console, collector, and Navidrome runtime.",
+  "packageManager": "pnpm@10.12.1",
   "scripts": {
-    "start": "node app/launcher.js",
-    "app": "electron app/electron-main.js",
-    "dist": "electron-builder --win dir",
-    "collector": "pnpm --dir services/collector start"
+    "start": "pnpm build && node packages/runtime/dist/launcher.js",
+    "build": "pnpm --filter @personal-music/shared build && pnpm --filter @personal-music/downloader build && pnpm --filter @personal-music/api build && pnpm --filter @personal-music/runtime build && pnpm --filter @personal-music/web build",
+    "typecheck": "pnpm -r typecheck",
+    "dev:web": "pnpm --filter @personal-music/web dev",
+    "setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1"
   },
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
-    "electron": "^42.0.1",
-    "electron-builder": "^26.8.1"
-  },
-  "build": {
-    "appId": "com.yuf.personal-music",
-    "productName": "Personal Music",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "app/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "bin",
-        "to": "bin"
-      },
-      {
-        "from": "services",
-        "to": "services",
-        "filter": [
-          "**/*",
-          "!collector/node_modules/**"
-        ]
-      }
-    ],
-    "win": {
-      "signAndEditExecutable": false,
-      "target": [
-        "dir"
-      ]
-    }
+    "typescript": "^5.8.3"
   }
 }

@@ -1,11 +1,14 @@
 # Dependencies
 node_modules/
 services/collector/node_modules/
+.pnpm-store/
 
 # Build outputs
 release/
 dist/
 out/
+apps/web/dist/
+packages/*/dist/
 
 # Runtime data
 library/
