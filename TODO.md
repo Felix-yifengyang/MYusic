@@ -11,23 +11,33 @@
 - [x] Exclude binaries, cookies, local config, build output, and runtime data from Git.
 - [x] Replace the Electron shell with a lightweight local Web console.
 - [x] Put Download / Music List / Settings into one browser page.
-- [x] Add a collector-side local music list by scanning the library folder.
+- [x] Replace the collector-side local scan with Navidrome API as the music library source.
 - [x] Show cookie status, tool status, data paths, and LAN connection URLs in Settings.
 - [x] Restructure into pnpm workspace with React web, Fastify API, runtime, downloader, and shared packages.
 - [x] Persist download jobs to `D:\project\personal-music-stack-data\collector\jobs.json`.
 - [x] Add cancel / retry / clear finished actions for download jobs.
 - [x] Add diagnostics API and UI for tools, cookie, directories, task store, and Navidrome.
+- [x] Add Navidrome/Subsonic API integration for in-page search and playback.
+- [x] Add a unified bottom player for Navidrome songs.
+- [x] Make the music page use Navidrome API as the single source of truth.
+- [x] Add a player queue with previous / next controls.
+- [x] Trigger a Navidrome library scan automatically after successful downloads.
+- [x] Show download-to-library sync status on job cards.
+- [x] Show current track and next track context without duplicating the music list.
+- [x] Capture final downloaded file path and source metadata as a minimal ingestion record.
 
 ## Next
 
-- [ ] Add a file detail view for downloaded songs.
+- [ ] Add a file detail view for Navidrome songs.
+- [ ] Link ingestion records to Navidrome song ids after scanning.
 - [ ] Improve metadata cleanup for Bilibili downloads.
-- [ ] Add a direct link from a completed download job to the local music list item.
+- [ ] Add a direct link from a completed download job to the Navidrome music list item.
+- [ ] Add a richer queue drawer if long playlists become necessary.
 
 ## Product
 
 - [x] Add editable settings UI backed by local `api.json`.
-- [ ] Decide whether the built-in music list should stay file-based or move to Navidrome API.
+- [x] Decide whether the built-in music list should stay file-based or move to Navidrome API.
 - [x] Add first-run diagnostics for local tools and writable data paths.
 - [ ] Add first-run guidance for Bilibili cookies and Navidrome admin account.
 - [ ] Add cookie management UI for Bilibili.

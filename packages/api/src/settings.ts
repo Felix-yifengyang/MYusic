@@ -13,6 +13,8 @@ export function getSettings(config: ApiConfig): AppSettings {
     audioQuality: config.audioQuality,
     bilibiliCookiesPath: config.cookies.bilibili || "",
     navidromeBaseUrl: config.navidrome.baseUrl || "http://127.0.0.1:4533",
+    navidromeUsername: config.navidrome.username || "",
+    navidromePassword: config.navidrome.password || "",
     maxJobs: config.maxJobs
   };
 }
@@ -61,6 +63,20 @@ export function updateSettings(config: ApiConfig, input: Partial<AppSettings>): 
     config.navidrome = {
       ...config.navidrome,
       baseUrl: input.navidromeBaseUrl.trim() || "http://127.0.0.1:4533"
+    };
+  }
+
+  if (typeof input.navidromeUsername === "string") {
+    config.navidrome = {
+      ...config.navidrome,
+      username: input.navidromeUsername.trim()
+    };
+  }
+
+  if (typeof input.navidromePassword === "string") {
+    config.navidrome = {
+      ...config.navidrome,
+      password: input.navidromePassword
     };
   }
 

@@ -1,4 +1,26 @@
 export type DownloadStatus = "running" | "done" | "failed" | "canceled";
+export type LibrarySyncStatus = "pending" | "scanning" | "synced" | "failed";
+
+export interface LibrarySyncState {
+  status: LibrarySyncStatus;
+  message?: string;
+  requestedAt?: string;
+  finishedAt?: string;
+}
+
+export interface IngestionRecord {
+  sourceUrl: string;
+  sourceSite?: string;
+  sourceId?: string;
+  title?: string;
+  uploader?: string;
+  duration?: number;
+  webpageUrl?: string;
+  outputPath?: string;
+  relativeOutputPath?: string;
+  infoJsonPath?: string;
+  capturedAt?: string;
+}
 
 export interface DownloadJob {
   id: string;
@@ -11,15 +33,8 @@ export interface DownloadJob {
   exitCode?: number | null;
   error?: string;
   retryOf?: string;
-}
-
-export interface Track {
-  title: string;
-  artist: string;
-  fileName: string;
-  relativePath: string;
-  size: number;
-  modifiedAt: string;
+  ingestion?: IngestionRecord;
+  librarySync?: LibrarySyncState;
 }
 
 export interface RuntimeStatus {
@@ -56,6 +71,8 @@ export interface AppSettings {
   audioQuality: string;
   bilibiliCookiesPath: string;
   navidromeBaseUrl: string;
+  navidromeUsername: string;
+  navidromePassword: string;
   maxJobs: number;
 }
 
@@ -78,4 +95,25 @@ export interface DiagnosticCheck {
 export interface DiagnosticsReport {
   ok: boolean;
   checks: DiagnosticCheck[];
+}
+
+export interface NavidromeSong {
+  id: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  duration?: number;
+  coverArt?: string;
+  suffix?: string;
+  size?: number;
+  contentType?: string;
+}
+
+export interface NavidromeSongsResult {
+  songs: NavidromeSong[];
+}
+
+export interface NavidromeScanStatus {
+  scanning: boolean;
+  count?: number;
 }

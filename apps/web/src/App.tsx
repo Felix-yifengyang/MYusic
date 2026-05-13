@@ -1,21 +1,36 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { AppSettings, DiagnosticCheck, DiagnosticsReport, DownloadJob, RuntimeStatus, Track } from "@personal-music/shared";
+import type { AppSettings, DiagnosticCheck, DiagnosticsReport, DownloadJob, NavidromeSong, RuntimeStatus } from "@personal-music/shared";
 
 type TabName = "download" | "library" | "settings";
+
+type PlayerTrack = {
+  key: string;
+  source: "navidrome";
+  title: string;
+  artist: string;
+  album?: string;
+  streamUrl: string;
+  coverUrl?: string;
+};
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabName>("download");
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [navidromeSongs, setNavidromeSongs] = useState<NavidromeSong[]>([]);
+  const [navidromeQuery, setNavidromeQuery] = useState("");
+  const [navidromeError, setNavidromeError] = useState("");
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
+  const [queue, setQueue] = useState<PlayerTrack[]>([]);
+  const [queueIndex, setQueueIndex] = useState(-1);
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [settingsMessage, setSettingsMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const activeTabRef = useRef<TabName>("download");
   const navidromeUrl = status?.navidromeUrl || "http://127.0.0.1:4533";
+  const nowPlaying = queueIndex >= 0 ? queue[queueIndex] : null;
 
   useEffect(() => {
     activeTabRef.current = activeTab;
@@ -24,33 +39,26 @@ export function App() {
   useEffect(() => {
     void loadStatus();
     void loadJobs();
-    void loadLibrary();
     void loadDiagnostics();
 
     const onFocus = () => {
       if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadStatus();
       if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadDiagnostics();
-      if (activeTabRef.current === "library") void loadLibrary();
+      if (activeTabRef.current === "library") void loadNavidromeSongs();
     };
 
     window.addEventListener("focus", onFocus);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-    };
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   useEffect(() => {
-    if (activeTab === "library") {
-      void loadLibrary();
-    }
+    if (activeTab === "library") void loadNavidromeSongs();
     if (activeTab === "settings") {
       void loadStatus();
       void loadSettings();
       void loadDiagnostics();
     }
-    if (activeTab === "download") {
-      void loadJobs();
-    }
+    if (activeTab === "download") void loadJobs();
   }, [activeTab]);
 
   useEffect(() => {
@@ -77,11 +85,6 @@ export function App() {
     setJobs(await response.json());
   }
 
-  async function loadLibrary() {
-    const response = await fetch("/api/library");
-    setTracks(await response.json());
-  }
-
   async function loadSettings() {
     const response = await fetch("/api/settings");
     setSettings(await response.json());
@@ -90,6 +93,19 @@ export function App() {
   async function loadDiagnostics() {
     const response = await fetch("/api/diagnostics");
     setDiagnostics(await response.json());
+  }
+
+  async function loadNavidromeSongs(query = navidromeQuery) {
+    setNavidromeError("");
+    try {
+      const response = await fetch(`/api/navidrome/songs?q=${encodeURIComponent(query)}`);
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Navidrome 音乐库读取失败");
+      setNavidromeSongs(body.songs);
+    } catch (caught) {
+      setNavidromeSongs([]);
+      setNavidromeError(caught instanceof Error ? caught.message : "Navidrome 音乐库读取失败");
+    }
   }
 
   async function submitDownload(event: FormEvent) {
@@ -113,7 +129,7 @@ export function App() {
       }
       setUrl("");
       await loadJobs();
-      await loadLibrary();
+      await loadNavidromeSongs();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "下载失败");
     } finally {
@@ -155,6 +171,30 @@ export function App() {
 
   function updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
     setSettings((current) => current ? { ...current, [key]: value } : current);
+  }
+
+  function searchNavidrome(event: FormEvent) {
+    event.preventDefault();
+    void loadNavidromeSongs(navidromeQuery);
+  }
+
+  function playSong(song: NavidromeSong) {
+    const tracks = navidromeSongs.map(navidromePlayerTrack);
+    const index = Math.max(0, navidromeSongs.findIndex((item) => item.id === song.id));
+    setQueue(tracks);
+    setQueueIndex(index);
+  }
+
+  function playPrevious() {
+    setQueueIndex((current) => current > 0 ? current - 1 : current);
+  }
+
+  function playNext() {
+    setQueueIndex((current) => current >= 0 && current < queue.length - 1 ? current + 1 : current);
+  }
+
+  function closePlayer() {
+    setQueueIndex(-1);
   }
 
   const serviceLabel = useMemo(() => {
@@ -210,24 +250,20 @@ export function App() {
       )}
 
       {activeTab === "library" && (
-        <section>
-          <div className="toolbar">
-            <button className="button secondary" type="button" onClick={loadLibrary}>刷新列表</button>
-            <a className="button secondary" href={navidromeUrl} target="_blank" rel="noreferrer">打开完整音乐库</a>
-          </div>
-          <div className="grid">
-            <section className="block">
-              <h2>本地音乐列表</h2>
-              <TrackList tracks={tracks} />
-            </section>
-            <section className="block">
-              <h2>Navidrome</h2>
-              <div className="navidrome-panel">
-                <div className="value">Navidrome 不允许被嵌入页面，完整播放和账号管理需要在独立页面打开。</div>
-                <a className="button secondary" href={navidromeUrl} target="_blank" rel="noreferrer">打开 Navidrome</a>
-              </div>
-            </section>
-          </div>
+        <section className="block">
+          <NavidromeLibrary
+            songs={navidromeSongs}
+            query={navidromeQuery}
+            error={navidromeError}
+            navidromeUrl={navidromeUrl}
+            currentTrackKey={nowPlaying?.key || ""}
+            queue={queue}
+            queueIndex={queueIndex}
+            onQueryChange={setNavidromeQuery}
+            onSearch={searchNavidrome}
+            onRefresh={() => loadNavidromeSongs()}
+            onPlay={playSong}
+          />
         </section>
       )}
 
@@ -253,6 +289,16 @@ export function App() {
           </section>
         </section>
       )}
+
+      <PlayerBar
+        track={nowPlaying}
+        canPrevious={queueIndex > 0}
+        canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
+        onPrevious={playPrevious}
+        onNext={playNext}
+        onEnded={playNext}
+        onClose={closePlayer}
+      />
     </main>
   );
 }
@@ -275,6 +321,126 @@ function QuickStatus({ status }: { status: RuntimeStatus }) {
       <Fact label="ffmpeg" value={status.tools.ffmpegExists ? "可用" : "未找到"} />
     </div>
   );
+}
+
+function NavidromeLibrary({
+  songs,
+  query,
+  error,
+  navidromeUrl,
+  currentTrackKey,
+  queue,
+  queueIndex,
+  onQueryChange,
+  onSearch,
+  onRefresh,
+  onPlay
+}: {
+  songs: NavidromeSong[];
+  query: string;
+  error: string;
+  navidromeUrl: string;
+  currentTrackKey: string;
+  queue: PlayerTrack[];
+  queueIndex: number;
+  onQueryChange: (value: string) => void;
+  onSearch: (event: FormEvent) => void;
+  onRefresh: () => void;
+  onPlay: (song: NavidromeSong) => void;
+}) {
+  const currentQueueTrack = queueIndex >= 0 ? queue[queueIndex] : null;
+  const nextQueueTrack = queueIndex >= 0 && queueIndex < queue.length - 1 ? queue[queueIndex + 1] : null;
+
+  return (
+    <div className="navidrome-panel">
+      <div className="section-heading">
+        <h2>音乐库</h2>
+        <div className="inline-actions">
+          <button className="button secondary compact" type="button" onClick={onRefresh}>刷新</button>
+          <a className="button secondary compact" href={navidromeUrl} target="_blank" rel="noreferrer">管理页</a>
+        </div>
+      </div>
+      <form className="search-form" onSubmit={onSearch}>
+        <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索标题、歌手、专辑" />
+        <button className="button secondary compact" type="submit">搜索</button>
+      </form>
+      {error && <div className="error">{error}</div>}
+      {currentQueueTrack && (
+        <div className="queue-summary">
+          <div>
+            <strong>当前播放</strong>
+            <div className="meta">{currentQueueTrack.title} · {queueIndex + 1}/{queue.length}</div>
+          </div>
+          <div>
+            <strong>下一首</strong>
+            <div className="meta">{nextQueueTrack ? nextQueueTrack.title : "队列已到末尾"}</div>
+          </div>
+        </div>
+      )}
+      <div className="navidrome-songs">
+        {!songs.length && !error ? <Empty>没有歌曲。确认 Navidrome 已扫描音乐库，并在设置中填写账号密码。</Empty> : songs.map((song) => (
+          <article className={`navidrome-song ${currentTrackKey === `navidrome:${song.id}` ? "active" : ""}`} key={song.id}>
+            {song.coverArt ? <img alt="" src={`/api/navidrome/cover/${encodeURIComponent(song.coverArt)}`} /> : <div className="cover-placeholder" />}
+            <div>
+              <div className="song-title">{song.title}</div>
+              <div className="meta">{song.artist || "Unknown"} · {song.album || "Unknown"}</div>
+            </div>
+            <button className="button secondary compact" type="button" onClick={() => onPlay(song)}>
+              {currentTrackKey === `navidrome:${song.id}` ? "播放中" : "播放"}
+            </button>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PlayerBar({
+  track,
+  canPrevious,
+  canNext,
+  onPrevious,
+  onNext,
+  onEnded,
+  onClose
+}: {
+  track: PlayerTrack | null;
+  canPrevious: boolean;
+  canNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+  onEnded: () => void;
+  onClose: () => void;
+}) {
+  if (!track) return null;
+
+  return (
+    <div className="player-bar">
+      {track.coverUrl ? <img alt="" src={track.coverUrl} /> : <div className="cover-placeholder" />}
+      <div className="player-info">
+        <div className="song-title">{track.title}</div>
+        <div className="meta">{track.artist}{track.album ? ` · ${track.album}` : ""}</div>
+      </div>
+      <div className="player-controls">
+        <button className="button secondary compact" type="button" disabled={!canPrevious} onClick={onPrevious}>上一首</button>
+        <audio controls autoPlay src={track.streamUrl} onEnded={onEnded} />
+        <button className="button secondary compact" type="button" disabled={!canNext} onClick={onNext}>下一首</button>
+      </div>
+      <button className="button secondary compact" type="button" onClick={onClose}>关闭</button>
+    </div>
+  );
+}
+
+function navidromePlayerTrack(song: NavidromeSong): PlayerTrack {
+  return {
+    key: `navidrome:${song.id}`,
+    source: "navidrome",
+    title: song.title,
+    artist: song.artist || "Unknown",
+    album: song.album,
+    streamUrl: `/api/navidrome/stream/${encodeURIComponent(song.id)}`,
+    coverUrl: song.coverArt ? `/api/navidrome/cover/${encodeURIComponent(song.coverArt)}` : undefined
+  };
 }
 
 function DiagnosticsList({ diagnostics, compact = false }: { diagnostics: DiagnosticsReport; compact?: boolean }) {
@@ -353,14 +519,16 @@ function SettingsForm({
         <input value={settings.navidromeBaseUrl} onChange={(event) => onChange("navidromeBaseUrl", event.target.value)} />
       </label>
       <label>
+        <span>Navidrome 用户名</span>
+        <input value={settings.navidromeUsername} onChange={(event) => onChange("navidromeUsername", event.target.value)} />
+      </label>
+      <label>
+        <span>Navidrome 密码</span>
+        <input type="password" value={settings.navidromePassword} onChange={(event) => onChange("navidromePassword", event.target.value)} />
+      </label>
+      <label>
         <span>最多保留任务</span>
-        <input
-          type="number"
-          min="1"
-          max="500"
-          value={settings.maxJobs}
-          onChange={(event) => onChange("maxJobs", Number(event.target.value))}
-        />
+        <input type="number" min="1" max="500" value={settings.maxJobs} onChange={(event) => onChange("maxJobs", Number(event.target.value))} />
       </label>
       <button className="button" type="submit">保存设置</button>
       {message && <div className="settings-message">{message}</div>}
@@ -403,6 +571,8 @@ function JobList({
             <span className={`status ${job.status}`}>{job.status}</span>
             <span className="meta">{formatDate(job.createdAt)}</span>
           </div>
+          <SyncStatus job={job} />
+          <IngestionDetails job={job} />
           <div className="url">{job.url}</div>
           <div className="job-actions">
             {job.status === "running" && (
@@ -420,18 +590,83 @@ function JobList({
   );
 }
 
-function TrackList({ tracks }: { tracks: Track[] }) {
-  if (!tracks.length) return <Empty>音乐库里还没有音频文件</Empty>;
+function IngestionDetails({ job }: { job: DownloadJob }) {
+  if (job.status === "running") return null;
+
+  const ingestion = job.ingestion;
+  if (job.status === "done" && !ingestion) {
+    return (
+      <div className="ingestion-details muted">
+        <strong>入库记录</strong>
+        <span>旧任务没有入库文件记录。新下载任务会记录最终文件和源站信息。</span>
+      </div>
+    );
+  }
+
+  if (!ingestion) return null;
 
   return (
-    <div className="songs">
-      {tracks.map((track) => (
-        <article className="song" key={track.relativePath}>
-          <div className="song-title">{track.title}</div>
-          <div className="meta">{track.artist} · {formatBytes(track.size)} · {formatDate(track.modifiedAt)}</div>
-          <div className="value">{track.relativePath}</div>
-        </article>
-      ))}
+    <div className="ingestion-details">
+      <strong>入库记录</strong>
+      <div className="ingestion-grid">
+        <IngestionField label="标题" value={ingestion.title || "未识别"} />
+        <IngestionField label="来源" value={formatSource(ingestion)} />
+        <IngestionField label="文件" value={ingestion.relativeOutputPath || ingestion.outputPath || "未识别"} />
+        <IngestionField label="元数据" value={ingestion.infoJsonPath || "未生成"} />
+      </div>
+    </div>
+  );
+}
+
+function IngestionField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="ingestion-field">
+      <span>{label}</span>
+      <div>{value}</div>
+    </div>
+  );
+}
+
+function SyncStatus({ job }: { job: DownloadJob }) {
+  if (job.status === "running") {
+    return (
+      <div className="sync-status muted">
+        <strong>音乐库同步</strong>
+        <span>下载中，完成后会自动触发 Navidrome 扫描。</span>
+      </div>
+    );
+  }
+
+  if (job.status === "failed" || job.status === "canceled") {
+    return (
+      <div className="sync-status muted">
+        <strong>音乐库同步</strong>
+        <span>下载未完成，不会同步到音乐库。</span>
+      </div>
+    );
+  }
+
+  const sync = job.librarySync;
+  if (!sync) {
+    return (
+      <div className="sync-status muted">
+        <strong>音乐库同步</strong>
+        <span>旧任务没有同步记录。新下载任务会显示扫描状态。</span>
+      </div>
+    );
+  }
+
+  const labels = {
+    pending: "等待扫描",
+    scanning: "同步中",
+    synced: "已同步",
+    failed: "同步失败"
+  };
+
+  return (
+    <div className={`sync-status ${sync.status}`}>
+      <strong>音乐库同步：{labels[sync.status]}</strong>
+      {sync.message ? <span>{sync.message}</span> : null}
     </div>
   );
 }
@@ -454,13 +689,8 @@ function formatDate(value?: string) {
   return new Date(value).toLocaleString();
 }
 
-function formatBytes(value: number) {
-  const units = ["B", "KB", "MB", "GB"];
-  let size = Number(value || 0);
-  let unit = 0;
-  while (size >= 1024 && unit < units.length - 1) {
-    size /= 1024;
-    unit += 1;
-  }
-  return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+function formatSource(ingestion: NonNullable<DownloadJob["ingestion"]>) {
+  const site = ingestion.sourceSite || "Unknown";
+  const uploader = ingestion.uploader ? ` · ${ingestion.uploader}` : "";
+  return `${site}${uploader}`;
 }

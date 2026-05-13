@@ -95,8 +95,8 @@ http://127.0.0.1:8787
 这个页面包含：
 
 - 下载：粘贴 Bilibili、YouTube 或其他 yt-dlp 支持的网站链接。
-- 下载任务：支持持久化、取消、重试、清空已结束任务。
-- 音乐列表：直接扫描本地音乐目录，并提供 Navidrome 外部入口。
+- 下载任务：支持持久化、取消、重试、清空已结束任务，并记录最终入库文件和源站 metadata。
+- 音乐列表：只通过 Navidrome/Subsonic API 搜索和播放，页面内置底部播放器。
 - 设置：查看音乐目录、cookie 状态、工具路径、局域网地址。
 
 停止服务：
@@ -143,6 +143,41 @@ http://电脑局域网IP:4533
 ```text
 http://172.20.10.5:4533
 ```
+
+## Navidrome 集成
+
+Web 控制台不会用 iframe 嵌入 Navidrome 页面，而是通过 Subsonic API 调用 Navidrome 能力。
+
+在设置页填写：
+
+```text
+Navidrome 地址
+Navidrome 用户名
+Navidrome 密码
+```
+
+之后可以在“音乐列表”页直接搜索 Navidrome 音乐库，并在当前页面播放。底层使用的接口包括 `ping`、`search3`、`getRandomSongs`、`stream` 和 `getCoverArt`。
+
+Web 控制台不再自己扫描本地音乐目录。下载后的文件仍然进入本地 `library` 目录，但音乐列表、封面和播放都以 Navidrome 扫描结果为准。
+
+## 入库记录
+
+每个新下载任务完成后，会记录一份最小入库信息：
+
+```text
+sourceUrl
+sourceSite
+sourceId
+title
+uploader
+duration
+outputPath
+relativeOutputPath
+infoJsonPath
+librarySync
+```
+
+这些信息当前保存在 `D:\project\personal-music-stack-data\collector\jobs.json`，后续迁移数据库时会成为核心表结构的基础。
 
 ## 数据目录
 

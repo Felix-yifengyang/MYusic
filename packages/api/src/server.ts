@@ -1,15 +1,23 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import path from "node:path";
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import Fastify from "fastify";
-import type { AppSettings, DownloadJob, RuntimeStatus } from "@personal-music/shared";
+import type { AppSettings, DownloadJob, IngestionRecord, RuntimeStatus } from "@personal-music/shared";
 import { createAudioDownloadArgs, decodeProcessOutput } from "@personal-music/downloader";
 import type { ApiConfig } from "./config";
 import { getBlockingDownloadChecks, getDiagnostics } from "./diagnostics";
 import { loadJobs, saveJobs, trimJobs } from "./job-store";
-import { scanLibrary } from "./library";
 import { getLanAddresses } from "./network";
+import {
+  getNavidromeScanStatus,
+  getNavidromeSongs,
+  pingNavidrome,
+  proxyNavidromeCover,
+  proxyNavidromeStream,
+  startNavidromeScan
+} from "./navidrome";
 import { getSettings, updateSettings } from "./settings";
 import { registerStaticRoutes } from "./static";
 
@@ -57,13 +65,25 @@ export function createApiServer(options: CreateApiServerOptions) {
     };
   });
 
-  app.get("/api/library", async () => scanLibrary(config.musicDir));
-
   app.get("/api/settings", async () => getSettings(config));
 
   app.patch<{ Body: Partial<AppSettings> }>("/api/settings", async (request) => updateSettings(config, request.body || {}));
 
   app.get("/api/diagnostics", async () => getDiagnostics(config));
+
+  app.get("/api/navidrome/ping", async () => pingNavidrome(config));
+
+  app.get<{ Querystring: { q?: string } }>("/api/navidrome/songs", async (request) => {
+    return getNavidromeSongs(config, request.query.q || "");
+  });
+
+  app.get<{ Params: { id: string } }>("/api/navidrome/stream/:id", async (request, reply) => {
+    await proxyNavidromeStream(config, request, reply);
+  });
+
+  app.get<{ Params: { id: string } }>("/api/navidrome/cover/:id", async (request, reply) => {
+    await proxyNavidromeCover(config, request, reply);
+  });
 
   app.get("/api/jobs", async () => jobs.slice().reverse());
 
@@ -241,11 +261,148 @@ function startDownload(
     }
     job.exitCode = code;
     job.finishedAt = new Date().toISOString();
+    if (job.status === "done") {
+      job.ingestion = buildIngestionRecord(job, config);
+    }
     job.updatedAt = new Date().toISOString();
     onChange();
+
+    if (job.status === "done") {
+      void syncDownloadedJobToNavidrome(job, config, onChange);
+    }
   });
 
   return job;
+}
+
+function buildIngestionRecord(job: DownloadJob, config: ApiConfig): IngestionRecord {
+  const outputPath = normalizeMarkerPath(readMarker(job.output, "__PERSONAL_MUSIC_FILE__"));
+  const infoJsonPath = normalizeMarkerPath(readMarker(job.output, "__PERSONAL_MUSIC_INFO__"));
+  const metadata = readInfoJson(infoJsonPath);
+  const resolvedOutputPath = outputPath ? path.resolve(outputPath) : undefined;
+  const resolvedInfoJsonPath = infoJsonPath ? path.resolve(infoJsonPath) : undefined;
+
+  return {
+    sourceUrl: job.url,
+    sourceSite: stringField(metadata.extractor_key) || stringField(metadata.extractor),
+    sourceId: stringField(metadata.id),
+    title: stringField(metadata.title),
+    uploader: stringField(metadata.uploader) || stringField(metadata.creator) || stringField(metadata.artist),
+    duration: numberField(metadata.duration),
+    webpageUrl: stringField(metadata.webpage_url) || stringField(metadata.original_url),
+    outputPath: resolvedOutputPath,
+    relativeOutputPath: resolvedOutputPath ? relativeToMusicDir(config.musicDir, resolvedOutputPath) : undefined,
+    infoJsonPath: resolvedInfoJsonPath,
+    capturedAt: new Date().toISOString()
+  };
+}
+
+function readMarker(output: string, marker: string) {
+  const pattern = new RegExp(`^${escapeRegExp(marker)}:(.+)$`, "m");
+  const match = pattern.exec(output);
+  if (!match) return "";
+
+  const raw = match[1].trim();
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return typeof parsed === "string" ? parsed : "";
+  } catch {
+    return raw;
+  }
+}
+
+function normalizeMarkerPath(value: string) {
+  const normalized = value.trim();
+  if (!normalized || normalized === "NA" || normalized === "null") return "";
+  return normalized;
+}
+
+function readInfoJson(infoJsonPath: string): Record<string, unknown> {
+  if (!infoJsonPath || !fs.existsSync(infoJsonPath)) return {};
+
+  try {
+    return JSON.parse(fs.readFileSync(infoJsonPath, "utf8")) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function stringField(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function numberField(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function relativeToMusicDir(musicDir: string, filePath: string) {
+  const root = path.resolve(musicDir);
+  const candidate = path.resolve(filePath);
+  const relative = path.relative(root, candidate);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return undefined;
+  return relative;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function syncDownloadedJobToNavidrome(job: DownloadJob, config: ApiConfig, onChange: () => void) {
+  const requestedAt = new Date().toISOString();
+  job.librarySync = {
+    status: "pending",
+    message: "等待 Navidrome 扫描音乐库。",
+    requestedAt
+  };
+  job.updatedAt = requestedAt;
+  onChange();
+
+  try {
+    const startStatus = await startNavidromeScan(config);
+    job.librarySync = {
+      status: startStatus.scanning ? "scanning" : "synced",
+      message: startStatus.scanning ? "Navidrome 正在扫描音乐库。" : "Navidrome 已接收音乐库扫描。",
+      requestedAt,
+      finishedAt: startStatus.scanning ? undefined : new Date().toISOString()
+    };
+    job.updatedAt = new Date().toISOString();
+    onChange();
+
+    if (!startStatus.scanning) return;
+
+    const finalStatus = await waitForNavidromeScan(config);
+    job.librarySync = {
+      status: finalStatus.scanning ? "scanning" : "synced",
+      message: finalStatus.scanning ? "Navidrome 仍在扫描，稍后刷新音乐列表。" : "已同步到 Navidrome 音乐库。",
+      requestedAt,
+      finishedAt: finalStatus.scanning ? undefined : new Date().toISOString()
+    };
+    job.updatedAt = new Date().toISOString();
+    onChange();
+  } catch (error) {
+    job.librarySync = {
+      status: "failed",
+      message: error instanceof Error ? error.message : "Navidrome 扫描触发失败。",
+      requestedAt,
+      finishedAt: new Date().toISOString()
+    };
+    job.updatedAt = new Date().toISOString();
+    onChange();
+  }
+}
+
+async function waitForNavidromeScan(config: ApiConfig) {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    await delay(1500);
+    const status = await getNavidromeScanStatus(config);
+    if (!status.scanning) return status;
+  }
+
+  return getNavidromeScanStatus(config);
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function persistAndBroadcastJobs(config: ApiConfig, jobs: DownloadJob[], clients: Set<(jobs: DownloadJob[]) => void>) {

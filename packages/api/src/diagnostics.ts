@@ -3,6 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import type { DiagnosticCheck, DiagnosticsReport } from "@personal-music/shared";
 import type { ApiConfig } from "./config";
+import { pingNavidrome } from "./navidrome";
 
 export async function getDiagnostics(config: ApiConfig): Promise<DiagnosticsReport> {
   const checks: DiagnosticCheck[] = [
@@ -13,7 +14,7 @@ export async function getDiagnostics(config: ApiConfig): Promise<DiagnosticsRepo
     optionalFileCheck("bilibiliCookie", "Bilibili Cookie", config.cookies.bilibili || "", "导出 cookies.txt 并在设置中填写路径。", "warning")
   ];
 
-  checks.push(await navidromeCheck(config.navidrome.baseUrl || "http://127.0.0.1:4533"));
+  checks.push(await navidromeCheck(config));
 
   return {
     ok: checks.every((check) => check.level !== "error"),
@@ -59,7 +60,11 @@ function directoryWritableCheck(id: string, label: string, dirPath: string, sugg
     fs.mkdirSync(dirPath, { recursive: true });
     const probe = path.join(dirPath, `.write-test-${process.pid}`);
     fs.writeFileSync(probe, "ok", "utf8");
-    fs.unlinkSync(probe);
+    try {
+      fs.unlinkSync(probe);
+    } catch {
+      setTimeout(() => fs.rm(probe, { force: true }, () => undefined), 1000);
+    }
     return { id, label, level: "ok", message: dirPath };
   } catch (error) {
     return {
@@ -76,31 +81,54 @@ function fileParentWritableCheck(id: string, label: string, filePath: string, su
   return directoryWritableCheck(id, label, path.dirname(filePath), suggestion);
 }
 
-function navidromeCheck(baseUrl: string): Promise<DiagnosticCheck> {
-  return new Promise((resolve) => {
+function navidromeCheck(config: ApiConfig): Promise<DiagnosticCheck> {
+  const baseUrl = config.navidrome.baseUrl || "http://127.0.0.1:4533";
+
+  if (!config.navidrome.username || !config.navidrome.password) {
+    return Promise.resolve({
+      id: "navidromeAuth",
+      label: "Navidrome API",
+      level: "warning",
+      message: "未配置 Navidrome 用户名或密码",
+      suggestion: "在设置中填写 Navidrome 账号密码后，才能在本页面搜索和播放 Navidrome 音乐库。"
+    });
+  }
+
+  return pingNavidrome(config).then(() => ({
+    id: "navidromeAuth",
+    label: "Navidrome API",
+    level: "ok" as const,
+    message: "Subsonic API 可用"
+  })).catch(() => new Promise<DiagnosticCheck>((resolve) => {
     const request = http.get(baseUrl, { timeout: 1500 }, (response) => {
       response.resume();
-      resolve({ id: "navidrome", label: "Navidrome", level: "ok", message: `${baseUrl} responded with ${response.statusCode}` });
+      resolve({
+        id: "navidromeAuth",
+        label: "Navidrome API",
+        level: "warning",
+        message: `${baseUrl} 可访问，但 Subsonic API 登录失败`,
+        suggestion: "检查设置中的 Navidrome 用户名和密码。"
+      });
     });
 
     request.on("timeout", () => {
       request.destroy();
       resolve({
-        id: "navidrome",
-        label: "Navidrome",
+        id: "navidromeAuth",
+        label: "Navidrome API",
         level: "warning",
         message: `${baseUrl} 没有响应`,
-        suggestion: "如果需要 iPhone/Amperfy 播放，检查 Navidrome 是否启动。"
+        suggestion: "检查 Navidrome 是否启动。"
       });
     });
     request.on("error", (error) => {
       resolve({
-        id: "navidrome",
-        label: "Navidrome",
+        id: "navidromeAuth",
+        label: "Navidrome API",
         level: "warning",
         message: error.message,
-        suggestion: "如果需要 iPhone/Amperfy 播放，检查 Navidrome 是否启动。"
+        suggestion: "检查 Navidrome 是否启动，或确认设置中的地址是否正确。"
       });
     });
-  });
+  }));
 }

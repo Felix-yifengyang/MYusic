@@ -32,6 +32,11 @@ export function createAudioDownloadArgs(url: string, config: DownloadConfig): Do
     config.audioQuality,
     "--embed-thumbnail",
     "--add-metadata",
+    "--write-info-json",
+    "--print",
+    "after_move:__PERSONAL_MUSIC_FILE__:%(filepath)j",
+    "--print",
+    "after_move:__PERSONAL_MUSIC_INFO__:%(infojson_filename)j",
     "-o",
     outputTemplate,
     url
