@@ -11,7 +11,8 @@ export async function getDiagnostics(config: ApiConfig): Promise<DiagnosticsRepo
     optionalFileCheck("ffmpeg", "ffmpeg", config.ffmpegPath, "运行 .\\scripts\\setup-windows.ps1 或在设置中填写正确的 ffmpeg 路径。"),
     directoryWritableCheck("musicDir", "音乐目录", config.musicDir, "检查音乐目录是否存在，以及当前用户是否有写入权限。"),
     fileParentWritableCheck("jobStore", "任务记录", config.jobStorePath, "检查 jobs.json 所在目录是否可写。"),
-    optionalFileCheck("bilibiliCookie", "Bilibili Cookie", config.cookies.bilibili || "", "导出 cookies.txt 并在设置中填写路径。", "warning")
+    fileParentWritableCheck("ingestionStore", "入库记录", config.ingestionStorePath, "检查 ingestions.json 所在目录是否可写。"),
+    bilibiliCookieCheck(config.cookies.bilibili || "")
   ];
 
   checks.push(await navidromeCheck(config));
@@ -53,6 +54,45 @@ function optionalFileCheck(
   }
 
   return { id, label, level: "ok", message: filePath };
+}
+
+function bilibiliCookieCheck(filePath: string): DiagnosticCheck {
+  const suggestion = "在设置中上传或粘贴从浏览器导出的 Netscape cookies.txt。";
+
+  if (!filePath) {
+    return { id: "bilibiliCookie", label: "Bilibili Cookie", level: "warning", message: "未配置", suggestion };
+  }
+
+  if (!fs.existsSync(filePath)) {
+    return { id: "bilibiliCookie", label: "Bilibili Cookie", level: "warning", message: `未找到：${filePath}`, suggestion };
+  }
+
+  try {
+    const content = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
+    const validationError = validateBilibiliCookieContent(content);
+    if (validationError) {
+      return { id: "bilibiliCookie", label: "Bilibili Cookie", level: "warning", message: validationError, suggestion };
+    }
+    return { id: "bilibiliCookie", label: "Bilibili Cookie", level: "ok", message: filePath };
+  } catch (error) {
+    return {
+      id: "bilibiliCookie",
+      label: "Bilibili Cookie",
+      level: "warning",
+      message: error instanceof Error ? error.message : "无法读取 Cookie 文件",
+      suggestion
+    };
+  }
+}
+
+function validateBilibiliCookieContent(content: string) {
+  const lines = content.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const cookieLines = lines.filter((line) => !line.startsWith("#"));
+
+  if (!cookieLines.length) return "Cookie 文件为空。";
+  if (!cookieLines.some((line) => line.includes("bilibili.com"))) return "Cookie 中没有 bilibili.com 域名。";
+  if (!cookieLines.some((line) => line.split("\t").length >= 7)) return "Cookie 文件不是 yt-dlp 可读取的 Netscape cookies.txt 格式。";
+  return "";
 }
 
 function directoryWritableCheck(id: string, label: string, dirPath: string, suggestion: string): DiagnosticCheck {

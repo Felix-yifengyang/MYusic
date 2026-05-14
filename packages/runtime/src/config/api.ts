@@ -11,6 +11,11 @@ export interface ApiRuntimeConfig {
   audioQuality: string;
   maxJobs: number;
   jobStorePath: string;
+  ingestionStorePath: string;
+  database: {
+    driver: "json" | "postgres";
+    url?: string;
+  };
   ffmpegPath: string;
   webDir: string;
   cookies: {
@@ -25,6 +30,7 @@ export interface ApiRuntimeConfig {
 
 export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
   const existing = readExistingConfig(paths.apiConfigPath);
+  const databaseUrl = process.env.DATABASE_URL || existing.database?.url || "";
   const config: ApiRuntimeConfig = {
     host: "0.0.0.0",
     port: 8787,
@@ -34,6 +40,11 @@ export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
     audioQuality: String(existing.audioQuality ?? "0"),
     maxJobs: Number(existing.maxJobs || 50),
     jobStorePath: path.join(paths.dataRootDir, "collector", "jobs.json"),
+    ingestionStorePath: path.join(paths.dataRootDir, "collector", "ingestions.json"),
+    database: {
+      driver: normalizeStorageDriver(process.env.PERSONAL_MUSIC_STORAGE || existing.database?.driver || (databaseUrl ? "postgres" : "json")),
+      url: databaseUrl || undefined
+    },
     ffmpegPath: existing.ffmpegPath || (fs.existsSync(paths.ffmpegExePath) ? paths.ffmpegExePath : ""),
     webDir: paths.webDistDir,
     cookies: {
@@ -49,6 +60,10 @@ export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
   fs.mkdirSync(config.musicDir, { recursive: true });
   fs.writeFileSync(paths.apiConfigPath, JSON.stringify(config, null, 2) + "\n", "utf8");
   return config;
+}
+
+function normalizeStorageDriver(value: string | undefined) {
+  return value === "postgres" ? "postgres" : "json";
 }
 
 function readExistingConfig(configPath: string): Partial<ApiRuntimeConfig> {

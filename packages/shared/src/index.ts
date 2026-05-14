@@ -1,5 +1,6 @@
 export type DownloadStatus = "running" | "done" | "failed" | "canceled";
 export type LibrarySyncStatus = "pending" | "scanning" | "synced" | "failed";
+export type IngestionMatchMethod = "path" | "title_artist" | "title";
 
 export interface LibrarySyncState {
   status: LibrarySyncStatus;
@@ -9,6 +10,8 @@ export interface LibrarySyncState {
 }
 
 export interface IngestionRecord {
+  id: string;
+  jobId?: string;
   sourceUrl: string;
   sourceSite?: string;
   sourceId?: string;
@@ -19,7 +22,20 @@ export interface IngestionRecord {
   outputPath?: string;
   relativeOutputPath?: string;
   infoJsonPath?: string;
+  navidromeSongId?: string;
+  navidromeMatchMethod?: IngestionMatchMethod;
+  navidromeMatchedAt?: string;
+  navidromeLastMatchAttemptAt?: string;
+  navidromeMatchError?: string;
   capturedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DuplicateIngestionError {
+  error: string;
+  code: "DUPLICATE_INGESTION";
+  ingestion: IngestionRecord;
 }
 
 export interface DownloadJob {
@@ -33,6 +49,7 @@ export interface DownloadJob {
   exitCode?: number | null;
   error?: string;
   retryOf?: string;
+  ingestionId?: string;
   ingestion?: IngestionRecord;
   librarySync?: LibrarySyncState;
 }
@@ -82,6 +99,12 @@ export interface SettingsSaveResult {
   restartReasons: string[];
 }
 
+export interface BilibiliCookieSaveResult {
+  path: string;
+  size: number;
+  settings: AppSettings;
+}
+
 export type DiagnosticLevel = "ok" | "warning" | "error";
 
 export interface DiagnosticCheck {
@@ -102,6 +125,7 @@ export interface NavidromeSong {
   title: string;
   artist?: string;
   album?: string;
+  path?: string;
   duration?: number;
   coverArt?: string;
   suffix?: string;

@@ -16,6 +16,11 @@ export interface DownloadArgsResult {
   notes: string[];
 }
 
+export interface MetadataArgsResult {
+  args: string[];
+  notes: string[];
+}
+
 export function createAudioDownloadArgs(url: string, config: DownloadConfig): DownloadArgsResult {
   const outputTemplate = path.join(
     config.musicDir,
@@ -51,6 +56,24 @@ export function createAudioDownloadArgs(url: string, config: DownloadConfig): Do
 
   if (config.ffmpegPath) {
     args.unshift("--ffmpeg-location", config.ffmpegPath);
+  }
+
+  return { args, notes };
+}
+
+export function createMetadataArgs(url: string, config: Pick<DownloadConfig, "cookies">): MetadataArgsResult {
+  const args = [
+    "--no-playlist",
+    "--dump-single-json",
+    "--skip-download",
+    url
+  ];
+  const notes: string[] = [];
+
+  const bilibiliCookies = config.cookies?.bilibili;
+  if (/^https?:\/\/([^/]+\.)?bilibili\.com\//i.test(url) && bilibiliCookies && fs.existsSync(bilibiliCookies)) {
+    args.unshift("--cookies", bilibiliCookies);
+    notes.push(`Using Bilibili cookies: ${bilibiliCookies}`);
   }
 
   return { args, notes };

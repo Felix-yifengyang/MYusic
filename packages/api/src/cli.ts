@@ -14,7 +14,7 @@ async function main() {
   }
 
   const config = loadApiConfig(configPath);
-  const app = createApiServer({ config });
+  const app = await createApiServer({ config });
 
   await app.listen({ host: config.host, port: config.port });
   console.log(`Personal Music API running at http://127.0.0.1:${config.port}`);

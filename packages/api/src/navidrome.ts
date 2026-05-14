@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
+import path from "node:path";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import type { NavidromeScanStatus, NavidromeSong, NavidromeSongsResult } from "@personal-music/shared";
+import type { IngestionMatchMethod, IngestionRecord, NavidromeScanStatus, NavidromeSong, NavidromeSongsResult } from "@personal-music/shared";
 import type { ApiConfig } from "./config";
 
 interface SubsonicResponse<T> {
@@ -65,6 +66,37 @@ export async function startNavidromeScan(config: ApiConfig): Promise<NavidromeSc
 export async function getNavidromeScanStatus(config: ApiConfig): Promise<NavidromeScanStatus> {
   const response = await requestJson<ScanStatusPayload>(config, "getScanStatus", {});
   return normalizeScanStatus(response.scanStatus);
+}
+
+export async function findNavidromeSongForIngestion(
+  config: ApiConfig,
+  ingestion: IngestionRecord
+): Promise<{ song: NavidromeSong; method: IngestionMatchMethod } | null> {
+  const candidates = await searchIngestionCandidates(config, ingestion);
+  if (!candidates.length) return null;
+
+  const expectedPath = normalizeLibraryPath(ingestion.relativeOutputPath || "");
+  if (expectedPath) {
+    const pathMatch = candidates.find((song) => normalizeLibraryPath(song.path || "") === expectedPath);
+    if (pathMatch) return { song: pathMatch, method: "path" };
+  }
+
+  const expectedTitle = normalizeText(ingestion.title || path.basename(ingestion.relativeOutputPath || "", path.extname(ingestion.relativeOutputPath || "")));
+  const expectedUploader = normalizeText(ingestion.uploader || "");
+  if (expectedTitle && expectedUploader) {
+    const titleArtistMatch = candidates.find((song) => (
+      normalizeText(song.title) === expectedTitle &&
+      normalizeText(song.artist || "").includes(expectedUploader)
+    ));
+    if (titleArtistMatch) return { song: titleArtistMatch, method: "title_artist" };
+  }
+
+  if (expectedTitle) {
+    const titleMatch = candidates.find((song) => normalizeText(song.title) === expectedTitle);
+    if (titleMatch) return { song: titleMatch, method: "title" };
+  }
+
+  return null;
 }
 
 export async function proxyNavidromeStream(
@@ -147,6 +179,38 @@ function buildUrl(config: ApiConfig, endpoint: string, params: Record<string, st
 function normalizeArray<T>(value: T[] | T | undefined): T[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
+}
+
+async function searchIngestionCandidates(config: ApiConfig, ingestion: IngestionRecord) {
+  const basename = ingestion.relativeOutputPath
+    ? path.basename(ingestion.relativeOutputPath, path.extname(ingestion.relativeOutputPath))
+    : "";
+  const queries = unique([ingestion.title || "", basename, ingestion.uploader || ""]).filter(Boolean);
+  const songs: NavidromeSong[] = [];
+  const seen = new Set<string>();
+
+  for (const query of queries) {
+    const result = await getNavidromeSongs(config, query);
+    for (const song of result.songs) {
+      if (seen.has(song.id)) continue;
+      seen.add(song.id);
+      songs.push(song);
+    }
+  }
+
+  return songs;
+}
+
+function unique(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
+
+function normalizeLibraryPath(value: string) {
+  return value.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase();
+}
+
+function normalizeText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function normalizeScanStatus(value: ScanStatusPayload["scanStatus"]): NavidromeScanStatus {

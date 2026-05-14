@@ -1,71 +1,64 @@
 # TODO
 
-## Done
+## 当前目标
 
-- [x] Build local collector service for yt-dlp audio downloads.
-- [x] Integrate Navidrome as the local music library service.
-- [x] Store runtime data on D drive under `D:\project\personal-music-stack-data`.
-- [x] Bundle local download tools in `bin/`: `yt-dlp.exe`, `ffmpeg.exe`.
-- [x] Add Bilibili cookies.txt support.
-- [x] Add Windows setup script for developers.
-- [x] Exclude binaries, cookies, local config, build output, and runtime data from Git.
-- [x] Replace the Electron shell with a lightweight local Web console.
-- [x] Put Download / Music List / Settings into one browser page.
-- [x] Replace the collector-side local scan with Navidrome API as the music library source.
-- [x] Show cookie status, tool status, data paths, and LAN connection URLs in Settings.
-- [x] Restructure into pnpm workspace with React web, Fastify API, runtime, downloader, and shared packages.
-- [x] Persist download jobs to `D:\project\personal-music-stack-data\collector\jobs.json`.
-- [x] Add cancel / retry / clear finished actions for download jobs.
-- [x] Add diagnostics API and UI for tools, cookie, directories, task store, and Navidrome.
-- [x] Add Navidrome/Subsonic API integration for in-page search and playback.
-- [x] Add a unified bottom player for Navidrome songs.
-- [x] Make the music page use Navidrome API as the single source of truth.
-- [x] Add a player queue with previous / next controls.
-- [x] Trigger a Navidrome library scan automatically after successful downloads.
-- [x] Show download-to-library sync status on job cards.
-- [x] Show current track and next track context without duplicating the music list.
-- [x] Capture final downloaded file path and source metadata as a minimal ingestion record.
+把项目从“验证型原型”整理成“可维护的本地产品雏形”，再继续云端化。
 
-## Next
+## 已完成里程碑
 
-- [ ] Add a file detail view for Navidrome songs.
-- [ ] Link ingestion records to Navidrome song ids after scanning.
-- [ ] Improve metadata cleanup for Bilibili downloads.
-- [ ] Add a direct link from a completed download job to the Navidrome music list item.
-- [ ] Add a richer queue drawer if long playlists become necessary.
+- [x] 本地 Web 控制台替代 Electron。
+- [x] yt-dlp + ffmpeg 下载链路跑通。
+- [x] Navidrome 集成，音乐列表、封面、播放都通过 Navidrome API。
+- [x] iPhone 可通过 Amperfy 连接 Navidrome。
+- [x] 下载任务持久化。
+- [x] 入库记录独立于下载任务。
+- [x] 下载完成后自动触发 Navidrome 扫描。
+- [x] 入库记录可自动/手动关联 Navidrome song id。
+- [x] Bilibili cookies.txt 上传/粘贴管理。
+- [x] repository 抽象。
+- [x] JSON 本地存储实现。
+- [x] Postgres 存储实现。
+- [x] `.env` 配置入口。
 
-## Product
+## 近期优先级
 
-- [x] Add editable settings UI backed by local `api.json`.
-- [x] Decide whether the built-in music list should stay file-based or move to Navidrome API.
-- [x] Add first-run diagnostics for local tools and writable data paths.
-- [ ] Add first-run guidance for Bilibili cookies and Navidrome admin account.
-- [ ] Add cookie management UI for Bilibili.
-- [ ] Add yt-dlp update flow.
-- [ ] Add service restart controls for collector and Navidrome.
-- [ ] Add LAN IP selection when multiple network interfaces exist.
-- [ ] Rename remaining user-facing "collector" wording to API/Web Console where appropriate.
+- [ ] 验证 Postgres 模式完整闭环。
+- [ ] 增加 JSON -> Postgres 迁移脚本。
+- [ ] 继续拆分前端 `App.tsx`。
+- [ ] 整理用户可见文案，统一“API / Web 控制台 / 入库记录”等命名。
 
-## Downloading
+## 后端整理
 
-- [x] Add cookies.txt support for Bilibili.
-- [x] Add download queue persistence across restarts.
-- [x] Add retry/cancel controls for running jobs.
-- [ ] Support playlist/batch mode intentionally instead of always using `--no-playlist`.
-- [ ] Add per-site presets if Bilibili / YouTube / other sites need different options.
+- [x] 拆 `routes/jobs.ts`。
+- [x] 拆 `routes/ingestions.ts`。
+- [x] 拆 `routes/navidrome.ts`。
+- [x] 拆 `routes/settings.ts`。
+- [x] 抽 `services/download-service.ts`。
+- [x] 抽 `services/ingestion-service.ts`。
+- [ ] 给 repository 增加最小测试或验证脚本。
 
-## Cloud
+## 前端整理
 
-- [ ] Introduce a persistence repository layer so local JSON can be swapped for a server database.
-- [ ] Move settings, download jobs, users, and library metadata to server-side Postgres for cloud deployment.
-- [ ] Add local/cloud mode configuration.
-- [ ] Design cloud API for submitting links and checking download status.
-- [ ] Add HTTPS and authentication plan for remote access.
-- [ ] Decide how cloud storage maps to Navidrome library storage.
-- [ ] Decide whether the Web console should be deployable as a single server process.
+- [x] 拆 `DownloadPanel`。
+- [x] 拆 `LibraryPanel`。
+- [x] 拆 `IngestionPanel`。
+- [x] 拆 `SettingsPanel`。
+- [x] 拆 `PlayerBar`。
+- [x] 增加 `api/client.ts` 管理请求。
 
-## Mobile
+## 云端化
 
-- [ ] Document Amperfy setup.
-- [x] Show iPhone connection address in Settings.
-- [ ] Evaluate whether a PWA or native iOS app is worth building later.
+- [ ] 明确云端部署形态：单机服务器 / Docker / PaaS。
+- [ ] 设计用户登录和权限。
+- [ ] 设计 Cookie 安全存储。
+- [ ] 设计云端音乐文件存储：服务器磁盘 / 对象存储。
+- [ ] 设计 Navidrome 与云端音乐目录的关系。
+- [ ] 增加 HTTPS 和域名配置方案。
+
+## 暂缓
+
+- [ ] 批量下载/播放列表模式。
+- [ ] 元数据编辑。
+- [ ] 直接从下载任务播放或定位歌曲。
+- [ ] 更复杂的播放队列管理。
+- [ ] PWA 或原生 iOS app。

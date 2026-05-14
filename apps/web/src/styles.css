@@ -147,13 +147,13 @@ h2 {
   gap: 8px;
 }
 
-input, button, select {
+input, button, select, textarea {
   min-height: 44px;
   border-radius: 8px;
   font: inherit;
 }
 
-input, select {
+input, select, textarea {
   width: 100%;
   border: 1px solid var(--line);
   background: #13171a;
@@ -162,7 +162,14 @@ input, select {
   outline: none;
 }
 
-input:focus, select:focus { border-color: var(--accent); }
+textarea {
+  min-height: 150px;
+  padding: 12px 13px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 .button {
   display: inline-flex;
@@ -188,6 +195,24 @@ input:focus, select:focus { border-color: var(--accent); }
 .error {
   margin: 0 0 14px;
   color: var(--danger);
+}
+
+.duplicate-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  border: 1px solid rgba(240, 191, 104, .45);
+  border-radius: 8px;
+  background: rgba(240, 191, 104, .08);
+  color: var(--warn);
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
+.duplicate-notice span {
+  overflow-wrap: anywhere;
 }
 
 .jobs, .songs, .facts {
@@ -247,24 +272,6 @@ input:focus, select:focus { border-color: var(--accent); }
 .sync-status.failed strong { color: var(--danger); }
 .sync-status.muted { color: var(--muted); }
 
-.ingestion-details {
-  display: grid;
-  gap: 8px;
-  margin: 8px 0 10px;
-  border-top: 1px solid rgba(167, 179, 186, .18);
-  border-bottom: 1px solid rgba(167, 179, 186, .18);
-  padding: 10px 0;
-}
-
-.ingestion-details > strong {
-  font-size: 13px;
-}
-
-.ingestion-details.muted {
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .ingestion-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -286,6 +293,68 @@ input:focus, select:focus { border-color: var(--accent); }
   color: var(--text);
   font-size: 13px;
   overflow-wrap: anywhere;
+}
+
+.job-ingestion-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.job-ingestion-summary span {
+  overflow-wrap: anywhere;
+}
+
+.job-ingestion-summary.muted {
+  color: var(--muted);
+}
+
+.ingestion-page {
+  display: grid;
+  gap: 14px;
+}
+
+.ingestion-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ingestion-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 12px;
+}
+
+.ingestion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.match-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  border: 1px solid rgba(240, 191, 104, .5);
+  border-radius: 999px;
+  color: var(--warn);
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.match-badge.matched {
+  border-color: rgba(111, 210, 157, .45);
+  color: var(--ok);
 }
 
 .job-actions {
@@ -338,6 +407,30 @@ pre {
 }
 
 .settings-form label span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cookie-manager {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.cookie-manager h3 {
+  margin: 0 0 5px;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.cookie-manager label {
+  display: grid;
+  gap: 6px;
+}
+
+.cookie-manager label span {
   color: var(--muted);
   font-size: 13px;
 }

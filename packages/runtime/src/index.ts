@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { writeApiConfig } from "./config/api";
 import { writeNavidromeConfig } from "./config/navidrome";
+import { loadRuntimeEnv } from "./env";
 import { resolveNodeCommand } from "./node";
 import { ensureRuntimeFolders, resolveRuntimePaths } from "./paths";
 import { waitForPort } from "./ports";
@@ -22,6 +23,7 @@ export interface CreateRuntimeOptions {
 
 export function createRuntime(options: CreateRuntimeOptions = {}) {
   const paths = resolveRuntimePaths(options.rootDir, options.dataRootDir);
+  loadRuntimeEnv(paths.rootDir);
   const logger = options.logger || console;
   const processManager = new ProcessManager(logger);
 
