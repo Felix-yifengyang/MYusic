@@ -19,7 +19,7 @@ export interface RuntimePaths {
   ffmpegExePath: string;
 }
 
-export function resolveRuntimePaths(rootDir = resolveRootDir(), dataRootDir = resolveDataRootDir(rootDir)): RuntimePaths {
+export function resolveRuntimePaths(rootDir = resolveRuntimeRootDir(), dataRootDir = resolveDataRootDir(rootDir)): RuntimePaths {
   const configDir = path.join(dataRootDir, "config");
   const navidromeDir = path.join(rootDir, "services", "navidrome");
   const libraryDir = path.join(dataRootDir, "library");
@@ -53,7 +53,7 @@ export function ensureRuntimeFolders(paths: RuntimePaths) {
   fs.mkdirSync(paths.cookiesDir, { recursive: true });
 }
 
-function resolveRootDir() {
+export function resolveRuntimeRootDir() {
   const candidate = path.resolve(__dirname, "..", "..", "..");
   if (fs.existsSync(path.join(candidate, "packages", "runtime"))) {
     return candidate;

@@ -3,7 +3,7 @@ import { writeApiConfig } from "./config/api";
 import { writeNavidromeConfig } from "./config/navidrome";
 import { loadRuntimeEnv } from "./env";
 import { resolveNodeCommand } from "./node";
-import { ensureRuntimeFolders, resolveRuntimePaths } from "./paths";
+import { ensureRuntimeFolders, resolveRuntimePaths, resolveRuntimeRootDir } from "./paths";
 import { waitForPort } from "./ports";
 import { ProcessManager, type RuntimeLogger } from "./process-manager";
 
@@ -22,15 +22,18 @@ export interface CreateRuntimeOptions {
 }
 
 export function createRuntime(options: CreateRuntimeOptions = {}) {
-  const paths = resolveRuntimePaths(options.rootDir, options.dataRootDir);
-  loadRuntimeEnv(paths.rootDir);
+  const rootDir = options.rootDir || resolveRuntimeRootDir();
+  loadRuntimeEnv(rootDir);
+  const paths = resolveRuntimePaths(rootDir, options.dataRootDir);
   const logger = options.logger || console;
   const processManager = new ProcessManager(logger);
 
   async function start(): Promise<RuntimeStatus> {
     ensureRuntimeFolders(paths);
     const apiConfig = writeApiConfig(paths);
-    writeNavidromeConfig(paths, apiConfig.ffmpegPath, apiConfig.musicDir);
+    const navidromeConfig = writeNavidromeConfig(paths, apiConfig.ffmpegPath, apiConfig.musicDir);
+    const webConsoleUrl = localUrl(apiConfig.port);
+    const navidromeUrl = apiConfig.navidrome.baseUrl || localUrl(navidromeConfig.port);
 
     logger.log(`Runtime root: ${paths.rootDir}`);
     logger.log(`Runtime data: ${paths.dataRootDir}`);
@@ -40,8 +43,8 @@ export function createRuntime(options: CreateRuntimeOptions = {}) {
 
     await processManager.startService({
       name: "api",
-      port: 8787,
-      url: "http://127.0.0.1:8787",
+      port: apiConfig.port,
+      url: webConsoleUrl,
       command: resolveNodeCommand(),
       args: [paths.apiCliPath, "--config", paths.apiConfigPath],
       cwd: paths.rootDir,
@@ -50,8 +53,8 @@ export function createRuntime(options: CreateRuntimeOptions = {}) {
 
     await processManager.startService({
       name: "navidrome",
-      port: 4533,
-      url: "http://127.0.0.1:4533",
+      port: navidromeConfig.port,
+      url: navidromeUrl,
       command: paths.navidromeExePath,
       args: ["--configfile", paths.navidromeConfigPath],
       cwd: paths.navidromeDir,
@@ -59,10 +62,10 @@ export function createRuntime(options: CreateRuntimeOptions = {}) {
     });
 
     return {
-      apiReady: await waitForPort(8787),
-      navidromeReady: await waitForPort(4533),
-      webConsoleUrl: "http://127.0.0.1:8787",
-      navidromeUrl: "http://127.0.0.1:4533",
+      apiReady: await waitForPort(apiConfig.port),
+      navidromeReady: await waitForPort(navidromeConfig.port),
+      webConsoleUrl,
+      navidromeUrl,
       libraryDir: paths.libraryDir
     };
   }
@@ -72,4 +75,8 @@ export function createRuntime(options: CreateRuntimeOptions = {}) {
     stop: () => processManager.stop(),
     paths
   };
+}
+
+function localUrl(port: number) {
+  return `http://127.0.0.1:${port}`;
 }

@@ -39,16 +39,24 @@ export function loadApiConfig(configPath: string): ApiConfig {
 
   return {
     configPath,
-    host: parsed.host || "0.0.0.0",
-    port: Number(parsed.port || 8787),
-    musicDir: parsed.musicDir || path.join(rootDir, "music"),
-    ytdlpPath: parsed.ytdlpPath || "yt-dlp",
-    audioFormat: parsed.audioFormat || "mp3",
-    audioQuality: String(parsed.audioQuality ?? "0"),
-    ffmpegPath: parsed.ffmpegPath || "",
-    cookies: parsed.cookies || {},
-    navidrome: parsed.navidrome || {},
-    maxJobs: Number(parsed.maxJobs || 50),
+    host: process.env.PERSONAL_MUSIC_API_HOST || parsed.host || "0.0.0.0",
+    port: readNumberEnv("PERSONAL_MUSIC_API_PORT", Number(parsed.port || 8787)),
+    musicDir: process.env.PERSONAL_MUSIC_LIBRARY_DIR || parsed.musicDir || path.join(rootDir, "music"),
+    ytdlpPath: process.env.PERSONAL_MUSIC_YTDLP_PATH || parsed.ytdlpPath || "yt-dlp",
+    audioFormat: process.env.PERSONAL_MUSIC_AUDIO_FORMAT || parsed.audioFormat || "mp3",
+    audioQuality: String(process.env.PERSONAL_MUSIC_AUDIO_QUALITY ?? parsed.audioQuality ?? "0"),
+    ffmpegPath: process.env.PERSONAL_MUSIC_FFMPEG_PATH || parsed.ffmpegPath || "",
+    cookies: {
+      ...parsed.cookies,
+      bilibili: process.env.PERSONAL_MUSIC_BILIBILI_COOKIES || parsed.cookies?.bilibili
+    },
+    navidrome: {
+      ...parsed.navidrome,
+      baseUrl: process.env.PERSONAL_MUSIC_NAVIDROME_URL || parsed.navidrome?.baseUrl,
+      username: process.env.PERSONAL_MUSIC_NAVIDROME_USER || parsed.navidrome?.username,
+      password: process.env.PERSONAL_MUSIC_NAVIDROME_PASSWORD || parsed.navidrome?.password
+    },
+    maxJobs: readNumberEnv("PERSONAL_MUSIC_MAX_JOBS", Number(parsed.maxJobs || 50)),
     jobStorePath: parsed.jobStorePath || path.join(rootDir, "data", "jobs.json"),
     ingestionStorePath: parsed.ingestionStorePath || path.join(rootDir, "data", "ingestions.json"),
     database: {
@@ -82,4 +90,12 @@ export function saveApiConfig(config: ApiConfig) {
 
 function normalizeStorageDriver(value: string): StorageDriver {
   return value === "postgres" ? "postgres" : "json";
+}
+
+function readNumberEnv(name: string, fallback: number) {
+  const value = process.env[name];
+  if (!value) return fallback;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }

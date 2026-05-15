@@ -34,6 +34,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
 
   app.get("/api/health", async (request): Promise<RuntimeStatus> => {
     const navidromeUrl = config.navidrome.baseUrl || "http://127.0.0.1:4533";
+    const navidromePort = readPortFromUrl(navidromeUrl, 4533);
     const collectorUrl = `http://127.0.0.1:${config.port}`;
     const bilibiliCookies = config.cookies.bilibili || "";
 
@@ -58,7 +59,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
       lan: getLanAddresses().map((address) => ({
         address,
         collectorUrl: `http://${address}:${config.port}`,
-        navidromeUrl: `http://${address}:4533`
+        navidromeUrl: `http://${address}:${navidromePort}`
       })),
       requestHost: request.headers.host || ""
     };
@@ -92,6 +93,16 @@ export async function createApiServer(options: CreateApiServerOptions) {
   registerStaticRoutes(app, config.webDir);
 
   return app;
+}
+
+function readPortFromUrl(url: string, fallback: number) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.port) return Number(parsed.port);
+    return parsed.protocol === "https:" ? 443 : 80;
+  } catch {
+    return fallback;
+  }
 }
 
 function persistAndBroadcastState(

@@ -31,29 +31,35 @@ export interface ApiRuntimeConfig {
 export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
   const existing = readExistingConfig(paths.apiConfigPath);
   const databaseUrl = process.env.DATABASE_URL || existing.database?.url || "";
+  const apiPort = readNumberEnv("PERSONAL_MUSIC_API_PORT", existing.port || 8787);
+  const navidromePort = readNumberEnv("PERSONAL_MUSIC_NAVIDROME_PORT", 4533);
+  const navidromeUrl =
+    process.env.PERSONAL_MUSIC_NAVIDROME_URL ||
+    existing.navidrome?.baseUrl ||
+    `http://127.0.0.1:${navidromePort}`;
   const config: ApiRuntimeConfig = {
-    host: "0.0.0.0",
-    port: 8787,
-    musicDir: existing.musicDir || paths.libraryDir,
-    ytdlpPath: existing.ytdlpPath || (fs.existsSync(paths.ytdlpExePath) ? paths.ytdlpExePath : "yt-dlp"),
-    audioFormat: existing.audioFormat || "mp3",
-    audioQuality: String(existing.audioQuality ?? "0"),
-    maxJobs: Number(existing.maxJobs || 50),
+    host: process.env.PERSONAL_MUSIC_API_HOST || existing.host || "0.0.0.0",
+    port: apiPort,
+    musicDir: process.env.PERSONAL_MUSIC_LIBRARY_DIR || existing.musicDir || paths.libraryDir,
+    ytdlpPath: process.env.PERSONAL_MUSIC_YTDLP_PATH || existing.ytdlpPath || (fs.existsSync(paths.ytdlpExePath) ? paths.ytdlpExePath : "yt-dlp"),
+    audioFormat: process.env.PERSONAL_MUSIC_AUDIO_FORMAT || existing.audioFormat || "mp3",
+    audioQuality: String(process.env.PERSONAL_MUSIC_AUDIO_QUALITY ?? existing.audioQuality ?? "0"),
+    maxJobs: readNumberEnv("PERSONAL_MUSIC_MAX_JOBS", Number(existing.maxJobs || 50)),
     jobStorePath: path.join(paths.dataRootDir, "collector", "jobs.json"),
     ingestionStorePath: path.join(paths.dataRootDir, "collector", "ingestions.json"),
     database: {
       driver: normalizeStorageDriver(process.env.PERSONAL_MUSIC_STORAGE || existing.database?.driver || (databaseUrl ? "postgres" : "json")),
       url: databaseUrl || undefined
     },
-    ffmpegPath: existing.ffmpegPath || (fs.existsSync(paths.ffmpegExePath) ? paths.ffmpegExePath : ""),
+    ffmpegPath: process.env.PERSONAL_MUSIC_FFMPEG_PATH || existing.ffmpegPath || (fs.existsSync(paths.ffmpegExePath) ? paths.ffmpegExePath : ""),
     webDir: paths.webDistDir,
     cookies: {
-      bilibili: existing.cookies?.bilibili || paths.bilibiliCookiesPath
+      bilibili: process.env.PERSONAL_MUSIC_BILIBILI_COOKIES || existing.cookies?.bilibili || paths.bilibiliCookiesPath
     },
     navidrome: {
-      baseUrl: existing.navidrome?.baseUrl || "http://127.0.0.1:4533",
-      username: existing.navidrome?.username || "",
-      password: existing.navidrome?.password || ""
+      baseUrl: navidromeUrl,
+      username: process.env.PERSONAL_MUSIC_NAVIDROME_USER || existing.navidrome?.username || "",
+      password: process.env.PERSONAL_MUSIC_NAVIDROME_PASSWORD || existing.navidrome?.password || ""
     }
   };
 
@@ -64,6 +70,14 @@ export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
 
 function normalizeStorageDriver(value: string | undefined) {
   return value === "postgres" ? "postgres" : "json";
+}
+
+function readNumberEnv(name: string, fallback: number) {
+  const value = process.env[name];
+  if (!value) return fallback;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function readExistingConfig(configPath: string): Partial<ApiRuntimeConfig> {

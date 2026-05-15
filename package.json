@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "start": "pnpm build && node packages/runtime/dist/launcher.js",
+    "start:prod": "node packages/runtime/dist/launcher.js",
     "build": "pnpm --filter @personal-music/shared build && pnpm --filter @personal-music/downloader build && pnpm --filter @personal-music/api build && pnpm --filter @personal-music/runtime build && pnpm --filter @personal-music/web build",
     "migrate:json-to-postgres": "pnpm --filter @personal-music/api migrate:json-to-postgres",
     "typecheck": "pnpm -r typecheck",

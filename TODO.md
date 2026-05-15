@@ -1,68 +1,33 @@
 # TODO
 
-## 当前目标
+## 当前阶段：云端部署准备
 
-本地产品雏形已经成立，当前主线进入 Postgres 稳定化和云端化准备。
+- [x] 拆分前端模块：下载、音乐库、入库记录、播放器、设置、状态。
+- [x] 拆分后端模块：路由、下载服务、入库服务、持久化仓库。
+- [x] 支持 Postgres 作为下载记录和入库记录的主存储。
+- [x] 增加 JSON 到 Postgres 的迁移命令。
+- [x] 设置页环境检查展示存储模式、Postgres 状态和表记录数。
+- [x] 运行时配置支持 `.env` 覆盖端口、数据目录、工具路径、cookies 路径和 Navidrome 地址。
+- [x] 增加 `pnpm start:prod`，用于启动已构建产物。
 
-## 已完成里程碑
+## 下一阶段：云端可用性
 
-- [x] 本地 Web 控制台替代 Electron。
-- [x] yt-dlp + ffmpeg 下载链路跑通。
-- [x] Navidrome 集成，音乐列表、封面、播放都通过 Navidrome API。
-- [x] iPhone 可通过 Amperfy 连接 Navidrome。
-- [x] 下载任务持久化。
-- [x] 入库记录独立于下载任务。
-- [x] 下载完成后自动触发 Navidrome 扫描。
-- [x] 入库记录可自动/手动关联 Navidrome song id。
-- [x] Bilibili cookies.txt 上传/粘贴管理。
-- [x] repository 抽象。
-- [x] JSON 本地存储实现。
-- [x] Postgres 存储实现。
-- [x] `.env` 配置入口。
-- [x] JSON -> Postgres 迁移命令。
-- [x] 诊断页显示 Postgres 状态和表记录数。
+- [ ] 增加登录鉴权。云端部署前必须完成。
+- [ ] 增加 cookies 文件上传或同步入口，解决云端下载 B 站内容的登录态问题。
+- [ ] 整理反向代理部署说明：API/Web 控制台、Navidrome 是否暴露、内网调用地址。
+- [ ] 明确服务器目录规划：音乐库、cookies、Navidrome 数据、日志。
+- [ ] 增加生产健康检查接口或脚本，用于确认 API、Postgres、Navidrome、yt-dlp、ffmpeg 是否可用。
 
-## 近期优先级
+## 后续产品能力
 
-- [ ] 验证 Postgres 模式完整新下载闭环。
-- [ ] 整理用户可见文案，统一“API / Web 控制台 / 入库记录”等命名。
-- [ ] 增加 repository 最小测试或验证脚本。
-- [ ] 明确云端部署形态。
+- [ ] 下载任务失败原因结构化，减少只看 yt-dlp 原始日志的成本。
+- [ ] 入库记录增加更明确的匹配状态和重试入口。
+- [ ] 播放器体验继续完善：队列、上一首/下一首、播放模式。
+- [ ] 设置页支持更完整的服务状态展示。
+- [ ] 评估是否长期保留 Navidrome，或逐步替换其中一部分能力。
 
-## 后端整理
+## 暂不做
 
-- [x] 拆 `routes/jobs.ts`。
-- [x] 拆 `routes/ingestions.ts`。
-- [x] 拆 `routes/navidrome.ts`。
-- [x] 拆 `routes/settings.ts`。
-- [x] 抽 `services/download-service.ts`。
-- [x] 抽 `services/ingestion-service.ts`。
-- [x] 增加 `migrate:json-to-postgres`。
-- [x] 增加 Postgres diagnostics。
-
-## 前端整理
-
-- [x] 拆 `DownloadPanel`。
-- [x] 拆 `LibraryPanel`。
-- [x] 拆 `IngestionPanel`。
-- [x] 拆 `SettingsPanel`。
-- [x] 拆 `PlayerBar`。
-- [x] 拆 `StatusPanel`。
-- [x] 增加 `api/client.ts` 管理请求。
-
-## 云端化
-
-- [ ] 明确云端部署形态：单机服务器 / Docker / PaaS。
-- [ ] 设计用户登录和权限。
-- [ ] 设计 Cookie 安全存储。
-- [ ] 设计云端音乐文件存储：服务器磁盘 / 对象存储。
-- [ ] 设计 Navidrome 与云端音乐目录的关系。
-- [ ] 增加 HTTPS 和域名配置方案。
-
-## 暂缓
-
-- [ ] 批量下载/播放列表模式。
-- [ ] 元数据编辑。
-- [ ] 直接从下载任务播放或定位歌曲。
-- [ ] 更复杂的播放队列管理。
-- [ ] PWA 或原生 iOS app。
+- [ ] Electron / Tauri 桌面壳。
+- [ ] 自研完整音乐扫描和流媒体服务。
+- [ ] 云对象存储。第一阶段先使用服务器磁盘。

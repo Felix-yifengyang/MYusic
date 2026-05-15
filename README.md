@@ -2,7 +2,7 @@
 
 一个自用的个人音乐收集和播放系统。
 
-当前形态是本地 Web 控制台：在浏览器里完成链接下载、音乐列表、入库记录、播放和设置管理。当前主存储已经切到 Postgres，后续目标是部署到云端，让电脑和手机都连接同一个云端服务。
+当前形态是本地 Web 控制台：在浏览器里完成链接下载、音乐列表、入库记录、播放和设置管理。当前主存储已经切到 Postgres，后续目标是部署到云端，让电脑和手机都连接同一个服务。
 
 ## 核心链路
 
@@ -39,12 +39,12 @@ D:\project\personal-music-stack
 
 ```text
 D:\project\personal-music-stack-data
-├── config\api.json
-├── collector\jobs.json
-├── collector\ingestions.json
-├── cookies\bilibili.txt
-├── library
-└── navidrome
+|-- config\api.json
+|-- collector\jobs.json
+|-- collector\ingestions.json
+|-- cookies\bilibili.txt
+|-- library
+`-- navidrome
 ```
 
 说明：
@@ -79,11 +79,25 @@ D:\project\personal-music-stack-data
 
 ```env
 PERSONAL_MUSIC_STORAGE=postgres
-DATABASE_URL=postgres://MYusic:dtwxjzh123@127.0.0.1:5432/MYusic
+DATABASE_URL=postgres://MYusic:your_password@127.0.0.1:5432/MYusic
 PERSONAL_MUSIC_DATA_DIR=D:\project\personal-music-stack-data
 ```
 
-如需临时回到 JSON 本地文件：
+常用运行配置：
+
+```env
+PERSONAL_MUSIC_API_HOST=0.0.0.0
+PERSONAL_MUSIC_API_PORT=8787
+PERSONAL_MUSIC_NAVIDROME_HOST=0.0.0.0
+PERSONAL_MUSIC_NAVIDROME_PORT=4533
+PERSONAL_MUSIC_NAVIDROME_URL=http://127.0.0.1:4533
+PERSONAL_MUSIC_BILIBILI_COOKIES=D:\project\personal-music-stack-data\cookies\bilibili.txt
+PERSONAL_MUSIC_AUDIO_FORMAT=mp3
+PERSONAL_MUSIC_AUDIO_QUALITY=0
+PERSONAL_MUSIC_MAX_JOBS=50
+```
+
+如果需要临时回到 JSON 本地文件：
 
 ```env
 PERSONAL_MUSIC_STORAGE=json
@@ -112,7 +126,7 @@ ingestions
 
 迁移脚本只做 upsert，不会删除数据库中已有的新数据。
 
-## 启动
+## 本地启动
 
 ```powershell
 cd D:\project\personal-music-stack
@@ -130,6 +144,37 @@ Navidrome 服务默认地址：
 ```text
 http://127.0.0.1:4533
 ```
+
+## 生产启动
+
+先构建：
+
+```powershell
+pnpm build
+```
+
+再启动已经构建好的运行时：
+
+```powershell
+pnpm start:prod
+```
+
+`pnpm start` 会先构建再启动，适合本地验证；`pnpm start:prod` 不会重复构建，适合后续交给 pm2、systemd 或 Docker 托管。
+
+## 云端部署前提
+
+第一阶段云端仍然保留 Navidrome：
+
+- Web 控制台负责产品体验、下载入口、记录管理和内嵌播放。
+- API 负责调用 yt-dlp、读写 Postgres、调用 Navidrome API。
+- Navidrome 负责音乐库扫描、封面、播放流和 Subsonic 兼容能力。
+
+上云前必须补齐：
+
+- 登录鉴权，避免公网裸奔。
+- cookies 文件上传或同步方案，因为云端没有你的本机 Chrome 登录态。
+- 反向代理配置，例如把公网域名转发到 API 端口。
+- 服务器磁盘目录规划，至少包含 music library、cookies、Navidrome data。
 
 ## 常用检查
 
