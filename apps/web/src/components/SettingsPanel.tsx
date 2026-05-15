@@ -1,36 +1,54 @@
 import type { FormEvent } from "react";
-import type { AppSettings, DiagnosticsReport, RuntimeStatus } from "@personal-music/shared";
+import type { AppSettings, AuthStatus, DiagnosticsReport, RuntimeStatus } from "@personal-music/shared";
 import { Empty } from "./common";
 import { DiagnosticsList, Fact } from "./StatusPanel";
 
 export interface SettingsPanelProps {
   settings: AppSettings | null;
   status: RuntimeStatus | null;
+  authStatus: AuthStatus | null;
   diagnostics: DiagnosticsReport | null;
   settingsMessage: string;
   bilibiliCookieText: string;
   bilibiliCookieMessage: string;
   bilibiliCookieSaving: boolean;
+  currentPassword: string;
+  newPassword: string;
+  passwordMessage: string;
+  passwordSaving: boolean;
   onSettingsChange: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
   onSettingsSubmit: (event: FormEvent) => void;
   onCookieContentChange: (value: string) => void;
   onCookieFileLoad: (file: File | undefined) => void;
   onCookieSubmit: (event: FormEvent) => void;
+  onCurrentPasswordChange: (value: string) => void;
+  onNewPasswordChange: (value: string) => void;
+  onPasswordSubmit: (event: FormEvent) => void;
+  onLogoutAllDevices: () => void;
 }
 
 export function SettingsPanel({
   settings,
   status,
+  authStatus,
   diagnostics,
   settingsMessage,
   bilibiliCookieText,
   bilibiliCookieMessage,
   bilibiliCookieSaving,
+  currentPassword,
+  newPassword,
+  passwordMessage,
+  passwordSaving,
   onSettingsChange,
   onSettingsSubmit,
   onCookieContentChange,
   onCookieFileLoad,
-  onCookieSubmit
+  onCookieSubmit,
+  onCurrentPasswordChange,
+  onNewPasswordChange,
+  onPasswordSubmit,
+  onLogoutAllDevices
 }: SettingsPanelProps) {
   return (
     <section className="grid">
@@ -59,7 +77,18 @@ export function SettingsPanel({
         )}
       </section>
       <section className="block">
-        <h2>手机连接</h2>
+        <h2>账号和连接</h2>
+        <AccountSecurity
+          authStatus={authStatus}
+          currentPassword={currentPassword}
+          newPassword={newPassword}
+          message={passwordMessage}
+          saving={passwordSaving}
+          onCurrentPasswordChange={onCurrentPasswordChange}
+          onNewPasswordChange={onNewPasswordChange}
+          onSubmit={onPasswordSubmit}
+          onLogoutAllDevices={onLogoutAllDevices}
+        />
         {status ? <LanSettings status={status} /> : <Empty>正在读取局域网地址</Empty>}
         {diagnostics && <DiagnosticsList diagnostics={diagnostics} />}
       </section>
@@ -132,6 +161,58 @@ function SettingsForm({
   );
 }
 
+function AccountSecurity({
+  authStatus,
+  currentPassword,
+  newPassword,
+  message,
+  saving,
+  onCurrentPasswordChange,
+  onNewPasswordChange,
+  onSubmit,
+  onLogoutAllDevices
+}: {
+  authStatus: AuthStatus | null;
+  currentPassword: string;
+  newPassword: string;
+  message: string;
+  saving: boolean;
+  onCurrentPasswordChange: (value: string) => void;
+  onNewPasswordChange: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
+  onLogoutAllDevices: () => void;
+}) {
+  if (!authStatus?.enabled) {
+    return <Empty>当前未启用登录鉴权</Empty>;
+  }
+
+  return (
+    <form className="account-security" onSubmit={onSubmit}>
+      <div className="facts">
+        <Fact label="当前用户" value={authStatus.user?.username || "未知"} />
+        <Fact label="权限" value={authStatus.user?.role || "admin"} />
+      </div>
+      <label>
+        <span>当前密码</span>
+        <input type="password" value={currentPassword} onChange={(event) => onCurrentPasswordChange(event.target.value)} autoComplete="current-password" />
+      </label>
+      <label>
+        <span>新密码</span>
+        <input type="password" value={newPassword} onChange={(event) => onNewPasswordChange(event.target.value)} autoComplete="new-password" />
+      </label>
+      <div className="inline-actions">
+        <button className="button" type="submit" disabled={saving}>
+          {saving ? "保存中..." : "修改密码"}
+        </button>
+        <button className="button secondary" type="button" onClick={onLogoutAllDevices}>
+          退出所有设备
+        </button>
+      </div>
+      {message && <div className="settings-message">{message}</div>}
+    </form>
+  );
+}
+
 function BilibiliCookieManager({
   path,
   content,
@@ -169,7 +250,7 @@ function BilibiliCookieManager({
         />
       </label>
       <button className="button secondary" type="submit" disabled={saving}>
-        {saving ? "保存中" : "保存 Cookie"}
+        {saving ? "保存中..." : "保存 Cookie"}
       </button>
       {message && <div className="settings-message">{message}</div>}
     </form>
@@ -180,7 +261,7 @@ function LanSettings({ status }: { status: RuntimeStatus }) {
   if (!status.lan.length) return <Empty>没有检测到局域网 IP</Empty>;
 
   return (
-    <div className="facts">
+    <div className="facts lan-settings">
       {status.lan.map((item) => (
         <Fact label={item.address} value={`控制台：${item.collectorUrl} / Amperfy：${item.navidromeUrl}`} key={item.address} />
       ))}

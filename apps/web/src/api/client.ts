@@ -49,6 +49,17 @@ export async function logout() {
   return postJson<{ ok: boolean }>("/api/auth/logout");
 }
 
+export async function changePassword(currentPassword: string, newPassword: string) {
+  return requestJson<{ ok: boolean }>("/api/auth/password", {
+    method: "PATCH",
+    body: { currentPassword, newPassword }
+  });
+}
+
+export async function logoutAllDevices() {
+  return requestJson<{ ok: boolean }>("/api/auth/sessions", { method: "DELETE" });
+}
+
 export async function getHealth() {
   return getJson<RuntimeStatus>("/api/health");
 }

@@ -459,6 +459,26 @@ pre {
   padding-top: 16px;
 }
 
+.account-security {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.account-security label {
+  display: grid;
+  gap: 6px;
+}
+
+.account-security label span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.lan-settings {
+  margin-top: 14px;
+}
+
 .cookie-manager h3 {
   margin: 0 0 5px;
   font-size: 15px;

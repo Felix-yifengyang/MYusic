@@ -25,6 +25,35 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService | und
     return handleAuthResult(reply, auth, () => auth.login(String(request.body?.username || ""), String(request.body?.password || "")));
   });
 
+  app.patch<{ Body: { currentPassword?: string; newPassword?: string } }>("/api/auth/password", async (request, reply) => {
+    if (!auth) return { ok: true };
+    try {
+      await auth.changePassword(
+        readSessionToken(request, auth),
+        String(request.body?.currentPassword || ""),
+        String(request.body?.newPassword || "")
+      );
+      return { ok: true };
+    } catch (error) {
+      const statusCode = error instanceof AuthError ? error.statusCode : 500;
+      reply.code(statusCode);
+      return { error: error instanceof Error ? error.message : "修改密码失败。" };
+    }
+  });
+
+  app.delete("/api/auth/sessions", async (request, reply) => {
+    if (!auth) return { ok: true };
+    try {
+      await auth.logoutAll(readSessionToken(request, auth));
+      reply.header("set-cookie", auth.buildClearCookie());
+      return { ok: true };
+    } catch (error) {
+      const statusCode = error instanceof AuthError ? error.statusCode : 500;
+      reply.code(statusCode);
+      return { error: error instanceof Error ? error.message : "退出所有设备失败。" };
+    }
+  });
+
   app.post("/api/auth/logout", async (request, reply) => {
     if (!auth) return { ok: true };
     await auth.logout(readSessionToken(request, auth));

@@ -10,6 +10,7 @@ import type {
 } from "@personal-music/shared";
 import {
   cancelDownloadJob,
+  changePassword as changePasswordApi,
   clearDownloadJobs,
   createDownload,
   deleteDownloadJob,
@@ -22,6 +23,7 @@ import {
   getSettings,
   login as loginApi,
   logout as logoutApi,
+  logoutAllDevices as logoutAllDevicesApi,
   rematchIngestion as rematchIngestionApi,
   retryDownloadJob,
   saveBilibiliCookie as saveBilibiliCookieApi,
@@ -60,6 +62,10 @@ export function App() {
   const [bilibiliCookieText, setBilibiliCookieText] = useState("");
   const [bilibiliCookieMessage, setBilibiliCookieMessage] = useState("");
   const [bilibiliCookieSaving, setBilibiliCookieSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [ingestionMessage, setIngestionMessage] = useState("");
   const [rematchingIngestionId, setRematchingIngestionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -153,6 +159,15 @@ export function App() {
 
   async function logout() {
     await logoutApi();
+    await resetAfterLogout();
+  }
+
+  async function logoutAllDevices() {
+    await logoutAllDevicesApi();
+    await resetAfterLogout();
+  }
+
+  async function resetAfterLogout() {
     setStatus(null);
     setJobs([]);
     setIngestions([]);
@@ -161,6 +176,9 @@ export function App() {
     setDiagnostics(null);
     setQueue([]);
     setQueueIndex(-1);
+    setCurrentPassword("");
+    setNewPassword("");
+    setPasswordMessage("");
     setAuthStatus(await getAuthStatus());
   }
 
@@ -295,6 +313,22 @@ export function App() {
       setBilibiliCookieMessage(caught instanceof Error ? caught.message : "保存 Bilibili Cookie 失败");
     } finally {
       setBilibiliCookieSaving(false);
+    }
+  }
+
+  async function changePassword(event: FormEvent) {
+    event.preventDefault();
+    setPasswordMessage("");
+    setPasswordSaving(true);
+    try {
+      await changePasswordApi(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setPasswordMessage("密码已更新。");
+    } catch (caught) {
+      setPasswordMessage(caught instanceof Error ? caught.message : "修改密码失败");
+    } finally {
+      setPasswordSaving(false);
     }
   }
 
@@ -437,16 +471,25 @@ export function App() {
         <SettingsPanel
           settings={settings}
           status={status}
+          authStatus={authStatus}
           diagnostics={diagnostics}
           settingsMessage={settingsMessage}
           bilibiliCookieText={bilibiliCookieText}
           bilibiliCookieMessage={bilibiliCookieMessage}
           bilibiliCookieSaving={bilibiliCookieSaving}
+          currentPassword={currentPassword}
+          newPassword={newPassword}
+          passwordMessage={passwordMessage}
+          passwordSaving={passwordSaving}
           onSettingsChange={updateSetting}
           onSettingsSubmit={saveSettings}
           onCookieContentChange={setBilibiliCookieText}
           onCookieFileLoad={loadBilibiliCookieFile}
           onCookieSubmit={saveBilibiliCookie}
+          onCurrentPasswordChange={setCurrentPassword}
+          onNewPasswordChange={setNewPassword}
+          onPasswordSubmit={changePassword}
+          onLogoutAllDevices={() => void logoutAllDevices()}
         />
       )}
 

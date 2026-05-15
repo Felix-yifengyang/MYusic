@@ -194,6 +194,8 @@ user_sessions
 
 - 密码不会明文保存，后端使用 `crypto.scrypt` 保存哈希。
 - 登录态保存在 HttpOnly Cookie 中。
+- 设置页可以修改当前用户密码。
+- 设置页可以退出所有设备，会让当前用户的所有会话失效。
 - 云端 HTTPS 部署时应设置 `PERSONAL_MUSIC_AUTH_SECURE_COOKIE=true`。
 
 ## 常用检查

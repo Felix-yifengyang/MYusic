@@ -105,10 +105,44 @@ export class AuthService {
     };
   }
 
+  async changePassword(token: string | undefined, currentPassword: string, nextPassword: string): Promise<void> {
+    const session = token ? await this.authenticate(token) : undefined;
+    if (!session) {
+      throw new AuthError(401, "请先登录。");
+    }
+
+    validatePassword(nextPassword);
+    const result = await this.pool.query(
+      `select password_hash from users where id = $1 limit 1`,
+      [session.user.id]
+    );
+    const passwordHash = String(result.rows[0]?.password_hash || "");
+    if (!(await verifyPassword(currentPassword, passwordHash))) {
+      throw new AuthError(401, "当前密码不正确。");
+    }
+
+    await this.pool.query(
+      `update users set password_hash = $1, updated_at = now() where id = $2`,
+      [await hashPassword(nextPassword), session.user.id]
+    );
+  }
+
   async logout(token?: string): Promise<void> {
     if (!token) return;
     await this.ensureMigrated();
     await this.pool.query(`update user_sessions set revoked_at = now() where token_hash = $1`, [hashToken(token)]);
+  }
+
+  async logoutAll(token?: string): Promise<void> {
+    const session = token ? await this.authenticate(token) : undefined;
+    if (!session) {
+      throw new AuthError(401, "请先登录。");
+    }
+
+    await this.pool.query(
+      `update user_sessions set revoked_at = now() where user_id = $1 and revoked_at is null`,
+      [session.user.id]
+    );
   }
 
   buildSessionCookie(token: string, expiresAt: string) {
