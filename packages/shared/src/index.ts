@@ -64,6 +64,8 @@ export interface RuntimeStatus {
     bilibili: {
       path: string;
       exists: boolean;
+      size?: number;
+      updatedAt?: string;
     };
   };
   tools: {
@@ -120,7 +122,15 @@ export interface SettingsSaveResult {
 export interface BilibiliCookieSaveResult {
   path: string;
   size: number;
+  updatedAt?: string;
   settings: AppSettings;
+}
+
+export interface CookieFileStatus {
+  path: string;
+  exists: boolean;
+  size: number;
+  updatedAt?: string;
 }
 
 export type DiagnosticLevel = "ok" | "warning" | "error";

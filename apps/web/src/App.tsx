@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AppSettings,
   AuthStatus,
+  CookieFileStatus,
   DiagnosticsReport,
   DownloadJob,
   IngestionRecord,
@@ -11,10 +12,12 @@ import type {
 import {
   cancelDownloadJob,
   changePassword as changePasswordApi,
+  clearBilibiliCookie as clearBilibiliCookieApi,
   clearDownloadJobs,
   createDownload,
   deleteDownloadJob,
   getAuthStatus,
+  getBilibiliCookieStatus,
   getDiagnostics,
   getHealth,
   getIngestions,
@@ -53,6 +56,7 @@ export function App() {
   const [navidromeError, setNavidromeError] = useState("");
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
+  const [cookieStatus, setCookieStatus] = useState<CookieFileStatus | null>(null);
   const [queue, setQueue] = useState<PlayerTrack[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
   const [url, setUrl] = useState("");
@@ -90,6 +94,7 @@ export function App() {
       if (auth?.enabled && !auth.authenticated) return;
       if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadStatus();
       if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadDiagnostics();
+      if (activeTabRef.current === "settings") void loadBilibiliCookieStatus();
       if (activeTabRef.current === "library") void loadNavidromeSongs();
       if (activeTabRef.current === "ingestions") void loadIngestions();
     };
@@ -105,6 +110,7 @@ export function App() {
       void loadStatus();
       void loadSettings();
       void loadDiagnostics();
+      void loadBilibiliCookieStatus();
     }
     if (activeTab === "download") void loadJobs();
     if (activeTab === "ingestions") void loadIngestions();
@@ -143,7 +149,8 @@ export function App() {
       loadStatus(),
       loadJobs(),
       loadIngestions(),
-      loadDiagnostics()
+      loadDiagnostics(),
+      loadBilibiliCookieStatus()
     ]);
   }
 
@@ -174,6 +181,7 @@ export function App() {
     setNavidromeSongs([]);
     setSettings(null);
     setDiagnostics(null);
+    setCookieStatus(null);
     setQueue([]);
     setQueueIndex(-1);
     setCurrentPassword("");
@@ -200,6 +208,10 @@ export function App() {
 
   async function loadDiagnostics() {
     setDiagnostics(await getDiagnostics());
+  }
+
+  async function loadBilibiliCookieStatus() {
+    setCookieStatus(await getBilibiliCookieStatus());
   }
 
   async function loadNavidromeSongs(query = navidromeQuery) {
@@ -283,6 +295,7 @@ export function App() {
     setSettings(body.settings);
     await loadStatus();
     await loadDiagnostics();
+    await loadBilibiliCookieStatus();
     setSettingsMessage(body.restartRequired ? `已保存，需要重启：${body.restartReasons.join("；")}` : "已保存");
   }
 
@@ -309,8 +322,26 @@ export function App() {
       setBilibiliCookieMessage(`已保存到：${body.path}`);
       await loadStatus();
       await loadDiagnostics();
+      await loadBilibiliCookieStatus();
     } catch (caught) {
       setBilibiliCookieMessage(caught instanceof Error ? caught.message : "保存 Bilibili Cookie 失败");
+    } finally {
+      setBilibiliCookieSaving(false);
+    }
+  }
+
+  async function clearBilibiliCookie() {
+    setBilibiliCookieSaving(true);
+    setBilibiliCookieMessage("");
+    try {
+      const nextStatus = await clearBilibiliCookieApi();
+      setCookieStatus(nextStatus);
+      setBilibiliCookieText("");
+      setBilibiliCookieMessage("Cookie 已清空。");
+      await loadStatus();
+      await loadDiagnostics();
+    } catch (caught) {
+      setBilibiliCookieMessage(caught instanceof Error ? caught.message : "清空 Bilibili Cookie 失败");
     } finally {
       setBilibiliCookieSaving(false);
     }
@@ -472,6 +503,7 @@ export function App() {
           settings={settings}
           status={status}
           authStatus={authStatus}
+          cookieStatus={cookieStatus}
           diagnostics={diagnostics}
           settingsMessage={settingsMessage}
           bilibiliCookieText={bilibiliCookieText}
@@ -486,6 +518,7 @@ export function App() {
           onCookieContentChange={setBilibiliCookieText}
           onCookieFileLoad={loadBilibiliCookieFile}
           onCookieSubmit={saveBilibiliCookie}
+          onCookieClear={() => void clearBilibiliCookie()}
           onCurrentPasswordChange={setCurrentPassword}
           onNewPasswordChange={setNewPassword}
           onPasswordSubmit={changePassword}

@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { AppSettings, AuthStatus, DiagnosticsReport, RuntimeStatus } from "@personal-music/shared";
+import type { AppSettings, AuthStatus, CookieFileStatus, DiagnosticsReport, RuntimeStatus } from "@personal-music/shared";
 import { Empty } from "./common";
 import { DiagnosticsList, Fact } from "./StatusPanel";
 
@@ -7,6 +7,7 @@ export interface SettingsPanelProps {
   settings: AppSettings | null;
   status: RuntimeStatus | null;
   authStatus: AuthStatus | null;
+  cookieStatus: CookieFileStatus | null;
   diagnostics: DiagnosticsReport | null;
   settingsMessage: string;
   bilibiliCookieText: string;
@@ -21,6 +22,7 @@ export interface SettingsPanelProps {
   onCookieContentChange: (value: string) => void;
   onCookieFileLoad: (file: File | undefined) => void;
   onCookieSubmit: (event: FormEvent) => void;
+  onCookieClear: () => void;
   onCurrentPasswordChange: (value: string) => void;
   onNewPasswordChange: (value: string) => void;
   onPasswordSubmit: (event: FormEvent) => void;
@@ -31,6 +33,7 @@ export function SettingsPanel({
   settings,
   status,
   authStatus,
+  cookieStatus,
   diagnostics,
   settingsMessage,
   bilibiliCookieText,
@@ -45,6 +48,7 @@ export function SettingsPanel({
   onCookieContentChange,
   onCookieFileLoad,
   onCookieSubmit,
+  onCookieClear,
   onCurrentPasswordChange,
   onNewPasswordChange,
   onPasswordSubmit,
@@ -64,12 +68,14 @@ export function SettingsPanel({
             />
             <BilibiliCookieManager
               path={settings.bilibiliCookiesPath}
+              status={cookieStatus}
               content={bilibiliCookieText}
               message={bilibiliCookieMessage}
               saving={bilibiliCookieSaving}
               onContentChange={onCookieContentChange}
               onFileLoad={onCookieFileLoad}
               onSubmit={onCookieSubmit}
+              onClear={onCookieClear}
             />
           </>
         ) : (
@@ -215,26 +221,34 @@ function AccountSecurity({
 
 function BilibiliCookieManager({
   path,
+  status,
   content,
   message,
   saving,
   onContentChange,
   onFileLoad,
-  onSubmit
+  onSubmit,
+  onClear
 }: {
   path: string;
+  status: CookieFileStatus | null;
   content: string;
   message: string;
   saving: boolean;
   onContentChange: (value: string) => void;
   onFileLoad: (file: File | undefined) => void;
   onSubmit: (event: FormEvent) => void;
+  onClear: () => void;
 }) {
   return (
     <form className="cookie-manager" onSubmit={onSubmit}>
       <div>
         <h3>Bilibili Cookie</h3>
         <div className="meta">当前路径：{path || "未配置"}</div>
+      </div>
+      <div className="facts">
+        <Fact label="文件状态" value={formatCookieStatus(status)} />
+        <Fact label="更新时间" value={status?.updatedAt ? new Date(status.updatedAt).toLocaleString() : "无"} />
       </div>
       <label>
         <span>选择 cookies.txt</span>
@@ -249,9 +263,14 @@ function BilibiliCookieManager({
           spellCheck={false}
         />
       </label>
-      <button className="button secondary" type="submit" disabled={saving}>
-        {saving ? "保存中..." : "保存 Cookie"}
-      </button>
+      <div className="inline-actions">
+        <button className="button secondary" type="submit" disabled={saving}>
+          {saving ? "保存中..." : "保存 Cookie"}
+        </button>
+        <button className="button secondary" type="button" onClick={onClear} disabled={saving || !status?.exists}>
+          清空 Cookie
+        </button>
+      </div>
       {message && <div className="settings-message">{message}</div>}
     </form>
   );
@@ -267,4 +286,16 @@ function LanSettings({ status }: { status: RuntimeStatus }) {
       ))}
     </div>
   );
+}
+
+function formatCookieStatus(status: CookieFileStatus | null) {
+  if (!status) return "正在读取";
+  if (!status.exists) return "未配置";
+  return `已配置，${formatBytes(status.size)}`;
+}
+
+function formatBytes(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }

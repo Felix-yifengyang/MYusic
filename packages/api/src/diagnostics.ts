@@ -4,6 +4,7 @@ import path from "node:path";
 import { Pool } from "pg";
 import type { DiagnosticCheck, DiagnosticsReport } from "@personal-music/shared";
 import type { ApiConfig } from "./config";
+import { getCookieFileStatus, validateBilibiliCookieContent } from "./cookies";
 import { pingNavidrome } from "./navidrome";
 
 export async function getDiagnostics(config: ApiConfig): Promise<DiagnosticsReport> {
@@ -126,12 +127,13 @@ function optionalFileCheck(
 
 function bilibiliCookieCheck(filePath: string): DiagnosticCheck {
   const suggestion = "在设置中上传或粘贴从浏览器导出的 Netscape cookies.txt。";
+  const status = getCookieFileStatus(filePath);
 
   if (!filePath) {
     return { id: "bilibiliCookie", label: "Bilibili Cookie", level: "warning", message: "未配置", suggestion };
   }
 
-  if (!fs.existsSync(filePath)) {
+  if (!status.exists) {
     return { id: "bilibiliCookie", label: "Bilibili Cookie", level: "warning", message: `未找到：${filePath}`, suggestion };
   }
 
@@ -141,7 +143,14 @@ function bilibiliCookieCheck(filePath: string): DiagnosticCheck {
     if (validationError) {
       return { id: "bilibiliCookie", label: "Bilibili Cookie", level: "warning", message: validationError, suggestion };
     }
-    return { id: "bilibiliCookie", label: "Bilibili Cookie", level: "ok", message: filePath };
+
+    const updatedAt = status.updatedAt ? `，更新时间 ${new Date(status.updatedAt).toLocaleString("zh-CN")}` : "";
+    return {
+      id: "bilibiliCookie",
+      label: "Bilibili Cookie",
+      level: "ok",
+      message: `${filePath}，${formatBytes(status.size)}${updatedAt}`
+    };
   } catch (error) {
     return {
       id: "bilibiliCookie",
@@ -151,16 +160,6 @@ function bilibiliCookieCheck(filePath: string): DiagnosticCheck {
       suggestion
     };
   }
-}
-
-function validateBilibiliCookieContent(content: string) {
-  const lines = content.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const cookieLines = lines.filter((line) => !line.startsWith("#"));
-
-  if (!cookieLines.length) return "Cookie 文件为空。";
-  if (!cookieLines.some((line) => line.includes("bilibili.com"))) return "Cookie 中没有 bilibili.com 域名。";
-  if (!cookieLines.some((line) => line.split("\t").length >= 7)) return "Cookie 文件不是 yt-dlp 可读取的 Netscape cookies.txt 格式。";
-  return "";
 }
 
 function directoryWritableCheck(id: string, label: string, dirPath: string, suggestion: string): DiagnosticCheck {
@@ -239,4 +238,10 @@ function navidromeCheck(config: ApiConfig): Promise<DiagnosticCheck> {
       });
     });
   }));
+}
+
+function formatBytes(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }

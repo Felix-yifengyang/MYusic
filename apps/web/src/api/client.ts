@@ -3,6 +3,7 @@ import type {
   AuthLoginResult,
   AuthStatus,
   BilibiliCookieSaveResult,
+  CookieFileStatus,
   DiagnosticsReport,
   DownloadJob,
   IngestionRecord,
@@ -123,6 +124,14 @@ export async function saveSettings(settings: AppSettings) {
 
 export async function saveBilibiliCookie(content: string) {
   return postJson<BilibiliCookieSaveResult>("/api/cookies/bilibili", { content });
+}
+
+export async function getBilibiliCookieStatus() {
+  return getJson<CookieFileStatus>("/api/cookies/bilibili");
+}
+
+export async function clearBilibiliCookie() {
+  return requestJson<CookieFileStatus>("/api/cookies/bilibili", { method: "DELETE" });
 }
 
 async function getJson<T>(url: string) {

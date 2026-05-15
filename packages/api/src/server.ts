@@ -4,6 +4,7 @@ import Fastify from "fastify";
 import type { DownloadJob, IngestionRecord, RuntimeStatus } from "@personal-music/shared";
 import type { ApiConfig } from "./config";
 import { createAuthService } from "./auth";
+import { getCookieFileStatus } from "./cookies";
 import { seedIngestionsFromJobs } from "./ingestion-store";
 import { getLanAddresses } from "./network";
 import { createRepository } from "./persistence";
@@ -43,6 +44,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
     const navidromePort = readPortFromUrl(navidromeUrl, 4533);
     const collectorUrl = `http://127.0.0.1:${config.port}`;
     const bilibiliCookies = config.cookies.bilibili || "";
+    const bilibiliCookieStatus = getCookieFileStatus(bilibiliCookies);
 
     return {
       ok: true,
@@ -52,8 +54,10 @@ export async function createApiServer(options: CreateApiServerOptions) {
       audioFormat: config.audioFormat,
       cookies: {
         bilibili: {
-          path: bilibiliCookies,
-          exists: Boolean(bilibiliCookies && fs.existsSync(bilibiliCookies))
+          path: bilibiliCookieStatus.path,
+          exists: bilibiliCookieStatus.exists,
+          size: bilibiliCookieStatus.size,
+          updatedAt: bilibiliCookieStatus.updatedAt
         }
       },
       tools: {

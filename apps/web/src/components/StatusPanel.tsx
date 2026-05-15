@@ -38,7 +38,7 @@ function QuickStatus({ status }: { status: RuntimeStatus }) {
     <div className="facts">
       <Fact label="下载服务" value={status.collectorUrl} />
       <Fact label="音乐库服务" value={status.navidromeUrl} />
-      <Fact label="Bilibili Cookie" value={status.cookies.bilibili.exists ? "已配置" : "未配置"} />
+      <Fact label="Bilibili Cookie" value={formatCookieStatus(status)} />
       <Fact label="yt-dlp" value={status.tools.ytdlpExists ? "可用" : "未找到"} />
       <Fact label="ffmpeg" value={status.tools.ffmpegExists ? "可用" : "未找到"} />
     </div>
@@ -65,4 +65,17 @@ export function Fact({ label, value }: { label: string; value: string }) {
       <div className="value">{value}</div>
     </article>
   );
+}
+
+function formatCookieStatus(status: RuntimeStatus) {
+  const cookie = status.cookies.bilibili;
+  if (!cookie.exists) return "未配置";
+  const updatedAt = cookie.updatedAt ? `，${new Date(cookie.updatedAt).toLocaleString()}` : "";
+  return `已配置，${formatBytes(cookie.size || 0)}${updatedAt}`;
+}
+
+function formatBytes(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
