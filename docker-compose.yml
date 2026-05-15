@@ -35,13 +35,13 @@ services:
     image: postgres:18
     restart: unless-stopped
     environment:
-      POSTGRES_DB: personal_music
-      POSTGRES_USER: personal_music
-      POSTGRES_PASSWORD: change_me
+      POSTGRES_DB: MYusic
+      POSTGRES_USER: MYusic
+      POSTGRES_PASSWORD: your_password
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U personal_music -d personal_music"]
+      test: ["CMD-SHELL", "pg_isready -U MYusic -d MYusic"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -24,10 +24,16 @@ docker-compose.yml
 cp .env.docker.example .env.docker
 ```
 
+生成一个强密码：
+
+```bash
+openssl rand -base64 24
+```
+
 修改 `.env.docker`：
 
 ```env
-DATABASE_URL=postgres://personal_music:change_me@postgres:5432/personal_music
+DATABASE_URL=postgres://MYusic:你的密码@postgres:5432/MYusic
 PERSONAL_MUSIC_NAVIDROME_URL=http://navidrome:4533
 PERSONAL_MUSIC_MANAGED_NAVIDROME=false
 ```
@@ -35,7 +41,9 @@ PERSONAL_MUSIC_MANAGED_NAVIDROME=false
 同时修改 `docker-compose.yml` 里的 Postgres 密码：
 
 ```yaml
-POSTGRES_PASSWORD: change_me
+POSTGRES_DB: MYusic
+POSTGRES_USER: MYusic
+POSTGRES_PASSWORD: 你的密码
 ```
 
 启动：

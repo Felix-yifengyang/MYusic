@@ -2,6 +2,8 @@
 
 这份文档描述第一阶段的云端部署模型：一台服务器同时运行 Web/API、Postgres、Navidrome、yt-dlp 和 ffmpeg。音乐文件先保存在服务器磁盘，不引入对象存储和独立云数据库。
 
+当前更推荐先使用 Docker Compose，见 [Docker Compose 部署](docker-deploy.md)。
+
 ## 推荐拓扑
 
 ```text
@@ -24,8 +26,8 @@
 
 - Web 控制台只暴露 `console.example.com`。
 - Navidrome 建议用独立域名 `music.example.com` 暴露给 Amperfy。
-- API 内部调用 Navidrome 仍然用 `http://127.0.0.1:4533`，不依赖公网域名。
-- 防火墙只开放 `80` 和 `443`，不要直接开放 `8787` 和 `4533`。
+- API 内部调用 Navidrome 使用容器内地址或本机内网地址，不依赖公网域名。
+- 防火墙只开放 `80` 和 `443`；临时验证可以开放 `8787` 和 `4533`。
 
 ## 服务器目录
 
@@ -39,27 +41,13 @@
 /data/personal-music-stack/navidrome
 ```
 
-## 依赖
-
-服务器需要准备：
-
-```text
-Node.js 18+
-pnpm
-PostgreSQL
-yt-dlp
-ffmpeg
-Navidrome Linux 可执行文件
-Caddy 或 Nginx
-```
-
-当前 `pnpm setup` 是 Windows 初始化脚本。Linux 云端第一版需要手动安装 `yt-dlp`、`ffmpeg` 和 Navidrome，后续可以再补 `setup-linux.sh`。
-
 ## 云端 .env 示例
+
+非 Docker 手动部署可参考：
 
 ```env
 PERSONAL_MUSIC_STORAGE=postgres
-DATABASE_URL=postgres://personal_music:strong_password@127.0.0.1:5432/personal_music
+DATABASE_URL=postgres://MYusic:strong_password@127.0.0.1:5432/MYusic
 
 PERSONAL_MUSIC_DATA_DIR=/data/personal-music-stack
 PERSONAL_MUSIC_LIBRARY_DIR=/data/personal-music-stack/library
@@ -84,23 +72,6 @@ PERSONAL_MUSIC_AUDIO_FORMAT=mp3
 PERSONAL_MUSIC_AUDIO_QUALITY=0
 PERSONAL_MUSIC_MAX_JOBS=50
 ```
-
-关键点：
-
-- 云端必须启用 `PERSONAL_MUSIC_AUTH_SECURE_COOKIE=true`，否则 HTTPS 下 Cookie 安全性不够。
-- `PERSONAL_MUSIC_API_HOST` 和 `PERSONAL_MUSIC_NAVIDROME_HOST` 推荐绑定 `127.0.0.1`，只让反向代理访问。
-- `PERSONAL_MUSIC_NAVIDROME_URL` 推荐保持 `http://127.0.0.1:4533`，这是 API 到 Navidrome 的内部地址。
-
-## 启动流程
-
-```bash
-cd /opt/personal-music-stack
-pnpm install
-pnpm build
-pnpm start:prod
-```
-
-首次打开 `https://console.example.com` 时，如果数据库里还没有用户，会进入创建管理员流程。
 
 ## Caddy 示例
 
@@ -175,22 +146,19 @@ Password: Navidrome 密码
 
 ## 上云检查清单
 
-- [ ] `pnpm build` 通过。
-- [ ] `.env` 使用云端路径和强密码。
-- [ ] Postgres 可连接。
-- [ ] `yt-dlp` 可执行。
-- [ ] `ffmpeg` 可执行。
-- [ ] Navidrome 可以在 `127.0.0.1:4533` 打开。
-- [ ] `console.example.com` 可以打开控制台。
-- [ ] `music.example.com` 可以打开 Navidrome。
-- [ ] HTTPS 生效。
-- [ ] `PERSONAL_MUSIC_AUTH_SECURE_COOKIE=true`。
+- [ ] `docker compose up -d --build` 成功。
+- [ ] `.env.docker` 使用云端路径和强密码。
+- [ ] Postgres 容器 healthy。
+- [ ] Navidrome 可以打开。
+- [ ] 控制台可以打开。
+- [ ] 首次打开控制台可以创建管理员。
 - [ ] 设置页上传 Bilibili Cookie 后状态正常。
-- [ ] Amperfy 能连接 `https://music.example.com`。
+- [ ] 下载一条音频成功。
+- [ ] Navidrome 能扫描到下载后的音乐。
+- [ ] Amperfy 能连接 Navidrome。
 
 ## 暂不处理
 
-- Docker 镜像。
 - systemd / pm2 自动守护配置。
 - Linux 一键安装脚本。
 - 对象存储。
