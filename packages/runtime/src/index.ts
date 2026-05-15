@@ -31,15 +31,17 @@ export function createRuntime(options: CreateRuntimeOptions = {}) {
   async function start(): Promise<RuntimeStatus> {
     ensureRuntimeFolders(paths);
     const apiConfig = writeApiConfig(paths);
-    const navidromeConfig = writeNavidromeConfig(paths, apiConfig.ffmpegPath, apiConfig.musicDir);
+    const managedNavidrome = isManagedNavidrome();
+    const navidromeConfig = managedNavidrome ? writeNavidromeConfig(paths, apiConfig.ffmpegPath, apiConfig.musicDir) : undefined;
     const webConsoleUrl = localUrl(apiConfig.port);
-    const navidromeUrl = apiConfig.navidrome.baseUrl || localUrl(navidromeConfig.port);
+    const navidromeUrl = apiConfig.navidrome.baseUrl || localUrl(navidromeConfig?.port || 4533);
 
     logger.log(`Runtime root: ${paths.rootDir}`);
     logger.log(`Runtime data: ${paths.dataRootDir}`);
     logger.log(`Runtime node: ${resolveNodeCommand()}`);
     logger.log(`Runtime yt-dlp: ${fs.existsSync(paths.ytdlpExePath) ? paths.ytdlpExePath : "yt-dlp from PATH"}`);
     logger.log(`Runtime ffmpeg: ${fs.existsSync(paths.ffmpegExePath) ? paths.ffmpegExePath : "not bundled"}`);
+    logger.log(`Runtime managed Navidrome: ${managedNavidrome ? "yes" : "no"}`);
 
     await processManager.startService({
       name: "api",
@@ -51,19 +53,21 @@ export function createRuntime(options: CreateRuntimeOptions = {}) {
       requiredFile: paths.apiCliPath
     });
 
-    await processManager.startService({
-      name: "navidrome",
-      port: navidromeConfig.port,
-      url: navidromeUrl,
-      command: paths.navidromeExePath,
-      args: ["--configfile", paths.navidromeConfigPath],
-      cwd: paths.navidromeDir,
-      requiredFile: paths.navidromeExePath
-    });
+    if (managedNavidrome && navidromeConfig) {
+      await processManager.startService({
+        name: "navidrome",
+        port: navidromeConfig.port,
+        url: navidromeUrl,
+        command: paths.navidromeExePath,
+        args: ["--configfile", paths.navidromeConfigPath],
+        cwd: paths.navidromeDir,
+        requiredFile: paths.navidromeExePath
+      });
+    }
 
     return {
       apiReady: await waitForPort(apiConfig.port),
-      navidromeReady: await waitForPort(navidromeConfig.port),
+      navidromeReady: managedNavidrome && navidromeConfig ? await waitForPort(navidromeConfig.port) : true,
       webConsoleUrl,
       navidromeUrl,
       libraryDir: paths.libraryDir
@@ -79,4 +83,10 @@ export function createRuntime(options: CreateRuntimeOptions = {}) {
 
 function localUrl(port: number) {
   return `http://127.0.0.1:${port}`;
+}
+
+function isManagedNavidrome() {
+  const value = process.env.PERSONAL_MUSIC_MANAGED_NAVIDROME;
+  if (value === undefined) return true;
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }

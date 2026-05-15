@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    ports:
+      - "8787:8787"
+    volumes:
+      - app-data:/data/personal-music-stack
+      - music-library:/data/personal-music-stack/library
+    depends_on:
+      postgres:
+        condition: service_healthy
+      navidrome:
+        condition: service_started
+
+  navidrome:
+    image: deluan/navidrome:latest
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      ND_ADDRESS: 0.0.0.0
+      ND_PORT: 4533
+      ND_MUSICFOLDER: /music
+      ND_DATAFOLDER: /data
+    ports:
+      - "4533:4533"
+    volumes:
+      - music-library:/music
+      - navidrome-data:/data
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: personal_music
+      POSTGRES_USER: personal_music
+      POSTGRES_PASSWORD: change_me
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U personal_music -d personal_music"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  app-data:
+  music-library:
+  navidrome-data:
+  postgres-data:

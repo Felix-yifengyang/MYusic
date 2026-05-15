@@ -127,6 +127,11 @@ user_sessions
 - 服务器磁盘目录规划，至少包含 music library、cookies、Navidrome data。
 - Bilibili Cookie 需要从本机浏览器导出后上传到服务器。
 
+详细部署说明：
+
+- [云端部署说明](docs/deploy.md)
+- [Docker Compose 部署](docs/docker-deploy.md)
+
 ## 常用检查
 
 ```powershell

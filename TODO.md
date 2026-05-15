@@ -12,10 +12,11 @@
 - [x] 增加 Postgres 用户表、会话表和登录鉴权第一版。
 - [x] 增加修改密码和退出所有设备。
 - [x] 增加 Bilibili Cookie 文件状态、更新时间和清空能力。
+- [x] 整理第一版云端部署说明。
+- [x] 增加 Docker Compose 云端部署入口。
 
 ## 下一阶段：云端可用性
 
-- [ ] 整理反向代理部署说明：API/Web 控制台、Navidrome 是否暴露、内网调用地址。
 - [ ] 明确服务器目录规划：音乐库、cookies、Navidrome 数据、日志。
 - [ ] 增加生产健康检查接口或脚本，用于确认 API、Postgres、Navidrome、yt-dlp、ffmpeg 是否可用。
 - [ ] 完善用户能力：用户管理、重置密码、会话列表。
