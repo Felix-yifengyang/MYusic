@@ -95,6 +95,10 @@ PERSONAL_MUSIC_BILIBILI_COOKIES=D:\project\personal-music-stack-data\cookies\bil
 PERSONAL_MUSIC_AUDIO_FORMAT=mp3
 PERSONAL_MUSIC_AUDIO_QUALITY=0
 PERSONAL_MUSIC_MAX_JOBS=50
+PERSONAL_MUSIC_AUTH_ENABLED=true
+PERSONAL_MUSIC_AUTH_COOKIE=personal_music_session
+PERSONAL_MUSIC_AUTH_SESSION_DAYS=30
+PERSONAL_MUSIC_AUTH_SECURE_COOKIE=false
 ```
 
 如果需要临时回到 JSON 本地文件：
@@ -171,10 +175,26 @@ pnpm start:prod
 
 上云前必须补齐：
 
-- 登录鉴权，避免公网裸奔。
 - cookies 文件上传或同步方案，因为云端没有你的本机 Chrome 登录态。
 - 反向代理配置，例如把公网域名转发到 API 端口。
 - 服务器磁盘目录规划，至少包含 music library、cookies、Navidrome data。
+
+## 登录鉴权
+
+Postgres 模式下默认启用登录鉴权。首次打开页面时，如果数据库里还没有用户，会进入创建管理员流程。
+
+用户和会话都保存在 Postgres：
+
+```text
+users
+user_sessions
+```
+
+说明：
+
+- 密码不会明文保存，后端使用 `crypto.scrypt` 保存哈希。
+- 登录态保存在 HttpOnly Cookie 中。
+- 云端 HTTPS 部署时应设置 `PERSONAL_MUSIC_AUTH_SECURE_COOKIE=true`。
 
 ## 常用检查
 

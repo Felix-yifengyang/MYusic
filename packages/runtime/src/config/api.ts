@@ -16,6 +16,12 @@ export interface ApiRuntimeConfig {
     driver: "json" | "postgres";
     url?: string;
   };
+  auth: {
+    enabled: boolean;
+    cookieName: string;
+    sessionDays: number;
+    secureCookie: boolean;
+  };
   ffmpegPath: string;
   webDir: string;
   cookies: {
@@ -33,6 +39,7 @@ export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
   const databaseUrl = process.env.DATABASE_URL || existing.database?.url || "";
   const apiPort = readNumberEnv("PERSONAL_MUSIC_API_PORT", existing.port || 8787);
   const navidromePort = readNumberEnv("PERSONAL_MUSIC_NAVIDROME_PORT", 4533);
+  const storageDriver = normalizeStorageDriver(process.env.PERSONAL_MUSIC_STORAGE || existing.database?.driver || (databaseUrl ? "postgres" : "json"));
   const navidromeUrl =
     process.env.PERSONAL_MUSIC_NAVIDROME_URL ||
     existing.navidrome?.baseUrl ||
@@ -48,8 +55,14 @@ export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
     jobStorePath: path.join(paths.dataRootDir, "collector", "jobs.json"),
     ingestionStorePath: path.join(paths.dataRootDir, "collector", "ingestions.json"),
     database: {
-      driver: normalizeStorageDriver(process.env.PERSONAL_MUSIC_STORAGE || existing.database?.driver || (databaseUrl ? "postgres" : "json")),
+      driver: storageDriver,
       url: databaseUrl || undefined
+    },
+    auth: {
+      enabled: readBooleanEnv("PERSONAL_MUSIC_AUTH_ENABLED", storageDriver === "postgres"),
+      cookieName: process.env.PERSONAL_MUSIC_AUTH_COOKIE || existing.auth?.cookieName || "personal_music_session",
+      sessionDays: readNumberEnv("PERSONAL_MUSIC_AUTH_SESSION_DAYS", Number(existing.auth?.sessionDays || 30)),
+      secureCookie: readBooleanEnv("PERSONAL_MUSIC_AUTH_SECURE_COOKIE", Boolean(existing.auth?.secureCookie))
     },
     ffmpegPath: process.env.PERSONAL_MUSIC_FFMPEG_PATH || existing.ffmpegPath || (fs.existsSync(paths.ffmpegExePath) ? paths.ffmpegExePath : ""),
     webDir: paths.webDistDir,
@@ -78,6 +91,12 @@ function readNumberEnv(name: string, fallback: number) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readBooleanEnv(name: string, fallback: boolean) {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
 function readExistingConfig(configPath: string): Partial<ApiRuntimeConfig> {

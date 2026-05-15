@@ -80,6 +80,24 @@ export interface RuntimeStatus {
   requestHost: string;
 }
 
+export interface AuthUser {
+  id: string;
+  username: string;
+  role: "admin";
+}
+
+export interface AuthStatus {
+  enabled: boolean;
+  setupRequired: boolean;
+  authenticated: boolean;
+  user?: AuthUser;
+}
+
+export interface AuthLoginResult {
+  user: AuthUser;
+  expiresAt: string;
+}
+
 export interface AppSettings {
   musicDir: string;
   ytdlpPath: string;

@@ -27,6 +27,12 @@ export interface ApiConfig {
     driver: StorageDriver;
     url?: string;
   };
+  auth: {
+    enabled: boolean;
+    cookieName: string;
+    sessionDays: number;
+    secureCookie: boolean;
+  };
   webDir: string;
 }
 
@@ -36,6 +42,7 @@ export function loadApiConfig(configPath: string): ApiConfig {
   const rootDir = path.resolve(__dirname, "..", "..", "..");
 
   const databaseUrl = process.env.DATABASE_URL || parsed.database?.url || "";
+  const storageDriver = normalizeStorageDriver(process.env.PERSONAL_MUSIC_STORAGE || parsed.database?.driver || (databaseUrl ? "postgres" : "json"));
 
   return {
     configPath,
@@ -60,8 +67,14 @@ export function loadApiConfig(configPath: string): ApiConfig {
     jobStorePath: parsed.jobStorePath || path.join(rootDir, "data", "jobs.json"),
     ingestionStorePath: parsed.ingestionStorePath || path.join(rootDir, "data", "ingestions.json"),
     database: {
-      driver: normalizeStorageDriver(process.env.PERSONAL_MUSIC_STORAGE || parsed.database?.driver || (databaseUrl ? "postgres" : "json")),
+      driver: storageDriver,
       url: databaseUrl || undefined
+    },
+    auth: {
+      enabled: readBooleanEnv("PERSONAL_MUSIC_AUTH_ENABLED", storageDriver === "postgres"),
+      cookieName: process.env.PERSONAL_MUSIC_AUTH_COOKIE || parsed.auth?.cookieName || "personal_music_session",
+      sessionDays: readNumberEnv("PERSONAL_MUSIC_AUTH_SESSION_DAYS", Number(parsed.auth?.sessionDays || 30)),
+      secureCookie: readBooleanEnv("PERSONAL_MUSIC_AUTH_SECURE_COOKIE", Boolean(parsed.auth?.secureCookie))
     },
     webDir: parsed.webDir || path.join(rootDir, "apps", "web", "dist")
   };
@@ -82,6 +95,7 @@ export function saveApiConfig(config: ApiConfig) {
     jobStorePath: config.jobStorePath,
     ingestionStorePath: config.ingestionStorePath,
     database: config.database,
+    auth: config.auth,
     webDir: config.webDir
   };
 
@@ -98,4 +112,10 @@ function readNumberEnv(name: string, fallback: number) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readBooleanEnv(name: string, fallback: boolean) {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }

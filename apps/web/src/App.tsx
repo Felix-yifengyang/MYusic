@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AppSettings,
+  AuthStatus,
   DiagnosticsReport,
   DownloadJob,
   IngestionRecord,
@@ -12,17 +13,22 @@ import {
   clearDownloadJobs,
   createDownload,
   deleteDownloadJob,
+  getAuthStatus,
   getDiagnostics,
   getHealth,
   getIngestions,
   getJobs,
   getNavidromeSongs,
   getSettings,
+  login as loginApi,
+  logout as logoutApi,
   rematchIngestion as rematchIngestionApi,
   retryDownloadJob,
   saveBilibiliCookie as saveBilibiliCookieApi,
-  saveSettings as saveSettingsApi
+  saveSettings as saveSettingsApi,
+  setupAdmin as setupAdminApi
 } from "./api/client";
+import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
 import { LibraryPanel } from "./components/LibraryPanel";
@@ -35,6 +41,8 @@ type TabName = "download" | "library" | "ingestions" | "settings";
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabName>("download");
+  const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [ingestions, setIngestions] = useState<IngestionRecord[]>([]);
@@ -56,6 +64,7 @@ export function App() {
   const [rematchingIngestionId, setRematchingIngestionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const activeTabRef = useRef<TabName>("download");
+  const authStatusRef = useRef<AuthStatus | null>(null);
   const navidromeUrl = status?.navidromeUrl || "http://127.0.0.1:4533";
   const nowPlaying = queueIndex >= 0 ? queue[queueIndex] : null;
 
@@ -64,12 +73,15 @@ export function App() {
   }, [activeTab]);
 
   useEffect(() => {
-    void loadStatus();
-    void loadJobs();
-    void loadIngestions();
-    void loadDiagnostics();
+    authStatusRef.current = authStatus;
+  }, [authStatus]);
+
+  useEffect(() => {
+    void boot();
 
     const onFocus = () => {
+      const auth = authStatusRef.current;
+      if (auth?.enabled && !auth.authenticated) return;
       if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadStatus();
       if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadDiagnostics();
       if (activeTabRef.current === "library") void loadNavidromeSongs();
@@ -81,6 +93,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (!authStatus || (authStatus.enabled && !authStatus.authenticated)) return;
     if (activeTab === "library") void loadNavidromeSongs();
     if (activeTab === "settings") {
       void loadStatus();
@@ -89,10 +102,11 @@ export function App() {
     }
     if (activeTab === "download") void loadJobs();
     if (activeTab === "ingestions") void loadIngestions();
-  }, [activeTab]);
+  }, [activeTab, authStatus]);
 
   useEffect(() => {
     if (activeTab !== "download") return;
+    if (!authStatus || (authStatus.enabled && !authStatus.authenticated)) return;
 
     const events = new EventSource("/api/jobs/events");
     events.addEventListener("jobs", (event) => {
@@ -103,7 +117,52 @@ export function App() {
     };
 
     return () => events.close();
-  }, [activeTab]);
+  }, [activeTab, authStatus]);
+
+  async function boot() {
+    setAuthLoading(true);
+    try {
+      const auth = await getAuthStatus();
+      setAuthStatus(auth);
+      if (!auth.enabled || auth.authenticated) {
+        await loadInitialData();
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function loadInitialData() {
+    await Promise.all([
+      loadStatus(),
+      loadJobs(),
+      loadIngestions(),
+      loadDiagnostics()
+    ]);
+  }
+
+  async function setupAdmin(username: string, password: string) {
+    await setupAdminApi(username, password);
+    await boot();
+  }
+
+  async function login(username: string, password: string) {
+    await loginApi(username, password);
+    await boot();
+  }
+
+  async function logout() {
+    await logoutApi();
+    setStatus(null);
+    setJobs([]);
+    setIngestions([]);
+    setNavidromeSongs([]);
+    setSettings(null);
+    setDiagnostics(null);
+    setQueue([]);
+    setQueueIndex(-1);
+    setAuthStatus(await getAuthStatus());
+  }
 
   async function loadStatus() {
     setStatus(await getHealth());
@@ -272,6 +331,21 @@ export function App() {
     return "服务正常";
   }, [status]);
 
+  if (authLoading || !authStatus) {
+    return (
+      <main className="auth-page">
+        <div className="auth-card">
+          <h1>Personal Music</h1>
+          <p>正在检查登录状态...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (authStatus.enabled && !authStatus.authenticated) {
+    return <AuthPanel status={authStatus} onSetup={setupAdmin} onLogin={login} />;
+  }
+
   return (
     <main className="layout">
       <header className="header">
@@ -279,7 +353,15 @@ export function App() {
           <h1>Personal Music</h1>
           <div className="subtle">{status?.musicDir || "正在读取音乐库..."}</div>
         </div>
-        <div className={`status-dot ${status ? "ready" : ""}`}>{serviceLabel}</div>
+        <div className="header-actions">
+          {authStatus.user && <span className="subtle">{authStatus.user.username}</span>}
+          <div className={`status-dot ${status ? "ready" : ""}`}>{serviceLabel}</div>
+          {authStatus.enabled && (
+            <button className="button secondary compact" type="button" onClick={() => void logout()}>
+              退出
+            </button>
+          )}
+        </div>
       </header>
 
       <nav className="tabs" aria-label="功能">

@@ -3,10 +3,12 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import Fastify from "fastify";
 import type { DownloadJob, IngestionRecord, RuntimeStatus } from "@personal-music/shared";
 import type { ApiConfig } from "./config";
+import { createAuthService } from "./auth";
 import { seedIngestionsFromJobs } from "./ingestion-store";
 import { getLanAddresses } from "./network";
 import { createRepository } from "./persistence";
 import type { AppStateRepository } from "./persistence/repository";
+import { registerAuthGuard, registerAuthRoutes } from "./routes/auth";
 import { registerIngestionRoutes } from "./routes/ingestions";
 import { registerJobRoutes } from "./routes/jobs";
 import { registerNavidromeRoutes } from "./routes/navidrome";
@@ -28,9 +30,13 @@ export async function createApiServer(options: CreateApiServerOptions) {
   const runningProcesses = new Map<string, ChildProcessWithoutNullStreams>();
   const jobClients = new Set<(jobs: DownloadJob[]) => void>();
   const app = Fastify({ logger: false });
+  const auth = createAuthService(config);
   const persist = () => persistAndBroadcastState(repository, jobs, ingestions, jobClients, config.maxJobs);
   seedIngestionsFromJobs(ingestions, jobs);
   await persist();
+
+  registerAuthRoutes(app, auth);
+  registerAuthGuard(app, auth);
 
   app.get("/api/health", async (request): Promise<RuntimeStatus> => {
     const navidromeUrl = config.navidrome.baseUrl || "http://127.0.0.1:4533";

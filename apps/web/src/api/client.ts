@@ -1,5 +1,7 @@
 import type {
   AppSettings,
+  AuthLoginResult,
+  AuthStatus,
   BilibiliCookieSaveResult,
   DiagnosticsReport,
   DownloadJob,
@@ -23,6 +25,28 @@ export interface SaveSettingsResult {
 export interface RematchIngestionResult {
   matched: boolean;
   ingestion: IngestionRecord;
+}
+
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+  }
+}
+
+export async function getAuthStatus() {
+  return getJson<AuthStatus>("/api/auth/status");
+}
+
+export async function setupAdmin(username: string, password: string) {
+  return postJson<AuthLoginResult>("/api/auth/setup", { username, password });
+}
+
+export async function login(username: string, password: string) {
+  return postJson<AuthLoginResult>("/api/auth/login", { username, password });
+}
+
+export async function logout() {
+  return postJson<{ ok: boolean }>("/api/auth/logout");
 }
 
 export async function getHealth() {
@@ -105,6 +129,6 @@ async function requestJson<T>(url: string, options: { method?: string; body?: un
     body: options.body === undefined ? undefined : JSON.stringify(options.body)
   });
   const body = await response.json() as T & { error?: string };
-  if (!response.ok) throw new Error(body.error || `Request failed: ${response.status}`);
+  if (!response.ok) throw new ApiError(body.error || `Request failed: ${response.status}`, response.status);
   return body;
 }

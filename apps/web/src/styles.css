@@ -29,12 +29,52 @@ body {
   padding: 24px 0 118px;
 }
 
+.auth-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.auth-card {
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 22px;
+}
+
+.auth-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.auth-card label {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-card label span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 h1 {
@@ -574,6 +614,7 @@ pre {
 
 @media (max-width: 860px) {
   .header { display: block; }
+  .header-actions { justify-content: flex-start; margin-top: 10px; }
   .status-dot { margin-top: 10px; }
   .grid { grid-template-columns: 1fr; }
 }
