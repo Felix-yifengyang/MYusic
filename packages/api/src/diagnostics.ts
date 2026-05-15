@@ -1,19 +1,28 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { Pool } from "pg";
 import type { DiagnosticCheck, DiagnosticsReport } from "@personal-music/shared";
 import type { ApiConfig } from "./config";
 import { pingNavidrome } from "./navidrome";
 
 export async function getDiagnostics(config: ApiConfig): Promise<DiagnosticsReport> {
   const checks: DiagnosticCheck[] = [
-    fileCheck("yt-dlp", "yt-dlp", config.ytdlpPath, "运行 .\\scripts\\setup-windows.ps1 或在设置中填写正确的 yt-dlp 路径。"),
-    optionalFileCheck("ffmpeg", "ffmpeg", config.ffmpegPath, "运行 .\\scripts\\setup-windows.ps1 或在设置中填写正确的 ffmpeg 路径。"),
+    storageModeCheck(config),
+    fileCheck("yt-dlp", "yt-dlp", config.ytdlpPath, "运行 .\\scripts\\setup-windows.ps1，或在设置中填写正确的 yt-dlp 路径。"),
+    optionalFileCheck("ffmpeg", "ffmpeg", config.ffmpegPath, "运行 .\\scripts\\setup-windows.ps1，或在设置中填写正确的 ffmpeg 路径。"),
     directoryWritableCheck("musicDir", "音乐目录", config.musicDir, "检查音乐目录是否存在，以及当前用户是否有写入权限。"),
-    fileParentWritableCheck("jobStore", "任务记录", config.jobStorePath, "检查 jobs.json 所在目录是否可写。"),
-    fileParentWritableCheck("ingestionStore", "入库记录", config.ingestionStorePath, "检查 ingestions.json 所在目录是否可写。"),
     bilibiliCookieCheck(config.cookies.bilibili || "")
   ];
+
+  if (config.database.driver === "postgres") {
+    checks.push(await postgresCheck(config));
+  } else {
+    checks.push(
+      fileParentWritableCheck("jobStore", "任务记录", config.jobStorePath, "检查 jobs.json 所在目录是否可写。"),
+      fileParentWritableCheck("ingestionStore", "入库记录", config.ingestionStorePath, "检查 ingestions.json 所在目录是否可写。")
+    );
+  }
 
   checks.push(await navidromeCheck(config));
 
@@ -25,9 +34,68 @@ export async function getDiagnostics(config: ApiConfig): Promise<DiagnosticsRepo
 
 export function getBlockingDownloadChecks(config: ApiConfig): DiagnosticCheck[] {
   return [
-    fileCheck("yt-dlp", "yt-dlp", config.ytdlpPath, "运行 .\\scripts\\setup-windows.ps1 或在设置中填写正确的 yt-dlp 路径。"),
+    fileCheck("yt-dlp", "yt-dlp", config.ytdlpPath, "运行 .\\scripts\\setup-windows.ps1，或在设置中填写正确的 yt-dlp 路径。"),
     directoryWritableCheck("musicDir", "音乐目录", config.musicDir, "检查音乐目录是否存在，以及当前用户是否有写入权限。")
   ].filter((check) => check.level === "error");
+}
+
+function storageModeCheck(config: ApiConfig): DiagnosticCheck {
+  return {
+    id: "storageMode",
+    label: "数据存储",
+    level: "ok",
+    message: config.database.driver === "postgres" ? "Postgres" : "JSON 本地文件"
+  };
+}
+
+async function postgresCheck(config: ApiConfig): Promise<DiagnosticCheck> {
+  if (!config.database.url) {
+    return {
+      id: "postgres",
+      label: "Postgres",
+      level: "error",
+      message: "未配置 DATABASE_URL",
+      suggestion: "在 .env 中填写 DATABASE_URL。"
+    };
+  }
+
+  const pool = new Pool({ connectionString: config.database.url });
+  try {
+    const result = await pool.query(`
+      select
+        to_regclass('public.download_jobs') is not null as has_download_jobs,
+        to_regclass('public.ingestions') is not null as has_ingestions,
+        case when to_regclass('public.download_jobs') is null then 0 else (select count(*) from download_jobs) end as download_jobs_count,
+        case when to_regclass('public.ingestions') is null then 0 else (select count(*) from ingestions) end as ingestions_count
+    `);
+    const row = result.rows[0] as {
+      has_download_jobs: boolean;
+      has_ingestions: boolean;
+      download_jobs_count: string | number;
+      ingestions_count: string | number;
+    };
+    const hasTables = row.has_download_jobs && row.has_ingestions;
+
+    return {
+      id: "postgres",
+      label: "Postgres",
+      level: hasTables ? "ok" : "warning",
+      message: hasTables
+        ? `连接正常；download_jobs ${row.download_jobs_count} 条，ingestions ${row.ingestions_count} 条`
+        : "连接正常，但表尚未完整创建",
+      suggestion: hasTables ? undefined : "启动 API 后会自动创建表，或运行 pnpm migrate:json-to-postgres。"
+    };
+  } catch (error) {
+    return {
+      id: "postgres",
+      label: "Postgres",
+      level: "error",
+      message: error instanceof Error ? error.message : "数据库连接失败",
+      suggestion: "检查 .env 中 DATABASE_URL 的数据库名、用户名、密码和端口。"
+    };
+  } finally {
+    await pool.end();
+  }
 }
 
 function fileCheck(id: string, label: string, filePath: string, suggestion: string): DiagnosticCheck {

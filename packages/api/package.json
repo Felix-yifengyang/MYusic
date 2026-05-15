@@ -6,6 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "migrate:json-to-postgres": "pnpm build && node dist/scripts/migrate-json-to-postgres.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

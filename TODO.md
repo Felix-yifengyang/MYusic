@@ -2,7 +2,7 @@
 
 ## 当前目标
 
-把项目从“验证型原型”整理成“可维护的本地产品雏形”，再继续云端化。
+本地产品雏形已经成立，当前主线进入 Postgres 稳定化和云端化准备。
 
 ## 已完成里程碑
 
@@ -19,13 +19,15 @@
 - [x] JSON 本地存储实现。
 - [x] Postgres 存储实现。
 - [x] `.env` 配置入口。
+- [x] JSON -> Postgres 迁移命令。
+- [x] 诊断页显示 Postgres 状态和表记录数。
 
 ## 近期优先级
 
-- [ ] 验证 Postgres 模式完整闭环。
-- [ ] 增加 JSON -> Postgres 迁移脚本。
-- [ ] 继续拆分前端 `App.tsx`。
+- [ ] 验证 Postgres 模式完整新下载闭环。
 - [ ] 整理用户可见文案，统一“API / Web 控制台 / 入库记录”等命名。
+- [ ] 增加 repository 最小测试或验证脚本。
+- [ ] 明确云端部署形态。
 
 ## 后端整理
 
@@ -35,7 +37,8 @@
 - [x] 拆 `routes/settings.ts`。
 - [x] 抽 `services/download-service.ts`。
 - [x] 抽 `services/ingestion-service.ts`。
-- [ ] 给 repository 增加最小测试或验证脚本。
+- [x] 增加 `migrate:json-to-postgres`。
+- [x] 增加 Postgres diagnostics。
 
 ## 前端整理
 
@@ -44,6 +47,7 @@
 - [x] 拆 `IngestionPanel`。
 - [x] 拆 `SettingsPanel`。
 - [x] 拆 `PlayerBar`。
+- [x] 拆 `StatusPanel`。
 - [x] 增加 `api/client.ts` 管理请求。
 
 ## 云端化
