@@ -12,14 +12,14 @@
   | HTTPS
   v
 反向代理 Caddy / Nginx
-  |-- console.example.com  -> 127.0.0.1:8787  Personal Music Web/API
+  |-- console.example.com  -> 127.0.0.1:8787  MYusic Web/API
   `-- music.example.com    -> 127.0.0.1:4533  Navidrome / Amperfy
 
 服务器内部
-  |-- Personal Music API
+  |-- MYusic API
   |-- Navidrome
   |-- PostgreSQL
-  `-- /data/personal-music-stack
+  `-- /data/MYusic
 ```
 
 说明：
@@ -34,11 +34,11 @@
 建议把代码和运行数据分开：
 
 ```text
-/opt/personal-music-stack          项目代码
-/data/personal-music-stack         运行数据
-/data/personal-music-stack/library 音乐文件
-/data/personal-music-stack/cookies Cookie 文件
-/data/personal-music-stack/navidrome
+/opt/MYusic          项目代码
+/data/MYusic         运行数据
+/data/MYusic/library 音乐文件
+/data/MYusic/cookies Cookie 文件
+/data/MYusic/navidrome
 ```
 
 ## 云端 .env 示例
@@ -46,31 +46,31 @@
 非 Docker 手动部署可参考：
 
 ```env
-PERSONAL_MUSIC_STORAGE=postgres
-DATABASE_URL=postgres://MYusic:strong_password@127.0.0.1:5432/MYusic
+MYUSIC_STORAGE=postgres
+DATABASE_URL=postgres://myusic:strong_password@127.0.0.1:5432/myusic
 
-PERSONAL_MUSIC_DATA_DIR=/data/personal-music-stack
-PERSONAL_MUSIC_LIBRARY_DIR=/data/personal-music-stack/library
+MYUSIC_DATA_DIR=/data/MYusic
+MYUSIC_LIBRARY_DIR=/data/MYusic/library
 
-PERSONAL_MUSIC_API_HOST=127.0.0.1
-PERSONAL_MUSIC_API_PORT=8787
+MYUSIC_API_HOST=127.0.0.1
+MYUSIC_API_PORT=8787
 
-PERSONAL_MUSIC_NAVIDROME_HOST=127.0.0.1
-PERSONAL_MUSIC_NAVIDROME_PORT=4533
-PERSONAL_MUSIC_NAVIDROME_URL=http://127.0.0.1:4533
+MYUSIC_NAVIDROME_HOST=127.0.0.1
+MYUSIC_NAVIDROME_PORT=4533
+MYUSIC_NAVIDROME_URL=http://127.0.0.1:4533
 
-PERSONAL_MUSIC_AUTH_ENABLED=true
-PERSONAL_MUSIC_AUTH_COOKIE=personal_music_session
-PERSONAL_MUSIC_AUTH_SESSION_DAYS=30
-PERSONAL_MUSIC_AUTH_SECURE_COOKIE=true
+MYUSIC_AUTH_ENABLED=true
+MYUSIC_AUTH_COOKIE=myusic_session
+MYUSIC_AUTH_SESSION_DAYS=30
+MYUSIC_AUTH_SECURE_COOKIE=true
 
-PERSONAL_MUSIC_YTDLP_PATH=/usr/local/bin/yt-dlp
-PERSONAL_MUSIC_FFMPEG_PATH=/usr/bin/ffmpeg
-PERSONAL_MUSIC_BILIBILI_COOKIES=/data/personal-music-stack/cookies/bilibili.txt
+MYUSIC_YTDLP_PATH=/usr/local/bin/yt-dlp
+MYUSIC_FFMPEG_PATH=/usr/bin/ffmpeg
+MYUSIC_BILIBILI_COOKIES=/data/MYusic/cookies/bilibili.txt
 
-PERSONAL_MUSIC_AUDIO_FORMAT=mp3
-PERSONAL_MUSIC_AUDIO_QUALITY=0
-PERSONAL_MUSIC_MAX_JOBS=50
+MYUSIC_AUDIO_FORMAT=mp3
+MYUSIC_AUDIO_QUALITY=0
+MYUSIC_MAX_JOBS=50
 ```
 
 ## Caddy 示例
@@ -131,7 +131,7 @@ Username: Navidrome 用户名
 Password: Navidrome 密码
 ```
 
-注意：这是 Navidrome 的账号，不是 Personal Music 控制台的账号。
+注意：这是 Navidrome 的账号，不是 MYusic 控制台的账号。
 
 ## Bilibili Cookie
 
@@ -163,3 +163,4 @@ Password: Navidrome 密码
 - Linux 一键安装脚本。
 - 对象存储。
 - 独立云数据库。
+

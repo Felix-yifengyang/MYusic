@@ -1,4 +1,4 @@
-# Personal Music Stack
+# MYusic
 
 一个自用的个人音乐收集和播放系统。
 
@@ -32,19 +32,19 @@ bin                   本地工具缓存，不提交 Git
 复制 `.env.example` 为 `.env`，按需要修改。当前推荐使用 Postgres：
 
 ```env
-PERSONAL_MUSIC_STORAGE=postgres
-DATABASE_URL=postgres://MYusic:your_password@127.0.0.1:5432/MYusic
-PERSONAL_MUSIC_DATA_DIR=D:\project\personal-music-stack-data
-PERSONAL_MUSIC_API_PORT=8787
-PERSONAL_MUSIC_NAVIDROME_PORT=4533
-PERSONAL_MUSIC_NAVIDROME_URL=http://127.0.0.1:4533
-PERSONAL_MUSIC_AUTH_ENABLED=true
+MYUSIC_STORAGE=postgres
+DATABASE_URL=postgres://myusic:your_password@127.0.0.1:5432/myusic
+MYUSIC_DATA_DIR=D:\project\MYusic-data
+MYUSIC_API_PORT=8787
+MYUSIC_NAVIDROME_PORT=4533
+MYUSIC_NAVIDROME_URL=http://127.0.0.1:4533
+MYUSIC_AUTH_ENABLED=true
 ```
 
 ## 启动
 
 ```powershell
-cd D:\project\personal-music-stack
+cd D:\project\MYusic
 pnpm install
 pnpm setup
 pnpm start
@@ -70,7 +70,7 @@ pnpm start:prod
 默认运行数据目录：
 
 ```text
-D:\project\personal-music-stack-data
+D:\project\MYusic-data
 |-- config\api.json
 |-- collector\jobs.json
 |-- collector\ingestions.json
@@ -111,7 +111,7 @@ user_sessions
 - 登录态保存在 HttpOnly Cookie 中。
 - 设置页可以修改当前用户密码。
 - 设置页可以退出所有设备。
-- 云端 HTTPS 部署时应设置 `PERSONAL_MUSIC_AUTH_SECURE_COOKIE=true`。
+- 云端 HTTPS 部署时应设置 `MYUSIC_AUTH_SECURE_COOKIE=true`。
 
 ## 云端部署前提
 
@@ -138,3 +138,4 @@ user_sessions
 pnpm typecheck
 pnpm build
 ```
+
