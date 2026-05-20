@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import type { AuthStatus } from "@personal-music/shared";
+import type { AuthStatus } from "@myusic/shared";
 
 export interface AuthPanelProps {
   status: AuthStatus;
@@ -35,7 +35,7 @@ export function AuthPanel(props: AuthPanelProps) {
     <main className="auth-page">
       <form className="auth-card" onSubmit={submit}>
         <div>
-          <h1>Personal Music</h1>
+          <h1>MYusic</h1>
           <p>{mode === "setup" ? "创建管理员账号" : "登录控制台"}</p>
         </div>
 

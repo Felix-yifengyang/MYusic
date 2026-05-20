@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { NavidromeSong } from "@personal-music/shared";
+import type { NavidromeSong } from "@myusic/shared";
 import type { PlayerTrack } from "./PlayerBar";
 import { Empty } from "./common";
 

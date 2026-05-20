@@ -1,4 +1,4 @@
-import type { DownloadJob, IngestionRecord } from "@personal-music/shared";
+import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 import type { ApiConfig } from "../config";
 import { loadIngestions, saveIngestions } from "../ingestion-store";
 import { loadJobs, saveJobs } from "../job-store";

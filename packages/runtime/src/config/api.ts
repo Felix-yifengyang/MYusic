@@ -37,21 +37,21 @@ export interface ApiRuntimeConfig {
 export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
   const existing = readExistingConfig(paths.apiConfigPath);
   const databaseUrl = process.env.DATABASE_URL || existing.database?.url || "";
-  const apiPort = readNumberEnv("PERSONAL_MUSIC_API_PORT", existing.port || 8787);
-  const navidromePort = readNumberEnv("PERSONAL_MUSIC_NAVIDROME_PORT", 4533);
-  const storageDriver = normalizeStorageDriver(process.env.PERSONAL_MUSIC_STORAGE || existing.database?.driver || (databaseUrl ? "postgres" : "json"));
+  const apiPort = readNumberEnv("MYUSIC_API_PORT", existing.port || 8787);
+  const navidromePort = readNumberEnv("MYUSIC_NAVIDROME_PORT", 4533);
+  const storageDriver = normalizeStorageDriver(process.env.MYUSIC_STORAGE || existing.database?.driver || (databaseUrl ? "postgres" : "json"));
   const navidromeUrl =
-    process.env.PERSONAL_MUSIC_NAVIDROME_URL ||
+    process.env.MYUSIC_NAVIDROME_URL ||
     existing.navidrome?.baseUrl ||
     `http://127.0.0.1:${navidromePort}`;
   const config: ApiRuntimeConfig = {
-    host: process.env.PERSONAL_MUSIC_API_HOST || existing.host || "0.0.0.0",
+    host: process.env.MYUSIC_API_HOST || existing.host || "0.0.0.0",
     port: apiPort,
-    musicDir: process.env.PERSONAL_MUSIC_LIBRARY_DIR || existing.musicDir || paths.libraryDir,
-    ytdlpPath: process.env.PERSONAL_MUSIC_YTDLP_PATH || existing.ytdlpPath || (fs.existsSync(paths.ytdlpExePath) ? paths.ytdlpExePath : "yt-dlp"),
-    audioFormat: process.env.PERSONAL_MUSIC_AUDIO_FORMAT || existing.audioFormat || "mp3",
-    audioQuality: String(process.env.PERSONAL_MUSIC_AUDIO_QUALITY ?? existing.audioQuality ?? "0"),
-    maxJobs: readNumberEnv("PERSONAL_MUSIC_MAX_JOBS", Number(existing.maxJobs || 50)),
+    musicDir: process.env.MYUSIC_LIBRARY_DIR || existing.musicDir || paths.libraryDir,
+    ytdlpPath: process.env.MYUSIC_YTDLP_PATH || existing.ytdlpPath || (fs.existsSync(paths.ytdlpExePath) ? paths.ytdlpExePath : "yt-dlp"),
+    audioFormat: process.env.MYUSIC_AUDIO_FORMAT || existing.audioFormat || "mp3",
+    audioQuality: String(process.env.MYUSIC_AUDIO_QUALITY ?? existing.audioQuality ?? "0"),
+    maxJobs: readNumberEnv("MYUSIC_MAX_JOBS", Number(existing.maxJobs || 50)),
     jobStorePath: path.join(paths.dataRootDir, "collector", "jobs.json"),
     ingestionStorePath: path.join(paths.dataRootDir, "collector", "ingestions.json"),
     database: {
@@ -59,20 +59,20 @@ export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
       url: databaseUrl || undefined
     },
     auth: {
-      enabled: readBooleanEnv("PERSONAL_MUSIC_AUTH_ENABLED", storageDriver === "postgres"),
-      cookieName: process.env.PERSONAL_MUSIC_AUTH_COOKIE || existing.auth?.cookieName || "personal_music_session",
-      sessionDays: readNumberEnv("PERSONAL_MUSIC_AUTH_SESSION_DAYS", Number(existing.auth?.sessionDays || 30)),
-      secureCookie: readBooleanEnv("PERSONAL_MUSIC_AUTH_SECURE_COOKIE", Boolean(existing.auth?.secureCookie))
+      enabled: readBooleanEnv("MYUSIC_AUTH_ENABLED", storageDriver === "postgres"),
+      cookieName: process.env.MYUSIC_AUTH_COOKIE || existing.auth?.cookieName || "myusic_session",
+      sessionDays: readNumberEnv("MYUSIC_AUTH_SESSION_DAYS", Number(existing.auth?.sessionDays || 30)),
+      secureCookie: readBooleanEnv("MYUSIC_AUTH_SECURE_COOKIE", Boolean(existing.auth?.secureCookie))
     },
-    ffmpegPath: process.env.PERSONAL_MUSIC_FFMPEG_PATH || existing.ffmpegPath || (fs.existsSync(paths.ffmpegExePath) ? paths.ffmpegExePath : ""),
+    ffmpegPath: process.env.MYUSIC_FFMPEG_PATH || existing.ffmpegPath || (fs.existsSync(paths.ffmpegExePath) ? paths.ffmpegExePath : ""),
     webDir: paths.webDistDir,
     cookies: {
-      bilibili: process.env.PERSONAL_MUSIC_BILIBILI_COOKIES || existing.cookies?.bilibili || paths.bilibiliCookiesPath
+      bilibili: process.env.MYUSIC_BILIBILI_COOKIES || existing.cookies?.bilibili || paths.bilibiliCookiesPath
     },
     navidrome: {
       baseUrl: navidromeUrl,
-      username: process.env.PERSONAL_MUSIC_NAVIDROME_USER || existing.navidrome?.username || "",
-      password: process.env.PERSONAL_MUSIC_NAVIDROME_PASSWORD || existing.navidrome?.password || ""
+      username: process.env.MYUSIC_NAVIDROME_USER || existing.navidrome?.username || "",
+      password: process.env.MYUSIC_NAVIDROME_PASSWORD || existing.navidrome?.password || ""
     }
   };
 

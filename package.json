@@ -1,16 +1,16 @@
 {
-  "name": "personal-music-stack",
+  "name": "myusic",
   "version": "0.1.0",
   "private": true,
-  "description": "Personal music web console, collector, and Navidrome runtime.",
+  "description": "MYusic web console, collector, and Navidrome runtime.",
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "start": "pnpm build && node packages/runtime/dist/launcher.js",
     "start:prod": "node packages/runtime/dist/launcher.js",
-    "build": "pnpm --filter @personal-music/shared build && pnpm --filter @personal-music/downloader build && pnpm --filter @personal-music/api build && pnpm --filter @personal-music/runtime build && pnpm --filter @personal-music/web build",
-    "migrate:json-to-postgres": "pnpm --filter @personal-music/api migrate:json-to-postgres",
+    "build": "pnpm --filter @myusic/shared build && pnpm --filter @myusic/downloader build && pnpm --filter @myusic/api build && pnpm --filter @myusic/runtime build && pnpm --filter @myusic/web build",
+    "migrate:json-to-postgres": "pnpm --filter @myusic/api migrate:json-to-postgres",
     "typecheck": "pnpm -r typecheck",
-    "dev:web": "pnpm --filter @personal-music/web dev",
+    "dev:web": "pnpm --filter @myusic/web dev",
     "setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1"
   },
   "engines": {

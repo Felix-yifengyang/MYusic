@@ -1,5 +1,5 @@
 {
-  "name": "@personal-music/api",
+  "name": "@myusic/api",
   "version": "0.1.0",
   "private": true,
   "main": "dist/index.js",
@@ -10,8 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@personal-music/downloader": "workspace:*",
-    "@personal-music/shared": "workspace:*",
+    "@myusic/downloader": "workspace:*",
+    "@myusic/shared": "workspace:*",
     "fastify": "^5.3.3",
     "pg": "^8.20.0"
   },

@@ -1,12 +1,12 @@
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
-import type { DownloadJob, DownloadStatus, IngestionMatchMethod, IngestionRecord, LibrarySyncState } from "@personal-music/shared";
+import type { DownloadJob, DownloadStatus, IngestionMatchMethod, IngestionRecord, LibrarySyncState } from "@myusic/shared";
 import type { ApiConfig } from "../config";
 import { trimJobs } from "../job-store";
 import type { AppStateRepository } from "./repository";
 
 export function createPostgresRepository(config: ApiConfig): AppStateRepository {
   if (!config.database.url) {
-    throw new Error("DATABASE_URL is required when PERSONAL_MUSIC_STORAGE=postgres.");
+    throw new Error("DATABASE_URL is required when MYUSIC_STORAGE=postgres.");
   }
 
   return new PostgresRepository(config.database.url);

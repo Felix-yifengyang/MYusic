@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { AppSettings, SettingsSaveResult } from "@personal-music/shared";
+import type { AppSettings, SettingsSaveResult } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 import { saveApiConfig } from "./config";
 

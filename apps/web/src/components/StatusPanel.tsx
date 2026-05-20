@@ -1,4 +1,4 @@
-import type { DiagnosticCheck, DiagnosticsReport, RuntimeStatus } from "@personal-music/shared";
+import type { DiagnosticCheck, DiagnosticsReport, RuntimeStatus } from "@myusic/shared";
 import { Empty } from "./common";
 
 export function StatusPanel({

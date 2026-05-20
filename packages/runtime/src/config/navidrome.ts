@@ -9,8 +9,8 @@ export interface NavidromeRuntimeConfig {
 
 export function writeNavidromeConfig(paths: RuntimePaths, ffmpegPath: string, musicDir = paths.libraryDir): NavidromeRuntimeConfig {
   const dataDir = path.join(paths.dataRootDir, "navidrome", "data");
-  const host = process.env.PERSONAL_MUSIC_NAVIDROME_HOST || "0.0.0.0";
-  const port = readNumberEnv("PERSONAL_MUSIC_NAVIDROME_PORT", 4533);
+  const host = process.env.MYUSIC_NAVIDROME_HOST || "0.0.0.0";
+  const port = readNumberEnv("MYUSIC_NAVIDROME_PORT", 4533);
   const lines = [
     `MusicFolder = "${tomlString(musicDir)}"`,
     `DataFolder = "${tomlString(dataDir)}"`,

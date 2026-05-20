@@ -63,9 +63,11 @@ export function resolveRuntimeRootDir() {
 }
 
 function resolveDataRootDir(rootDir: string) {
-  if (process.env.PERSONAL_MUSIC_DATA_DIR) {
-    return process.env.PERSONAL_MUSIC_DATA_DIR;
+  const dataDir = process.env.MYUSIC_DATA_DIR;
+  if (dataDir) {
+    return dataDir;
   }
 
-  return path.resolve(rootDir, "..", "personal-music-stack-data");
+  return path.resolve(rootDir, "..", "MYusic-data");
 }
+

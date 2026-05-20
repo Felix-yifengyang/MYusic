@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { CookieFileStatus } from "@personal-music/shared";
+import type { CookieFileStatus } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 
 export function getBilibiliCookiePath(config: ApiConfig) {

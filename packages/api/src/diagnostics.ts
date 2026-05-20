@@ -2,7 +2,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { Pool } from "pg";
-import type { DiagnosticCheck, DiagnosticsReport } from "@personal-music/shared";
+import type { DiagnosticCheck, DiagnosticsReport } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 import { getCookieFileStatus, validateBilibiliCookieContent } from "./cookies";
 import { pingNavidrome } from "./navidrome";

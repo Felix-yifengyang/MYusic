@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { DownloadJob, IngestionRecord } from "@personal-music/shared";
+import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 import { Empty } from "./common";
 
 export interface DownloadPanelProps {

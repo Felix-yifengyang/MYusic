@@ -1,6 +1,6 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { FastifyInstance } from "fastify";
-import type { DownloadJob, IngestionRecord } from "@personal-music/shared";
+import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 import type { ApiConfig } from "../config";
 import { getBlockingDownloadChecks } from "../diagnostics";
 

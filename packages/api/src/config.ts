@@ -42,28 +42,28 @@ export function loadApiConfig(configPath: string): ApiConfig {
   const rootDir = path.resolve(__dirname, "..", "..", "..");
 
   const databaseUrl = process.env.DATABASE_URL || parsed.database?.url || "";
-  const storageDriver = normalizeStorageDriver(process.env.PERSONAL_MUSIC_STORAGE || parsed.database?.driver || (databaseUrl ? "postgres" : "json"));
+  const storageDriver = normalizeStorageDriver(process.env.MYUSIC_STORAGE || parsed.database?.driver || (databaseUrl ? "postgres" : "json"));
 
   return {
     configPath,
-    host: process.env.PERSONAL_MUSIC_API_HOST || parsed.host || "0.0.0.0",
-    port: readNumberEnv("PERSONAL_MUSIC_API_PORT", Number(parsed.port || 8787)),
-    musicDir: process.env.PERSONAL_MUSIC_LIBRARY_DIR || parsed.musicDir || path.join(rootDir, "music"),
-    ytdlpPath: process.env.PERSONAL_MUSIC_YTDLP_PATH || parsed.ytdlpPath || "yt-dlp",
-    audioFormat: process.env.PERSONAL_MUSIC_AUDIO_FORMAT || parsed.audioFormat || "mp3",
-    audioQuality: String(process.env.PERSONAL_MUSIC_AUDIO_QUALITY ?? parsed.audioQuality ?? "0"),
-    ffmpegPath: process.env.PERSONAL_MUSIC_FFMPEG_PATH || parsed.ffmpegPath || "",
+    host: process.env.MYUSIC_API_HOST || parsed.host || "0.0.0.0",
+    port: readNumberEnv("MYUSIC_API_PORT", Number(parsed.port || 8787)),
+    musicDir: process.env.MYUSIC_LIBRARY_DIR || parsed.musicDir || path.join(rootDir, "music"),
+    ytdlpPath: process.env.MYUSIC_YTDLP_PATH || parsed.ytdlpPath || "yt-dlp",
+    audioFormat: process.env.MYUSIC_AUDIO_FORMAT || parsed.audioFormat || "mp3",
+    audioQuality: String(process.env.MYUSIC_AUDIO_QUALITY ?? parsed.audioQuality ?? "0"),
+    ffmpegPath: process.env.MYUSIC_FFMPEG_PATH || parsed.ffmpegPath || "",
     cookies: {
       ...parsed.cookies,
-      bilibili: process.env.PERSONAL_MUSIC_BILIBILI_COOKIES || parsed.cookies?.bilibili
+      bilibili: process.env.MYUSIC_BILIBILI_COOKIES || parsed.cookies?.bilibili
     },
     navidrome: {
       ...parsed.navidrome,
-      baseUrl: process.env.PERSONAL_MUSIC_NAVIDROME_URL || parsed.navidrome?.baseUrl,
-      username: process.env.PERSONAL_MUSIC_NAVIDROME_USER || parsed.navidrome?.username,
-      password: process.env.PERSONAL_MUSIC_NAVIDROME_PASSWORD || parsed.navidrome?.password
+      baseUrl: process.env.MYUSIC_NAVIDROME_URL || parsed.navidrome?.baseUrl,
+      username: process.env.MYUSIC_NAVIDROME_USER || parsed.navidrome?.username,
+      password: process.env.MYUSIC_NAVIDROME_PASSWORD || parsed.navidrome?.password
     },
-    maxJobs: readNumberEnv("PERSONAL_MUSIC_MAX_JOBS", Number(parsed.maxJobs || 50)),
+    maxJobs: readNumberEnv("MYUSIC_MAX_JOBS", Number(parsed.maxJobs || 50)),
     jobStorePath: parsed.jobStorePath || path.join(rootDir, "data", "jobs.json"),
     ingestionStorePath: parsed.ingestionStorePath || path.join(rootDir, "data", "ingestions.json"),
     database: {
@@ -71,10 +71,10 @@ export function loadApiConfig(configPath: string): ApiConfig {
       url: databaseUrl || undefined
     },
     auth: {
-      enabled: readBooleanEnv("PERSONAL_MUSIC_AUTH_ENABLED", storageDriver === "postgres"),
-      cookieName: process.env.PERSONAL_MUSIC_AUTH_COOKIE || parsed.auth?.cookieName || "personal_music_session",
-      sessionDays: readNumberEnv("PERSONAL_MUSIC_AUTH_SESSION_DAYS", Number(parsed.auth?.sessionDays || 30)),
-      secureCookie: readBooleanEnv("PERSONAL_MUSIC_AUTH_SECURE_COOKIE", Boolean(parsed.auth?.secureCookie))
+      enabled: readBooleanEnv("MYUSIC_AUTH_ENABLED", storageDriver === "postgres"),
+      cookieName: process.env.MYUSIC_AUTH_COOKIE || parsed.auth?.cookieName || "myusic_session",
+      sessionDays: readNumberEnv("MYUSIC_AUTH_SESSION_DAYS", Number(parsed.auth?.sessionDays || 30)),
+      secureCookie: readBooleanEnv("MYUSIC_AUTH_SECURE_COOKIE", Boolean(parsed.auth?.secureCookie))
     },
     webDir: parsed.webDir || path.join(rootDir, "apps", "web", "dist")
   };
@@ -119,3 +119,4 @@ function readBooleanEnv(name: string, fallback: boolean) {
   if (value === undefined) return fallback;
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }
+

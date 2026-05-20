@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import path from "node:path";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import type { IngestionMatchMethod, IngestionRecord, NavidromeScanStatus, NavidromeSong, NavidromeSongsResult } from "@personal-music/shared";
+import type { IngestionMatchMethod, IngestionRecord, NavidromeScanStatus, NavidromeSong, NavidromeSongsResult } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 
 interface SubsonicResponse<T> {
@@ -169,7 +169,7 @@ function buildUrl(config: ApiConfig, endpoint: string, params: Record<string, st
     t: token,
     s: salt,
     v: "1.16.1",
-    c: "personal-music",
+    c: "myusic",
     ...params
   });
 

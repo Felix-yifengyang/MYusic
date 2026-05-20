@@ -86,7 +86,7 @@ function localUrl(port: number) {
 }
 
 function isManagedNavidrome() {
-  const value = process.env.PERSONAL_MUSIC_MANAGED_NAVIDROME;
+  const value = process.env.MYUSIC_MANAGED_NAVIDROME;
   if (value === undefined) return true;
   return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
 }

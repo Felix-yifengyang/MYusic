@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { promisify } from "node:util";
 import { Pool, type QueryResultRow } from "pg";
-import type { AuthStatus, AuthUser } from "@personal-music/shared";
+import type { AuthStatus, AuthUser } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 
 const scrypt = promisify(crypto.scrypt);
@@ -229,7 +229,7 @@ export class AuthError extends Error {
 export function createAuthService(config: ApiConfig) {
   if (!config.auth.enabled) return undefined;
   if (config.database.driver !== "postgres") {
-    throw new Error("Auth only supports Postgres storage. Set PERSONAL_MUSIC_STORAGE=postgres.");
+    throw new Error("Auth only supports Postgres storage. Set MYUSIC_STORAGE=postgres.");
   }
   return new AuthService(config);
 }

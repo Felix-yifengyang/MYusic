@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { DownloadJob, IngestionRecord } from "@personal-music/shared";
+import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 import type { ApiConfig } from "../config";
 
 export interface RegisterIngestionRoutesOptions {

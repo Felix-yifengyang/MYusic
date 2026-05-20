@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import Fastify from "fastify";
-import type { DownloadJob, IngestionRecord, RuntimeStatus } from "@personal-music/shared";
+import type { DownloadJob, IngestionRecord, RuntimeStatus } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 import { createAuthService } from "./auth";
 import { getCookieFileStatus } from "./cookies";

@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { AppSettings, AuthStatus, CookieFileStatus, DiagnosticsReport, RuntimeStatus } from "@personal-music/shared";
+import type { AppSettings, AuthStatus, CookieFileStatus, DiagnosticsReport, RuntimeStatus } from "@myusic/shared";
 import { Empty } from "./common";
 import { DiagnosticsList, Fact } from "./StatusPanel";
 

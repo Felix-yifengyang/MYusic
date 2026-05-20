@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { IngestionRecord } from "@personal-music/shared";
+import type { IngestionRecord } from "@myusic/shared";
 
 export function loadIngestions(ingestionStorePath: string): IngestionRecord[] {
   if (!fs.existsSync(ingestionStorePath)) {

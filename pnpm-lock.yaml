@@ -14,7 +14,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@personal-music/shared':
+      '@myusic/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@rsbuild/core':
@@ -42,10 +42,10 @@ importers:
 
   packages/api:
     dependencies:
-      '@personal-music/downloader':
+      '@myusic/downloader':
         specifier: workspace:*
         version: link:../downloader
-      '@personal-music/shared':
+      '@myusic/shared':
         specifier: workspace:*
         version: link:../shared
       fastify:

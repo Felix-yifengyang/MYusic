@@ -1,4 +1,4 @@
-import type { IngestionRecord } from "@personal-music/shared";
+import type { IngestionRecord } from "@myusic/shared";
 import { Empty } from "./common";
 
 export interface IngestionPanelProps {

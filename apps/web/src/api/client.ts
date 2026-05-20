@@ -9,7 +9,7 @@ import type {
   IngestionRecord,
   NavidromeSongsResult,
   RuntimeStatus
-} from "@personal-music/shared";
+} from "@myusic/shared";
 
 export interface DownloadErrorBody {
   error?: string;

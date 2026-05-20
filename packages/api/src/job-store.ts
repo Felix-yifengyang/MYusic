@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { DownloadJob } from "@personal-music/shared";
+import type { DownloadJob } from "@myusic/shared";
 
 export function loadJobs(jobStorePath: string, maxJobs: number): DownloadJob[] {
   if (!fs.existsSync(jobStorePath)) {

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Pool, type PoolClient } from "pg";
-import type { DownloadJob, IngestionRecord } from "@personal-music/shared";
+import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 
 interface MigrationResult {
   jobsRead: number;
@@ -20,9 +20,9 @@ async function main() {
     throw new Error("DATABASE_URL is required. Put it in .env or set it before running the migration.");
   }
 
-  const dataRoot = process.env.PERSONAL_MUSIC_DATA_DIR || path.resolve(resolveRootDir(), "..", "personal-music-stack-data");
-  const jobsPath = process.env.PERSONAL_MUSIC_JOBS_JSON || path.join(dataRoot, "collector", "jobs.json");
-  const ingestionsPath = process.env.PERSONAL_MUSIC_INGESTIONS_JSON || path.join(dataRoot, "collector", "ingestions.json");
+  const dataRoot = process.env.MYUSIC_DATA_DIR || path.resolve(resolveRootDir(), "..", "MYusic-data");
+  const jobsPath = process.env.MYUSIC_JOBS_JSON || path.join(dataRoot, "collector", "jobs.json");
+  const ingestionsPath = process.env.MYUSIC_INGESTIONS_JSON || path.join(dataRoot, "collector", "ingestions.json");
 
   const jobs = readJsonArray<DownloadJob>(jobsPath);
   const ingestions = readJsonArray<IngestionRecord>(ingestionsPath);

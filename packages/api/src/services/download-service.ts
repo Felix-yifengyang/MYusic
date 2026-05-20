@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
-import type { DownloadJob, IngestionRecord } from "@personal-music/shared";
-import { createAudioDownloadArgs, createMetadataArgs, decodeProcessOutput } from "@personal-music/downloader";
+import type { DownloadJob, IngestionRecord } from "@myusic/shared";
+import { createAudioDownloadArgs, createMetadataArgs, decodeProcessOutput } from "@myusic/downloader";
 import type { ApiConfig } from "../config";
 import { upsertIngestion } from "../ingestion-store";
 import { trimJobs } from "../job-store";
@@ -133,8 +133,8 @@ export function stopRunningJob(job: DownloadJob, runningProcesses: Map<string, C
 }
 
 function buildIngestionRecord(job: DownloadJob, config: ApiConfig): IngestionRecord {
-  const outputPath = normalizeMarkerPath(readMarker(job.output, "__PERSONAL_MUSIC_FILE__"));
-  const infoJsonPath = normalizeMarkerPath(readMarker(job.output, "__PERSONAL_MUSIC_INFO__"));
+  const outputPath = normalizeMarkerPath(readMarker(job.output, "__MYUSIC_FILE__"));
+  const infoJsonPath = normalizeMarkerPath(readMarker(job.output, "__MYUSIC_INFO__"));
   const metadata = readInfoJson(infoJsonPath);
   const resolvedOutputPath = outputPath ? path.resolve(outputPath) : undefined;
   const resolvedInfoJsonPath = infoJsonPath ? path.resolve(infoJsonPath) : undefined;
@@ -224,8 +224,7 @@ function buildIngestionId(
 }
 
 function readMarker(output: string, marker: string) {
-  const pattern = new RegExp(`^${escapeRegExp(marker)}:(.+)$`, "m");
-  const match = pattern.exec(output);
+  const match = new RegExp(`^${escapeRegExp(marker)}:(.+)$`, "m").exec(output);
   if (!match) return "";
 
   const raw = match[1].trim();

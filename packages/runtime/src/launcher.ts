@@ -14,7 +14,7 @@ async function main() {
   const status = await runtime.start();
 
   console.log("");
-  console.log("Personal Music Stack is ready.");
+  console.log("MYusic is ready.");
   console.log("Web console: " + status.webConsoleUrl);
   console.log("Navidrome:    " + status.navidromeUrl);
   console.log("Library:      " + status.libraryDir);

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { AuthLoginResult, AuthStatus } from "@personal-music/shared";
+import type { AuthLoginResult, AuthStatus } from "@myusic/shared";
 import { AuthError, type AuthService, readCookie } from "../auth";
 
 export function registerAuthRoutes(app: FastifyInstance, auth: AuthService | undefined) {

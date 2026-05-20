@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { FastifyInstance } from "fastify";
-import type { AppSettings, BilibiliCookieSaveResult, CookieFileStatus } from "@personal-music/shared";
+import type { AppSettings, BilibiliCookieSaveResult, CookieFileStatus } from "@myusic/shared";
 import type { ApiConfig } from "../config";
 import { saveApiConfig } from "../config";
 import {

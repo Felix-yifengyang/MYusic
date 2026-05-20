@@ -8,7 +8,7 @@ import type {
   IngestionRecord,
   NavidromeSong,
   RuntimeStatus
-} from "@personal-music/shared";
+} from "@myusic/shared";
 import {
   cancelDownloadJob,
   changePassword as changePasswordApi,
@@ -400,7 +400,7 @@ export function App() {
     return (
       <main className="auth-page">
         <div className="auth-card">
-          <h1>Personal Music</h1>
+          <h1>MYusic</h1>
           <p>正在检查登录状态...</p>
         </div>
       </main>
@@ -415,7 +415,7 @@ export function App() {
     <main className="layout">
       <header className="header">
         <div>
-          <h1>Personal Music</h1>
+          <h1>MYusic</h1>
           <div className="subtle">{status?.musicDir || "正在读取音乐库..."}</div>
         </div>
         <div className="header-actions">

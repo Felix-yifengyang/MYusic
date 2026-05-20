@@ -8,7 +8,7 @@ function getArg(name: string): string | undefined {
 }
 
 async function main() {
-  const configPath = getArg("--config") || process.env.PERSONAL_MUSIC_API_CONFIG;
+  const configPath = getArg("--config") || process.env.MYUSIC_API_CONFIG;
   if (!configPath) {
     throw new Error("Missing --config <path>");
   }
@@ -17,7 +17,7 @@ async function main() {
   const app = await createApiServer({ config });
 
   await app.listen({ host: config.host, port: config.port });
-  console.log(`Personal Music API running at http://127.0.0.1:${config.port}`);
+  console.log(`MYusic API running at http://127.0.0.1:${config.port}`);
   console.log(`Music directory: ${config.musicDir}`);
 }
 

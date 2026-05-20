@@ -1,4 +1,4 @@
-import type { DownloadJob, IngestionRecord } from "@personal-music/shared";
+import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 
 export interface AppStateRepository {
   loadJobs(maxJobs: number): Promise<DownloadJob[]>;
