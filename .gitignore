@@ -22,7 +22,7 @@ services/navidrome/data/
 services/navidrome/navidrome.toml
 
 # User data and cookies must never be committed
-../personal-music-stack-data/
+../MYusic-data/
 **/cookies/
 *.cookies
 cookies.txt

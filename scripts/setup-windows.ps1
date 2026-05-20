@@ -1,5 +1,5 @@
 param(
-  [string]$DataDir = "D:\project\personal-music-stack-data",
+  [string]$DataDir = "D:\project\MYusic-data",
   [switch]$SkipPnpmInstall
 )
 
@@ -29,7 +29,7 @@ function Download-File($Url, $Destination) {
 
 function Get-GitHubLatestRelease($Repo) {
   $Url = "https://api.github.com/repos/$Repo/releases/latest"
-  Invoke-RestMethod -Headers @{ "User-Agent" = "personal-music-setup" } -Uri $Url
+  Invoke-RestMethod -Headers @{ "User-Agent" = "MYusic-setup" } -Uri $Url
 }
 
 function Find-CommandPath($Name) {
@@ -61,8 +61,8 @@ if (-not (Test-Path $FfmpegTarget)) {
     Copy-Item -LiteralPath $FfmpegSource -Destination $FfmpegTarget -Force
     Write-Host "Copied $FfmpegSource -> $FfmpegTarget"
   } else {
-    $FfmpegZip = Join-Path $env:TEMP "personal-music-ffmpeg.zip"
-    $FfmpegExtract = Join-Path $env:TEMP "personal-music-ffmpeg"
+    $FfmpegZip = Join-Path $env:TEMP "MYusic-ffmpeg.zip"
+    $FfmpegExtract = Join-Path $env:TEMP "MYusic-ffmpeg"
     if (Test-Path $FfmpegExtract) { Remove-Item -LiteralPath $FfmpegExtract -Recurse -Force }
     Download-File "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" $FfmpegZip
     Expand-Archive -LiteralPath $FfmpegZip -DestinationPath $FfmpegExtract -Force
@@ -111,3 +111,4 @@ Write-Host "  pnpm start"
 Write-Host ""
 Write-Host "Then open:"
 Write-Host "  http://127.0.0.1:8787"
+

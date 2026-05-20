@@ -21,7 +21,7 @@ services/navidrome/navidrome
 services/navidrome/data
 services/navidrome/LICENSE
 
-../personal-music-stack-data
+../MYusic-data
 **/cookies
 *.log
 *.pid

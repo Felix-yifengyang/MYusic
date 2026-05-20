@@ -8,8 +8,8 @@ services:
     ports:
       - "8787:8787"
     volumes:
-      - app-data:/data/personal-music-stack
-      - music-library:/data/personal-music-stack/library
+      - app-data:/data/MYusic
+      - music-library:/data/MYusic/library
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,13 +35,13 @@ services:
     image: postgres:18
     restart: unless-stopped
     environment:
-      POSTGRES_DB: MYusic
-      POSTGRES_USER: MYusic
+      POSTGRES_DB: myusic
+      POSTGRES_USER: myusic
       POSTGRES_PASSWORD: your_password
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U MYusic -d MYusic"]
+      test: ["CMD-SHELL", "pg_isready -U myusic -d myusic"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,3 +51,4 @@ volumes:
   music-library:
   navidrome-data:
   postgres-data:
+
