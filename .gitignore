@@ -41,6 +41,10 @@ Desktop.ini
 Thumbs.db
 .DS_Store
 
+# Local collaboration notes
+DESIGN.local.md
+.design-drafts/
+
 # Environment
 .env
 .env.*

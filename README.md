@@ -129,8 +129,7 @@ user_sessions
 
 详细部署说明：
 
-- [云端部署说明](docs/deploy.md)
-- [Docker Compose 部署](docs/docker-deploy.md)
+- [部署说明](docs/user/deploy.html)
 
 ## 常用检查
 

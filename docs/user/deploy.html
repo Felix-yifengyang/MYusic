@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MYusic 部署说明</title>
+    <style>
+      body { margin: 0; background: #101114; color: #f3f0e8; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 64px; }
+      h1 { margin: 0 0 10px; font-size: 40px; }
+      h2 { margin-top: 34px; }
+      p, li { color: #c7cdd3; line-height: 1.7; }
+      code, pre { background: #171a1e; border: 1px solid #323943; border-radius: 10px; }
+      code { padding: 2px 5px; }
+      pre { overflow: auto; padding: 14px; color: #f3f0e8; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>MYusic 部署说明</h1>
+      <p>当前推荐使用 Docker Compose 部署。它会启动 MYusic Web/API、Navidrome 和 Postgres。</p>
+
+      <h2>准备文件</h2>
+      <pre><code>Dockerfile
+docker-compose.yml
+.env.docker.example</code></pre>
+
+      <h2>启动步骤</h2>
+      <p>复制配置：</p>
+      <pre><code>cp .env.docker.example .env.docker</code></pre>
+
+      <p>生成强密码：</p>
+      <pre><code>openssl rand -base64 24</code></pre>
+
+      <p>修改 <code>.env.docker</code>：</p>
+      <pre><code>DATABASE_URL=postgres://myusic:你的密码@postgres:5432/myusic
+MYUSIC_NAVIDROME_URL=http://navidrome:4533
+MYUSIC_MANAGED_NAVIDROME=false</code></pre>
+
+      <p>同时修改 <code>docker-compose.yml</code> 里的 Postgres 密码：</p>
+      <pre><code>POSTGRES_DB: myusic
+POSTGRES_USER: myusic
+POSTGRES_PASSWORD: 你的密码</code></pre>
+
+      <p>启动服务：</p>
+      <pre><code>docker compose up -d --build</code></pre>
+
+      <h2>查看日志</h2>
+      <pre><code>docker compose logs -f app
+docker compose logs -f navidrome
+docker compose logs -f postgres</code></pre>
+
+      <h2>停止服务</h2>
+      <pre><code>docker compose down</code></pre>
+
+      <h2>访问地址</h2>
+      <p>本机或内网测试：</p>
+      <pre><code>http://服务器IP:8787
+http://服务器IP:4533</code></pre>
+
+      <p>正式云端建议走 HTTPS 反向代理：</p>
+      <pre><code>https://console.example.com -> app:8787
+https://music.example.com   -> navidrome:4533</code></pre>
+
+      <h2>反向代理示例</h2>
+      <p>Caddy：</p>
+      <pre><code>console.example.com {
+  reverse_proxy 127.0.0.1:8787
+}
+
+music.example.com {
+  reverse_proxy 127.0.0.1:4533
+}</code></pre>
+
+      <p>Nginx 只需要把 <code>console.example.com</code> 反代到 <code>127.0.0.1:8787</code>，把 <code>music.example.com</code> 反代到 <code>127.0.0.1:4533</code>。</p>
+
+      <h2>HTTPS Cookie</h2>
+      <p>如果通过 HTTPS 域名访问控制台，设置：</p>
+      <pre><code>MYUSIC_AUTH_SECURE_COOKIE=true</code></pre>
+
+      <p>如果只是内网 HTTP 测试，保持：</p>
+      <pre><code>MYUSIC_AUTH_SECURE_COOKIE=false</code></pre>
+
+      <h2>Amperfy</h2>
+      <pre><code>Server: https://music.example.com
+Username: Navidrome 用户名
+Password: Navidrome 密码</code></pre>
+      <p>这是 Navidrome 账号，不是 MYusic 控制台账号。</p>
+
+      <h2>Bilibili Cookie</h2>
+      <p>云端没有你的本机浏览器登录态。需要从本机浏览器导出 Netscape <code>cookies.txt</code>，然后在 MYusic 设置页上传或粘贴。</p>
+      <pre><code>/data/MYusic/cookies/bilibili.txt</code></pre>
+
+      <h2>检查清单</h2>
+      <ul>
+        <li><code>docker compose up -d --build</code> 成功。</li>
+        <li>Postgres 容器 healthy。</li>
+        <li>控制台可以打开并创建管理员。</li>
+        <li>Navidrome 可以打开。</li>
+        <li>Bilibili Cookie 上传后状态正常。</li>
+        <li>下载一条音频成功。</li>
+        <li>Navidrome 能扫描到下载后的音乐。</li>
+        <li>Amperfy 能连接 Navidrome。</li>
+      </ul>
+
+      <h2>当前限制</h2>
+      <ul>
+        <li>Dockerfile 构建时会从 GitHub 下载 <code>yt-dlp</code>，服务器需要能访问 GitHub。</li>
+        <li>Navidrome 当前使用 <code>deluan/navidrome:latest</code>，后续可以锁定版本。</li>
+        <li>Postgres 密码需要同时修改 <code>.env.docker</code> 和 <code>docker-compose.yml</code>。</li>
+      </ul>
+    </main>
+  </body>
+</html>
