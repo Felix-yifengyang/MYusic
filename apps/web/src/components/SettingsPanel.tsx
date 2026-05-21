@@ -55,17 +55,20 @@ export function SettingsPanel({
   onLogoutAllDevices
 }: SettingsPanelProps) {
   return (
-    <section className="grid">
-      <section className="block">
-        <h2>路径和工具</h2>
-        {settings ? (
-          <>
+    <section className="settings-page">
+      {settings ? (
+        <>
+          <section className="settings-card wide">
+            <SettingsCardHeader title="音乐服务" description="音乐目录、Navidrome 和音频输出。" />
             <SettingsForm
               settings={settings}
               message={settingsMessage}
               onChange={onSettingsChange}
               onSubmit={onSettingsSubmit}
             />
+          </section>
+          <section className="settings-card">
+            <SettingsCardHeader title="Bilibili Cookie" description="用于访问需要 Cookie 的视频源。" />
             <BilibiliCookieManager
               path={settings.bilibiliCookiesPath}
               status={cookieStatus}
@@ -77,13 +80,14 @@ export function SettingsPanel({
               onSubmit={onCookieSubmit}
               onClear={onCookieClear}
             />
-          </>
-        ) : (
-          <Empty>正在读取设置</Empty>
-        )}
-      </section>
-      <section className="block">
-        <h2>账号和连接</h2>
+          </section>
+        </>
+      ) : (
+        <section className="settings-card"><Empty>正在读取设置</Empty></section>
+      )}
+
+      <section className="settings-card">
+        <SettingsCardHeader title="账号安全" description="修改密码或让所有设备重新登录。" />
         <AccountSecurity
           authStatus={authStatus}
           currentPassword={currentPassword}
@@ -95,10 +99,27 @@ export function SettingsPanel({
           onSubmit={onPasswordSubmit}
           onLogoutAllDevices={onLogoutAllDevices}
         />
+      </section>
+
+      <section className="settings-card">
+        <SettingsCardHeader title="连接地址" description="局域网和移动端访问入口。" />
         {status ? <LanSettings status={status} /> : <Empty>正在读取局域网地址</Empty>}
+      </section>
+
+      <section className="settings-card wide">
+        <SettingsCardHeader title="环境诊断" description="检查下载工具、Cookie 和音乐服务连接。" />
         {diagnostics && <DiagnosticsList diagnostics={diagnostics} />}
       </section>
     </section>
+  );
+}
+
+function SettingsCardHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="settings-card-header">
+      <h2>{title}</h2>
+      <p>{description}</p>
+    </div>
   );
 }
 
@@ -115,53 +136,55 @@ function SettingsForm({
 }) {
   return (
     <form className="settings-form" onSubmit={onSubmit}>
-      <label>
-        <span>音乐目录</span>
-        <input value={settings.musicDir} onChange={(event) => onChange("musicDir", event.target.value)} />
-      </label>
-      <label>
-        <span>Bilibili Cookie</span>
-        <input value={settings.bilibiliCookiesPath} onChange={(event) => onChange("bilibiliCookiesPath", event.target.value)} />
-      </label>
-      <label>
-        <span>yt-dlp</span>
-        <input value={settings.ytdlpPath} onChange={(event) => onChange("ytdlpPath", event.target.value)} />
-      </label>
-      <label>
-        <span>ffmpeg</span>
-        <input value={settings.ffmpegPath} onChange={(event) => onChange("ffmpegPath", event.target.value)} />
-      </label>
-      <label>
-        <span>音频格式</span>
-        <select value={settings.audioFormat} onChange={(event) => onChange("audioFormat", event.target.value)}>
-          <option value="mp3">mp3</option>
-          <option value="m4a">m4a</option>
-          <option value="opus">opus</option>
-          <option value="flac">flac</option>
-          <option value="wav">wav</option>
-        </select>
-      </label>
-      <label>
-        <span>音频质量</span>
-        <input value={settings.audioQuality} onChange={(event) => onChange("audioQuality", event.target.value)} />
-      </label>
-      <label>
-        <span>Navidrome 地址</span>
-        <input value={settings.navidromeBaseUrl} onChange={(event) => onChange("navidromeBaseUrl", event.target.value)} />
-      </label>
-      <label>
-        <span>Navidrome 用户名</span>
-        <input value={settings.navidromeUsername} onChange={(event) => onChange("navidromeUsername", event.target.value)} />
-      </label>
-      <label>
-        <span>Navidrome 密码</span>
-        <input type="password" value={settings.navidromePassword} onChange={(event) => onChange("navidromePassword", event.target.value)} />
-      </label>
-      <label>
-        <span>最多保留任务</span>
-        <input type="number" min="1" max="500" value={settings.maxJobs} onChange={(event) => onChange("maxJobs", Number(event.target.value))} />
-      </label>
-      <button className="button" type="submit">保存设置</button>
+      <div className="settings-field-grid">
+        <label>
+          <span>音乐目录</span>
+          <input value={settings.musicDir} onChange={(event) => onChange("musicDir", event.target.value)} />
+        </label>
+        <label>
+          <span>Navidrome 地址</span>
+          <input value={settings.navidromeBaseUrl} onChange={(event) => onChange("navidromeBaseUrl", event.target.value)} />
+        </label>
+        <label>
+          <span>Navidrome 用户名</span>
+          <input value={settings.navidromeUsername} onChange={(event) => onChange("navidromeUsername", event.target.value)} />
+        </label>
+        <label>
+          <span>Navidrome 密码</span>
+          <input type="password" value={settings.navidromePassword} onChange={(event) => onChange("navidromePassword", event.target.value)} />
+        </label>
+        <label>
+          <span>yt-dlp</span>
+          <input value={settings.ytdlpPath} onChange={(event) => onChange("ytdlpPath", event.target.value)} />
+        </label>
+        <label>
+          <span>ffmpeg</span>
+          <input value={settings.ffmpegPath} onChange={(event) => onChange("ffmpegPath", event.target.value)} />
+        </label>
+        <label>
+          <span>音频格式</span>
+          <select value={settings.audioFormat} onChange={(event) => onChange("audioFormat", event.target.value)}>
+            <option value="mp3">mp3</option>
+            <option value="m4a">m4a</option>
+            <option value="opus">opus</option>
+            <option value="flac">flac</option>
+            <option value="wav">wav</option>
+          </select>
+        </label>
+        <label>
+          <span>音频质量</span>
+          <input value={settings.audioQuality} onChange={(event) => onChange("audioQuality", event.target.value)} />
+        </label>
+        <label>
+          <span>最多保留任务</span>
+          <input type="number" min="1" max="500" value={settings.maxJobs} onChange={(event) => onChange("maxJobs", Number(event.target.value))} />
+        </label>
+        <label>
+          <span>Bilibili Cookie 路径</span>
+          <input value={settings.bilibiliCookiesPath} onChange={(event) => onChange("bilibiliCookiesPath", event.target.value)} />
+        </label>
+      </div>
+      <button className="settings-primary" type="submit">保存设置</button>
       {message && <div className="settings-message">{message}</div>}
     </form>
   );
@@ -242,10 +265,7 @@ function BilibiliCookieManager({
 }) {
   return (
     <form className="cookie-manager" onSubmit={onSubmit}>
-      <div>
-        <h3>Bilibili Cookie</h3>
-        <div className="meta">当前路径：{path || "未配置"}</div>
-      </div>
+      <div className="settings-message">当前路径：{path || "未配置"}</div>
       <div className="facts">
         <Fact label="文件状态" value={formatCookieStatus(status)} />
         <Fact label="更新时间" value={status?.updatedAt ? new Date(status.updatedAt).toLocaleString() : "无"} />

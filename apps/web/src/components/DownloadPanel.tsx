@@ -33,13 +33,19 @@ export function DownloadPanel({
   onOpenIngestions,
   onDismissDuplicate
 }: DownloadPanelProps) {
+  const counts = summarizeJobs(jobs);
+
   return (
-    <section className="block">
-      <div className="section-heading">
-        <h2>下载音频</h2>
-        <button className="button secondary compact" type="button" onClick={onClearJobs}>清空任务</button>
+    <section className="collect-panel">
+      <div className="collect-hero">
+        <div>
+          <span>Collect</span>
+          <h2>把网页音频收进 MYusic</h2>
+          <p>{counts.running ? `${counts.running} 个任务正在处理，完成后会进入音乐库。` : "粘贴一个链接，MYusic 会下载、转码并同步到音乐库。"}</p>
+        </div>
       </div>
-      <form className="download-form" onSubmit={onSubmit}>
+
+      <form className="collect-form" onSubmit={onSubmit}>
         <input
           id="download-url"
           name="url"
@@ -49,8 +55,16 @@ export function DownloadPanel({
           onChange={(event) => onUrlChange(event.target.value)}
           required
         />
-        <button className="button" type="submit" disabled={submitting}>下载</button>
+        <button type="submit" disabled={submitting}>{submitting ? "提交中..." : "开始收集"}</button>
       </form>
+
+      <div className="collect-stats">
+        <SummaryPill label="进行中" value={counts.running} tone={counts.running ? "warn" : "neutral"} />
+        <SummaryPill label="已完成" value={counts.done} tone="ok" />
+        <SummaryPill label="失败" value={counts.failed} tone={counts.failed ? "danger" : "neutral"} />
+        <SummaryPill label="已取消" value={counts.canceled} tone="neutral" />
+      </div>
+
       {error && <p className="error">{error}</p>}
       {duplicateIngestion && (
         <div className="duplicate-notice">
@@ -59,6 +73,15 @@ export function DownloadPanel({
           <button className="button secondary compact" type="button" onClick={onDismissDuplicate}>关闭</button>
         </div>
       )}
+
+      <div className="collect-section-heading">
+        <div>
+          <h3>收集任务</h3>
+          <p>{jobs.length ? `${jobs.length} 条任务记录` : "暂无任务记录"}</p>
+        </div>
+        <button type="button" onClick={onClearJobs} disabled={!jobs.length}>清空任务</button>
+      </div>
+
       <JobList
         jobs={jobs}
         onCancel={onCancelJob}
@@ -67,6 +90,23 @@ export function DownloadPanel({
         onOpenIngestions={onOpenIngestions}
       />
     </section>
+  );
+}
+
+function SummaryPill({
+  label,
+  value,
+  tone
+}: {
+  label: string;
+  value: number;
+  tone: "ok" | "warn" | "danger" | "neutral";
+}) {
+  return (
+    <div className={`summary-pill ${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
@@ -88,14 +128,16 @@ function JobList({
   return (
     <div className="jobs">
       {jobs.map((job) => (
-        <article className="job" key={job.id}>
-          <div className="row">
-            <span className={`status ${job.status}`}>{job.status}</span>
-            <span className="meta">{formatDate(job.createdAt)}</span>
+        <article className={`job collect-job ${job.status}`} key={job.id}>
+          <div className="collect-job-main">
+            <div className="collect-job-status">
+              <span className={`status ${job.status}`}>{statusLabel(job.status)}</span>
+              <span className="meta">{formatDate(job.createdAt)}</span>
+            </div>
+            <div className="url">{job.url}</div>
           </div>
           <SyncStatus job={job} />
           <JobIngestionSummary job={job} onOpenIngestions={onOpenIngestions} />
-          <div className="url">{job.url}</div>
           <div className="job-actions">
             {job.status === "running" && (
               <button className="button secondary compact" type="button" onClick={() => onCancel(job.id)}>取消</button>
@@ -110,6 +152,16 @@ function JobList({
         </article>
       ))}
     </div>
+  );
+}
+
+function summarizeJobs(jobs: DownloadJob[]) {
+  return jobs.reduce(
+    (summary, job) => {
+      summary[job.status] += 1;
+      return summary;
+    },
+    { running: 0, done: 0, failed: 0, canceled: 0 }
   );
 }
 
@@ -178,4 +230,14 @@ function SyncStatus({ job }: { job: DownloadJob }) {
 function formatDate(value?: string) {
   if (!value) return "";
   return new Date(value).toLocaleString();
+}
+
+function statusLabel(status: DownloadJob["status"]) {
+  const labels = {
+    running: "下载中",
+    done: "已完成",
+    failed: "失败",
+    canceled: "已取消"
+  };
+  return labels[status];
 }

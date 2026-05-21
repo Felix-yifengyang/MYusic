@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import type {
   AppSettings,
   AuthStatus,
@@ -36,16 +37,17 @@ import {
 import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
-import { LibraryPanel } from "./components/LibraryPanel";
-import { PlayerBar } from "./components/PlayerBar";
-import type { PlayerTrack } from "./components/PlayerBar";
+import type { PlayerTrack } from "./components/playerTypes";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { StatusPanel } from "./components/StatusPanel";
+import { TurntablePage } from "./components/TurntablePage";
+import type { AppView } from "./components/TurntablePage";
 
-type TabName = "download" | "library" | "ingestions" | "settings";
+type ManagedView = Exclude<AppView, "player">;
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<TabName>("download");
+  const [activeView, setActiveView] = useState<AppView>("player");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
@@ -73,14 +75,13 @@ export function App() {
   const [ingestionMessage, setIngestionMessage] = useState("");
   const [rematchingIngestionId, setRematchingIngestionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const activeTabRef = useRef<TabName>("download");
+  const activeViewRef = useRef<AppView>("player");
   const authStatusRef = useRef<AuthStatus | null>(null);
-  const navidromeUrl = status?.navidromeUrl || "http://127.0.0.1:4533";
   const nowPlaying = queueIndex >= 0 ? queue[queueIndex] : null;
 
   useEffect(() => {
-    activeTabRef.current = activeTab;
-  }, [activeTab]);
+    activeViewRef.current = activeView;
+  }, [activeView]);
 
   useEffect(() => {
     authStatusRef.current = authStatus;
@@ -92,11 +93,11 @@ export function App() {
     const onFocus = () => {
       const auth = authStatusRef.current;
       if (auth?.enabled && !auth.authenticated) return;
-      if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadStatus();
-      if (activeTabRef.current === "settings" || activeTabRef.current === "download") void loadDiagnostics();
-      if (activeTabRef.current === "settings") void loadBilibiliCookieStatus();
-      if (activeTabRef.current === "library") void loadNavidromeSongs();
-      if (activeTabRef.current === "ingestions") void loadIngestions();
+      if (activeViewRef.current === "settings" || activeViewRef.current === "collect") void loadStatus();
+      if (activeViewRef.current === "settings" || activeViewRef.current === "collect") void loadDiagnostics();
+      if (activeViewRef.current === "settings") void loadBilibiliCookieStatus();
+      if (activeViewRef.current === "player") void loadNavidromeSongs();
+      if (activeViewRef.current === "ingestions") void loadIngestions();
     };
 
     window.addEventListener("focus", onFocus);
@@ -105,19 +106,23 @@ export function App() {
 
   useEffect(() => {
     if (!authStatus || (authStatus.enabled && !authStatus.authenticated)) return;
-    if (activeTab === "library") void loadNavidromeSongs();
-    if (activeTab === "settings") {
+    if (activeView === "player") void loadNavidromeSongs();
+    if (activeView === "settings") {
       void loadStatus();
       void loadSettings();
       void loadDiagnostics();
       void loadBilibiliCookieStatus();
     }
-    if (activeTab === "download") void loadJobs();
-    if (activeTab === "ingestions") void loadIngestions();
-  }, [activeTab, authStatus]);
+    if (activeView === "collect") {
+      void loadStatus();
+      void loadJobs();
+      void loadDiagnostics();
+    }
+    if (activeView === "ingestions") void loadIngestions();
+  }, [activeView, authStatus]);
 
   useEffect(() => {
-    if (activeTab !== "download") return;
+    if (activeView !== "collect") return;
     if (!authStatus || (authStatus.enabled && !authStatus.authenticated)) return;
 
     const events = new EventSource("/api/jobs/events");
@@ -129,7 +134,7 @@ export function App() {
     };
 
     return () => events.close();
-  }, [activeTab, authStatus]);
+  }, [activeView, authStatus]);
 
   async function boot() {
     setAuthLoading(true);
@@ -375,15 +380,6 @@ export function App() {
     setQueueIndex((current) => current >= 0 && current < queue.length - 1 ? current + 1 : current);
   }
 
-  function closePlayer() {
-    setQueueIndex(-1);
-  }
-
-  const serviceLabel = useMemo(() => {
-    if (!status) return "启动中";
-    return "服务正常";
-  }, [status]);
-
   if (authLoading || !authStatus) {
     return (
       <main className="auth-page">
@@ -399,33 +395,38 @@ export function App() {
     return <AuthPanel status={authStatus} onSetup={setupAdmin} onLogin={login} />;
   }
 
+  function openManagedView(view: ManagedView) {
+    setDrawerOpen(false);
+    setActiveView(view);
+  }
+
   return (
-    <main className="layout">
-      <header className="header">
-        <div>
-          <h1>MYusic</h1>
-          <div className="subtle">{status?.musicDir || "正在读取音乐库..."}</div>
-        </div>
-        <div className="header-actions">
-          {authStatus.user && <span className="subtle">{authStatus.user.username}</span>}
-          <div className={`status-dot ${status ? "ready" : ""}`}>{serviceLabel}</div>
-          {authStatus.enabled && (
-            <button className="button secondary compact" type="button" onClick={() => void logout()}>
-              退出
-            </button>
-          )}
-        </div>
-      </header>
+    <>
+      {activeView === "player" && (
+        <TurntablePage
+          songs={navidromeSongs}
+          query={navidromeQuery}
+          error={navidromeError}
+          currentTrack={nowPlaying}
+          currentTrackKey={nowPlaying?.key || ""}
+          drawerOpen={drawerOpen}
+          onDrawerOpenChange={setDrawerOpen}
+          onQueryChange={setNavidromeQuery}
+          onSearch={searchNavidrome}
+          onRefresh={() => loadNavidromeSongs()}
+          onPlay={playSong}
+          onNavigate={openManagedView}
+          canPrevious={queueIndex > 0}
+          canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
+          onPrevious={playPrevious}
+          onNext={playNext}
+          onEnded={playNext}
+        />
+      )}
 
-      <nav className="tabs" aria-label="功能">
-        <TabButton active={activeTab === "download"} onClick={() => setActiveTab("download")}>下载</TabButton>
-        <TabButton active={activeTab === "library"} onClick={() => setActiveTab("library")}>音乐列表</TabButton>
-        <TabButton active={activeTab === "ingestions"} onClick={() => setActiveTab("ingestions")}>入库记录</TabButton>
-        <TabButton active={activeTab === "settings"} onClick={() => setActiveTab("settings")}>设置</TabButton>
-      </nav>
-
-      {activeTab === "download" && (
-        <section className="grid">
+      {activeView === "collect" && (
+        <ManagedPage title="收集" subtitle="粘贴链接，加入音乐库" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
+          <section className="managed-grid">
           <DownloadPanel
             jobs={jobs}
             url={url}
@@ -441,7 +442,7 @@ export function App() {
             onOpenIngestions={() => {
               setDuplicateIngestion(null);
               setError("");
-              setActiveTab("ingestions");
+              setActiveView("ingestions");
             }}
             onDismissDuplicate={() => {
               setDuplicateIngestion(null);
@@ -453,29 +454,13 @@ export function App() {
             <h2>当前状态</h2>
             <StatusPanel status={status} diagnostics={diagnostics} compactDiagnostics />
           </aside>
-        </section>
+          </section>
+        </ManagedPage>
       )}
 
-      {activeTab === "library" && (
-        <section className="block">
-          <LibraryPanel
-            songs={navidromeSongs}
-            query={navidromeQuery}
-            error={navidromeError}
-            navidromeUrl={navidromeUrl}
-            currentTrackKey={nowPlaying?.key || ""}
-            queue={queue}
-            queueIndex={queueIndex}
-            onQueryChange={setNavidromeQuery}
-            onSearch={searchNavidrome}
-            onRefresh={() => loadNavidromeSongs()}
-            onPlay={playSong}
-          />
-        </section>
-      )}
-
-      {activeTab === "ingestions" && (
-        <section className="block">
+      {activeView === "ingestions" && (
+        <ManagedPage title="入库" subtitle="同步与匹配记录" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
+          <section className="block">
           <IngestionPanel
             ingestions={ingestions}
             message={ingestionMessage}
@@ -483,10 +468,12 @@ export function App() {
             onRefresh={loadIngestions}
             onRematch={rematchIngestion}
           />
-        </section>
+          </section>
+        </ManagedPage>
       )}
 
-      {activeTab === "settings" && (
+      {activeView === "settings" && (
+        <ManagedPage title="设置" subtitle="路径、账号和连接" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
         <SettingsPanel
           settings={settings}
           status={status}
@@ -512,18 +499,9 @@ export function App() {
           onPasswordSubmit={changePassword}
           onLogoutAllDevices={() => void logoutAllDevices()}
         />
+        </ManagedPage>
       )}
-
-      <PlayerBar
-        track={nowPlaying}
-        canPrevious={queueIndex > 0}
-        canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
-        onPrevious={playPrevious}
-        onNext={playNext}
-        onEnded={playNext}
-        onClose={closePlayer}
-      />
-    </main>
+    </>
   );
 }
 
@@ -531,11 +509,37 @@ function errorMessage(caught: unknown) {
   return caught instanceof Error ? caught.message : "\u64cd\u4f5c\u5931\u8d25";
 }
 
-function TabButton(props: { active: boolean; onClick: () => void; children: string }) {
+function ManagedPage({
+  title,
+  subtitle,
+  authStatus,
+  onBack,
+  onLogout,
+  children
+}: {
+  title: string;
+  subtitle: string;
+  authStatus: AuthStatus;
+  onBack: () => void;
+  onLogout: () => Promise<void>;
+  children: ReactNode;
+}) {
   return (
-    <button className={`tab ${props.active ? "active" : ""}`} type="button" onClick={props.onClick}>
-      {props.children}
-    </button>
+    <main className="managed-page">
+      <header className="managed-topbar">
+        <button className="managed-brand" type="button" onClick={onBack}>MYusic</button>
+        <div className="managed-actions">
+          {authStatus.user && <span>{authStatus.user.username}</span>}
+          <button type="button" onClick={onBack}>播放</button>
+          {authStatus.enabled && <button type="button" onClick={() => void onLogout()}>退出</button>}
+        </div>
+      </header>
+      <section className="managed-head">
+        <p>{subtitle}</p>
+        <h1>{title}</h1>
+      </section>
+      {children}
+    </main>
   );
 }
 
