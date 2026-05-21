@@ -22,7 +22,4 @@ async function main() {
   console.log("Open the web console in your browser. Press Ctrl+C here to stop local services.");
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+void main();

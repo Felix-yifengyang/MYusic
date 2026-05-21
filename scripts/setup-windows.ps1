@@ -92,12 +92,7 @@ if (-not (Test-Path $NavidromeTarget)) {
 
 if (-not $SkipPnpmInstall) {
   Write-Step "Installing npm dependencies"
-  Push-Location $Root
-  try {
-    pnpm install
-  } finally {
-    Pop-Location
-  }
+  pnpm --dir $Root install
 } else {
   Write-Host "Skipping pnpm install"
 }

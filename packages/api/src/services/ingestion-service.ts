@@ -22,46 +22,36 @@ export async function syncDownloadedJobToNavidrome(
   job.updatedAt = requestedAt;
   onChange();
 
-  try {
-    const startStatus = await startNavidromeScan(config);
-    job.librarySync = {
-      status: startStatus.scanning ? "scanning" : "synced",
-      message: startStatus.scanning ? "Navidrome 正在扫描音乐库。" : "Navidrome 已接收音乐库扫描。",
-      requestedAt,
-      finishedAt: startStatus.scanning ? undefined : new Date().toISOString()
-    };
-    job.updatedAt = new Date().toISOString();
-    onChange();
+  const startStatus = await startNavidromeScan(config);
+  job.librarySync = {
+    status: startStatus.scanning ? "scanning" : "synced",
+    message: startStatus.scanning ? "Navidrome 正在扫描音乐库。" : "Navidrome 已接收音乐库扫描。",
+    requestedAt,
+    finishedAt: startStatus.scanning ? undefined : new Date().toISOString()
+  };
+  job.updatedAt = new Date().toISOString();
+  onChange();
 
-    if (!startStatus.scanning) {
-      await linkIngestionToNavidrome(job, config, ingestions, requestedAt, "Navidrome 已完成扫描");
-      job.updatedAt = new Date().toISOString();
-      onChange();
-      return;
-    }
-
-    const finalStatus = await waitForNavidromeScan(config);
-    if (finalStatus.scanning) {
-      job.librarySync = {
-        status: "scanning",
-        message: "Navidrome 仍在扫描，稍后刷新音乐列表。",
-        requestedAt
-      };
-    } else {
-      await linkIngestionToNavidrome(job, config, ingestions, requestedAt, "已同步到 Navidrome 音乐库");
-    }
+  if (!startStatus.scanning) {
+    await linkIngestionToNavidrome(job, config, ingestions, requestedAt, "Navidrome 已完成扫描");
     job.updatedAt = new Date().toISOString();
     onChange();
-  } catch (error) {
-    job.librarySync = {
-      status: "failed",
-      message: error instanceof Error ? error.message : "Navidrome 扫描触发失败。",
-      requestedAt,
-      finishedAt: new Date().toISOString()
-    };
-    job.updatedAt = new Date().toISOString();
-    onChange();
+    return;
   }
+
+  const finalStatus = await waitForNavidromeScan(config);
+  if (finalStatus.scanning) {
+    job.librarySync = {
+      status: "scanning",
+      message: "Navidrome 仍在扫描，稍后刷新音乐列表。",
+      requestedAt
+    };
+  } else {
+    await linkIngestionToNavidrome(job, config, ingestions, requestedAt, "已同步到 Navidrome 音乐库");
+  }
+  job.updatedAt = new Date().toISOString();
+  onChange();
+
 }
 
 export async function rematchIngestion(

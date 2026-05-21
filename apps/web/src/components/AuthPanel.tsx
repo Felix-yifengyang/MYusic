@@ -18,17 +18,9 @@ export function AuthPanel(props: AuthPanelProps) {
     event.preventDefault();
     setError("");
     setSubmitting(true);
-    try {
-      if (mode === "setup") {
-        await props.onSetup(username, password);
-      } else {
-        await props.onLogin(username, password);
-      }
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "认证失败");
-    } finally {
-      setSubmitting(false);
-    }
+    await (mode === "setup" ? props.onSetup(username, password) : props.onLogin(username, password))
+      .catch((caught) => setError(caught instanceof Error ? caught.message : "\u8ba4\u8bc1\u5931\u8d25"))
+      .finally(() => setSubmitting(false));
   }
 
   return (

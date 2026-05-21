@@ -215,16 +215,14 @@ class PostgresRepository implements AppStateRepository {
 
   private async withTransaction(callback: (client: PoolClient) => Promise<void>) {
     const client = await this.pool.connect();
-    try {
-      await client.query("begin");
-      await callback(client);
-      await client.query("commit");
-    } catch (error) {
-      await client.query("rollback");
-      throw error;
-    } finally {
-      client.release();
-    }
+    await client.query("begin");
+    await callback(client)
+      .then(() => client.query("commit"))
+      .catch(async (error) => {
+        await client.query("rollback");
+        throw error;
+      })
+      .finally(() => client.release());
   }
 }
 
@@ -282,14 +280,7 @@ function rowToIngestion(row: QueryResultRow): IngestionRecord {
 
 function objectValue<T>(value: unknown): T | undefined {
   if (!value) return undefined;
-  if (typeof value === "string") {
-    try {
-      return JSON.parse(value) as T;
-    } catch {
-      return undefined;
-    }
-  }
-  return value as T;
+  return typeof value === "string" ? JSON.parse(value) as T : value as T;
 }
 
 function stringValue(value: unknown) {

@@ -30,13 +30,8 @@ export function registerIngestionRoutes(app: FastifyInstance, options: RegisterI
       return { error: "Ingestion record not found." };
     }
 
-    try {
-      const result = await options.rematchIngestion(config, jobs, ingestions, ingestion);
-      await options.persist();
-      return result;
-    } catch (error) {
-      reply.code(409);
-      return { error: error instanceof Error ? error.message : "Failed to rematch ingestion record." };
-    }
+    const result = await options.rematchIngestion(config, jobs, ingestions, ingestion);
+    await options.persist();
+    return result;
   });
 }

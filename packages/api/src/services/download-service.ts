@@ -199,11 +199,7 @@ async function fetchSourceMetadata(config: ApiConfig, url: string): Promise<Reco
         return;
       }
 
-      try {
-        resolve(JSON.parse(output) as Record<string, unknown>);
-      } catch {
-        reject(new Error("yt-dlp metadata returned invalid JSON."));
-      }
+      resolve(Promise.resolve().then(() => JSON.parse(output) as Record<string, unknown>));
     });
   });
 }
@@ -228,12 +224,8 @@ function readMarker(output: string, marker: string) {
   if (!match) return "";
 
   const raw = match[1].trim();
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return typeof parsed === "string" ? parsed : "";
-  } catch {
-    return raw;
-  }
+  const parsed = JSON.parse(raw) as unknown;
+  return typeof parsed === "string" ? parsed : "";
 }
 
 function normalizeMarkerPath(value: string) {
@@ -244,12 +236,7 @@ function normalizeMarkerPath(value: string) {
 
 function readInfoJson(infoJsonPath: string): Record<string, unknown> {
   if (!infoJsonPath || !fs.existsSync(infoJsonPath)) return {};
-
-  try {
-    return JSON.parse(fs.readFileSync(infoJsonPath, "utf8")) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
+  return JSON.parse(fs.readFileSync(infoJsonPath, "utf8")) as Record<string, unknown>;
 }
 
 function stringField(value: unknown) {

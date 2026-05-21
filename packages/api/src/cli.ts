@@ -21,7 +21,4 @@ async function main() {
   console.log(`Music directory: ${config.musicDir}`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+void main();

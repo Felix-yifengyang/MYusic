@@ -73,16 +73,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
     }
 
     if (!force) {
-      let duplicate: IngestionRecord | undefined;
-      try {
-        duplicate = await options.findDuplicateIngestion(config, ingestions, mediaUrl);
-      } catch (error) {
-        reply.code(409);
-        return {
-          error: error instanceof Error ? `下载预检查失败：${error.message}` : "下载预检查失败。"
-        };
-      }
-
+      const duplicate = await options.findDuplicateIngestion(config, ingestions, mediaUrl);
       if (duplicate) {
         reply.code(409);
         return {

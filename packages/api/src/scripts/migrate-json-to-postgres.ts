@@ -28,13 +28,13 @@ async function main() {
   const ingestions = readJsonArray<IngestionRecord>(ingestionsPath);
   const pool = new Pool({ connectionString: databaseUrl });
 
-  try {
-    await ensureSchema(pool);
-    const result = await migrateState(pool, jobs, ingestions, jobsPath, ingestionsPath);
-    console.log(JSON.stringify(result, null, 2));
-  } finally {
-    await pool.end();
-  }
+  await Promise.resolve()
+    .then(async () => {
+      await ensureSchema(pool);
+      const result = await migrateState(pool, jobs, ingestions, jobsPath, ingestionsPath);
+      console.log(JSON.stringify(result, null, 2));
+    })
+    .finally(() => pool.end());
 }
 
 async function migrateState(
@@ -48,28 +48,27 @@ async function migrateState(
   let jobsWritten = 0;
   let ingestionsWritten = 0;
 
-  try {
-    await client.query("begin");
+  await client.query("begin");
+  await Promise.resolve()
+    .then(async () => {
+      for (const job of jobs) {
+        if (!isValidJob(job)) continue;
+        await upsertJob(client, job);
+        jobsWritten += 1;
+      }
 
-    for (const job of jobs) {
-      if (!isValidJob(job)) continue;
-      await upsertJob(client, job);
-      jobsWritten += 1;
-    }
-
-    for (const ingestion of ingestions) {
-      if (!isValidIngestion(ingestion)) continue;
-      await upsertIngestion(client, ingestion);
-      ingestionsWritten += 1;
-    }
-
-    await client.query("commit");
-  } catch (error) {
-    await client.query("rollback");
-    throw error;
-  } finally {
-    client.release();
-  }
+      for (const ingestion of ingestions) {
+        if (!isValidIngestion(ingestion)) continue;
+        await upsertIngestion(client, ingestion);
+        ingestionsWritten += 1;
+      }
+    })
+    .then(() => client.query("commit"))
+    .catch(async (error) => {
+      await client.query("rollback");
+      throw error;
+    })
+    .finally(() => client.release());
 
   return {
     jobsRead: jobs.length,
@@ -267,7 +266,4 @@ function loadDotEnv(rootDir: string) {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+void main();

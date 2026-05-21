@@ -100,13 +100,6 @@ function readBooleanEnv(name: string, fallback: boolean) {
 }
 
 function readExistingConfig(configPath: string): Partial<ApiRuntimeConfig> {
-  if (!fs.existsSync(configPath)) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(fs.readFileSync(configPath, "utf8").replace(/^\uFEFF/, "")) as Partial<ApiRuntimeConfig>;
-  } catch {
-    return {};
-  }
+  if (!fs.existsSync(configPath)) return {};
+  return JSON.parse(fs.readFileSync(configPath, "utf8").replace(/^\uFEFF/, "")) as Partial<ApiRuntimeConfig>;
 }

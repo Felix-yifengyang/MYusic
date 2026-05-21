@@ -133,15 +133,14 @@ export function App() {
 
   async function boot() {
     setAuthLoading(true);
-    try {
-      const auth = await getAuthStatus();
-      setAuthStatus(auth);
-      if (!auth.enabled || auth.authenticated) {
-        await loadInitialData();
-      }
-    } finally {
-      setAuthLoading(false);
-    }
+    await getAuthStatus()
+      .then(async (auth) => {
+        setAuthStatus(auth);
+        if (!auth.enabled || auth.authenticated) {
+          await loadInitialData();
+        }
+      })
+      .finally(() => setAuthLoading(false));
   }
 
   async function loadInitialData() {
@@ -216,13 +215,12 @@ export function App() {
 
   async function loadNavidromeSongs(query = navidromeQuery) {
     setNavidromeError("");
-    try {
-      const body = await getNavidromeSongs(query);
-      setNavidromeSongs(body.songs);
-    } catch (caught) {
-      setNavidromeSongs([]);
-      setNavidromeError(caught instanceof Error ? caught.message : "Navidrome 音乐库读取失败");
-    }
+    await getNavidromeSongs(query)
+      .then((body) => setNavidromeSongs(body.songs))
+      .catch((caught) => {
+        setNavidromeSongs([]);
+        setNavidromeError(errorMessage(caught));
+      });
   }
 
   async function submitDownload(event: FormEvent) {
@@ -234,23 +232,21 @@ export function App() {
     setError("");
     setDuplicateIngestion(null);
 
-    try {
-      const result = await createDownload(mediaUrl);
-      if (!result.ok) {
-        await loadDiagnostics();
-        if (result.body.code === "DUPLICATE_INGESTION" && result.body.ingestion) {
-          setDuplicateIngestion(result.body.ingestion);
+    await createDownload(mediaUrl)
+      .then(async (result) => {
+        if (!result.ok) {
+          await loadDiagnostics();
+          if (result.body.code === "DUPLICATE_INGESTION" && result.body.ingestion) {
+            setDuplicateIngestion(result.body.ingestion);
+          }
+          throw new Error(result.body.error || "Download failed.");
         }
-        throw new Error(result.body.error || "下载失败");
-      }
-      setUrl("");
-      await loadJobs();
-      await loadNavidromeSongs();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "下载失败");
-    } finally {
-      setSubmitting(false);
-    }
+        setUrl("");
+        await loadJobs();
+        await loadNavidromeSongs();
+      })
+      .catch((caught) => setError(errorMessage(caught)))
+      .finally(() => setSubmitting(false));
   }
 
   async function cancelJob(id: string) {
@@ -274,16 +270,14 @@ export function App() {
   async function rematchIngestion(id: string) {
     setIngestionMessage("");
     setRematchingIngestionId(id);
-    try {
-      const body = await rematchIngestionApi(id);
-      await loadIngestions();
-      await loadJobs();
-      setIngestionMessage(body.matched ? "已重新匹配 Navidrome ID。" : "未找到匹配的 Navidrome 歌曲。");
-    } catch (caught) {
-      setIngestionMessage(caught instanceof Error ? caught.message : "重新匹配失败");
-    } finally {
-      setRematchingIngestionId("");
-    }
+    await rematchIngestionApi(id)
+      .then(async (body) => {
+        await loadIngestions();
+        await loadJobs();
+        setIngestionMessage(body.matched ? "\u5df2\u91cd\u65b0\u5339\u914d Navidrome ID\u3002" : "\u672a\u627e\u5230\u5339\u914d\u7684 Navidrome \u6b4c\u66f2\u3002");
+      })
+      .catch((caught) => setIngestionMessage(errorMessage(caught)))
+      .finally(() => setRematchingIngestionId(""));
   }
 
   async function saveSettings(event: FormEvent) {
@@ -309,58 +303,52 @@ export function App() {
     event.preventDefault();
     const content = bilibiliCookieText.trim();
     if (!content) {
-      setBilibiliCookieMessage("请先上传或粘贴 cookies.txt 内容。");
+      setBilibiliCookieMessage("\u8bf7\u5148\u4e0a\u4f20\u6216\u7c98\u8d34 cookies.txt \u5185\u5bb9\u3002");
       return;
     }
 
     setBilibiliCookieSaving(true);
     setBilibiliCookieMessage("");
-    try {
-      const body = await saveBilibiliCookieApi(content);
-      setSettings(body.settings);
-      setBilibiliCookieText("");
-      setBilibiliCookieMessage(`已保存到：${body.path}`);
-      await loadStatus();
-      await loadDiagnostics();
-      await loadBilibiliCookieStatus();
-    } catch (caught) {
-      setBilibiliCookieMessage(caught instanceof Error ? caught.message : "保存 Bilibili Cookie 失败");
-    } finally {
-      setBilibiliCookieSaving(false);
-    }
+    await saveBilibiliCookieApi(content)
+      .then(async (body) => {
+        setSettings(body.settings);
+        setBilibiliCookieText("");
+        setBilibiliCookieMessage(`\u5df2\u4fdd\u5b58\u5230\uff1a${body.path}`);
+        await loadStatus();
+        await loadDiagnostics();
+        await loadBilibiliCookieStatus();
+      })
+      .catch((caught) => setBilibiliCookieMessage(errorMessage(caught)))
+      .finally(() => setBilibiliCookieSaving(false));
   }
 
   async function clearBilibiliCookie() {
     setBilibiliCookieSaving(true);
     setBilibiliCookieMessage("");
-    try {
-      const nextStatus = await clearBilibiliCookieApi();
-      setCookieStatus(nextStatus);
-      setBilibiliCookieText("");
-      setBilibiliCookieMessage("Cookie 已清空。");
-      await loadStatus();
-      await loadDiagnostics();
-    } catch (caught) {
-      setBilibiliCookieMessage(caught instanceof Error ? caught.message : "清空 Bilibili Cookie 失败");
-    } finally {
-      setBilibiliCookieSaving(false);
-    }
+    await clearBilibiliCookieApi()
+      .then(async (nextStatus) => {
+        setCookieStatus(nextStatus);
+        setBilibiliCookieText("");
+        setBilibiliCookieMessage("Cookie \u5df2\u6e05\u7a7a\u3002");
+        await loadStatus();
+        await loadDiagnostics();
+      })
+      .catch((caught) => setBilibiliCookieMessage(errorMessage(caught)))
+      .finally(() => setBilibiliCookieSaving(false));
   }
 
   async function changePassword(event: FormEvent) {
     event.preventDefault();
     setPasswordMessage("");
     setPasswordSaving(true);
-    try {
-      await changePasswordApi(currentPassword, newPassword);
-      setCurrentPassword("");
-      setNewPassword("");
-      setPasswordMessage("密码已更新。");
-    } catch (caught) {
-      setPasswordMessage(caught instanceof Error ? caught.message : "修改密码失败");
-    } finally {
-      setPasswordSaving(false);
-    }
+    await changePasswordApi(currentPassword, newPassword)
+      .then(() => {
+        setCurrentPassword("");
+        setNewPassword("");
+        setPasswordMessage("\u5bc6\u7801\u5df2\u66f4\u65b0\u3002");
+      })
+      .catch((caught) => setPasswordMessage(errorMessage(caught)))
+      .finally(() => setPasswordSaving(false));
   }
 
   function updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
@@ -537,6 +525,10 @@ export function App() {
       />
     </main>
   );
+}
+
+function errorMessage(caught: unknown) {
+  return caught instanceof Error ? caught.message : "\u64cd\u4f5c\u5931\u8d25";
 }
 
 function TabButton(props: { active: boolean; onClick: () => void; children: string }) {
