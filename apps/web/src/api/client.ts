@@ -34,6 +34,12 @@ export class ApiError extends Error {
   }
 }
 
+export class ApiConnectionError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export async function getAuthStatus() {
   return getJson<AuthStatus>("/api/auth/status");
 }
@@ -143,11 +149,29 @@ async function postJson<T>(url: string, body?: unknown) {
 }
 
 async function requestJson<T>(url: string, options: { method?: string; body?: unknown } = {}) {
-  const response = await fetch(url, {
-    method: options.method || "GET",
-    headers: options.body === undefined ? undefined : { "content-type": "application/json" },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body)
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: options.method || "GET",
+      headers: options.body === undefined ? undefined : { "content-type": "application/json" },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body)
+    });
+  } catch {
+    throw new ApiConnectionError("无法连接 MYusic API。请先启动完整服务，或确认 dev:web 已代理到 http://127.0.0.1:8787。");
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await response.text();
+    const isFrontendFallback = text.trimStart().startsWith("<!doctype html") || text.trimStart().startsWith("<html");
+    throw new ApiError(
+      isFrontendFallback
+        ? "当前页面没有连到 MYusic API。开发模式请同时启动后端，正式使用请打开 http://127.0.0.1:8787。"
+        : `MYusic API 返回了非 JSON 响应：${response.status}`,
+      response.status
+    );
+  }
+
   const body = await response.json() as T & { error?: string };
   if (!response.ok) throw new ApiError(body.error || `Request failed: ${response.status}`, response.status);
   return body;

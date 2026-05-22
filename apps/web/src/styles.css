@@ -294,7 +294,12 @@ textarea:focus {
 
 .error {
   margin: 0 0 14px;
+  border: 1px solid rgba(223, 117, 111, .42);
+  border-radius: 8px;
+  background: var(--danger-soft);
   color: var(--danger);
+  padding: 10px 12px;
+  line-height: 1.45;
 }
 
 .duplicate-notice {

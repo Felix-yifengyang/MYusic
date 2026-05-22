@@ -56,6 +56,23 @@ pnpm start
 http://127.0.0.1:8787
 ```
 
+开发前端时可以单独运行：
+```powershell
+pnpm dev:web
+```
+
+`dev:web` 只启动前端页面，登录、下载、设置等功能仍然需要后端 API。先在另一个终端运行完整服务，再打开前端开发地址：
+```powershell
+pnpm start
+pnpm dev:web
+```
+
+前端开发服务器会把 `/api` 转发到 `http://127.0.0.1:8787`。如果后端端口不同，设置：
+```powershell
+$env:MYUSIC_API_PROXY_TARGET="http://127.0.0.1:你的端口"
+pnpm dev:web
+```
+
 ## 生产启动
 
 ```powershell

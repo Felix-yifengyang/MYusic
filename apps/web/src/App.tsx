@@ -11,6 +11,7 @@ import type {
   RuntimeStatus
 } from "@myusic/shared";
 import {
+  ApiConnectionError,
   cancelDownloadJob,
   changePassword as changePasswordApi,
   clearBilibiliCookie as clearBilibiliCookieApi,
@@ -138,12 +139,16 @@ export function App() {
 
   async function boot() {
     setAuthLoading(true);
+    setError("");
     await getAuthStatus()
       .then(async (auth) => {
         setAuthStatus(auth);
         if (!auth.enabled || auth.authenticated) {
           await loadInitialData();
         }
+      })
+      .catch((caught) => {
+        setError(errorMessage(caught));
       })
       .finally(() => setAuthLoading(false));
   }
@@ -160,11 +165,13 @@ export function App() {
 
   async function setupAdmin(username: string, password: string) {
     await setupAdminApi(username, password);
+    await verifySession();
     await boot();
   }
 
   async function login(username: string, password: string) {
     await loginApi(username, password);
+    await verifySession();
     await boot();
   }
 
@@ -192,6 +199,13 @@ export function App() {
     setNewPassword("");
     setPasswordMessage("");
     setAuthStatus(await getAuthStatus());
+  }
+
+  async function verifySession() {
+    const auth = await getAuthStatus();
+    if (!auth.authenticated) {
+      throw new ApiConnectionError("登录请求已返回，但浏览器没有保存会话 Cookie。请确认当前页面和 API 同源，并检查 MYUSIC_AUTH_SECURE_COOKIE。");
+    }
   }
 
   async function loadStatus() {
@@ -385,7 +399,8 @@ export function App() {
       <main className="auth-page">
         <div className="auth-card">
           <h1>MYusic</h1>
-          <p>正在检查登录状态...</p>
+          {error && <div className="error">{error}</div>}
+          <p>{error ? "无法连接登录服务" : "正在检查登录状态..."}</p>
         </div>
       </main>
     );

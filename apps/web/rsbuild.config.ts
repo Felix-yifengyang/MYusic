@@ -1,6 +1,8 @@
 import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 
+const apiTarget = process.env.MYUSIC_API_PROXY_TARGET || "http://127.0.0.1:8787";
+
 export default defineConfig({
   plugins: [pluginReact()],
   source: {
@@ -14,6 +16,14 @@ export default defineConfig({
   output: {
     distPath: {
       root: "dist"
+    }
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: apiTarget,
+        changeOrigin: true
+      }
     }
   }
 });
