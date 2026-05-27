@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, PointerEvent } from "react";
+import type { CSSProperties, FormEvent, PointerEvent } from "react";
 import type { NavidromeSong } from "@myusic/shared";
 import type { PlayerTrack } from "./playerTypes";
 import { Empty } from "./common";
@@ -12,6 +12,8 @@ export interface TurntablePageProps {
   error: string;
   currentTrack: PlayerTrack | null;
   currentTrackKey: string;
+  previousTrack: PlayerTrack | null;
+  nextTrack: PlayerTrack | null;
   drawerOpen: boolean;
   onDrawerOpenChange: (open: boolean) => void;
   onQueryChange: (value: string) => void;
@@ -32,6 +34,8 @@ export function TurntablePage({
   error,
   currentTrack,
   currentTrackKey,
+  previousTrack,
+  nextTrack,
   drawerOpen,
   onDrawerOpenChange,
   onQueryChange,
@@ -49,7 +53,11 @@ export function TurntablePage({
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [drawerDragProgress, setDrawerDragProgress] = useState<number | null>(null);
+  const drawerGestureRef = useRef({ active: false, startY: 0, startProgress: 0, moved: false, progress: 0 });
   const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  const drawerProgress = drawerDragProgress ?? (drawerOpen ? 1 : 0);
+  const pageStyle = { "--drawer-progress": drawerProgress } as CSSProperties;
 
   useEffect(() => {
     setCurrentTime(0);
@@ -87,78 +95,46 @@ export function TurntablePage({
     setCurrentTime(nextTime);
   }
 
+  function drawerPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    drawerGestureRef.current = {
+      active: true,
+      startY: event.clientY,
+      startProgress: drawerProgress,
+      moved: false,
+      progress: drawerProgress
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function drawerPointerMove(event: PointerEvent<HTMLButtonElement>) {
+    const gesture = drawerGestureRef.current;
+    if (!gesture.active) return;
+    const delta = gesture.startY - event.clientY;
+    const nextProgress = clamp(gesture.startProgress + delta / 260, 0, 1);
+    gesture.progress = nextProgress;
+    if (Math.abs(delta) > 8) gesture.moved = true;
+    setDrawerDragProgress(nextProgress);
+  }
+
+  function drawerPointerUp() {
+    const gesture = drawerGestureRef.current;
+    if (!gesture.active) return;
+    if (gesture.moved) {
+      onDrawerOpenChange(gesture.progress > 0.45);
+    } else {
+      onDrawerOpenChange(!drawerOpen);
+    }
+    gesture.active = false;
+    setDrawerDragProgress(null);
+  }
+
   return (
-    <main className={`turntable-page ${drawerOpen ? "drawer-open" : ""}`}>
+    <main className={`turntable-page ${drawerOpen ? "drawer-open" : ""}`} style={pageStyle}>
       <header className="turntable-topbar">
         <strong>MYusic</strong>
       </header>
 
       <section className="turntable-stage">
-        <section className="machine" aria-label="播放页">
-          <div className="plinth">
-            <div className={`record ${playing ? "spinning" : ""}`}>
-              {currentTrack?.coverUrl ? <img alt="" src={currentTrack.coverUrl} /> : <div className="record-label" />}
-            </div>
-            <div className="tonearm"><span /></div>
-            <div className="machine-meta">
-              {currentTrack ? (
-                <>
-                  <p>正在播放</p>
-                  <h1>{currentTrack.title}</h1>
-                  <span>{[currentTrack.artist, currentTrack.album].filter(Boolean).join(" · ")}</span>
-                </>
-              ) : null}
-            </div>
-            <div className="machine-controls">
-              <button className="deck-button deck-button-side" type="button" aria-label="上一首" disabled={!canPrevious} onClick={onPrevious}>
-                <span className="deck-button-icon deck-button-icon-prev" aria-hidden="true" />
-              </button>
-              <button
-                className={`deck-button deck-button-main ${playing ? "is-active" : ""}`}
-                type="button"
-                aria-label={playing ? "暂停" : "播放"}
-                disabled={!currentTrack}
-                onClick={() => void togglePlayback()}
-              >
-                <span className={`deck-button-icon ${playing ? "deck-button-icon-pause" : "deck-button-icon-play"}`} aria-hidden="true" />
-              </button>
-              <button className="deck-button deck-button-side" type="button" aria-label="下一首" disabled={!canNext} onClick={onNext}>
-                <span className="deck-button-icon deck-button-icon-next" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="machine-progress-row">
-              <time>{formatTime(currentTime)}</time>
-              <input
-                aria-label="播放进度"
-                className="machine-progress"
-                disabled={!currentTrack || !duration}
-                max="100"
-                min="0"
-                onChange={(event) => seek(event.target.value)}
-                type="range"
-                value={progress}
-              />
-              <time>{formatTime(duration)}</time>
-            </div>
-            {currentTrack && (
-              <audio
-                ref={audioRef}
-                autoPlay
-                src={currentTrack.streamUrl}
-                onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
-                onEnded={() => {
-                  setPlaying(false);
-                  onEnded();
-                }}
-                onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
-                onPause={() => setPlaying(false)}
-                onPlay={() => setPlaying(true)}
-                onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-              />
-            )}
-          </div>
-        </section>
-
         <RecordDrawer
           open={drawerOpen}
           songs={songs}
@@ -166,16 +142,119 @@ export function TurntablePage({
           error={error}
           currentTrack={currentTrack}
           currentTrackKey={currentTrackKey}
-          onOpenChange={onDrawerOpenChange}
           onQueryChange={onQueryChange}
           onSearch={onSearch}
           onRefresh={onRefresh}
           onPlay={onPlay}
           onNavigate={onNavigate}
         />
+
+        <section className="desktop-layer" aria-label="播放页">
+          <div className="desktop-surface">
+            <SideRecord
+              side="previous"
+              track={previousTrack}
+              disabled={!canPrevious}
+              onClick={onPrevious}
+            />
+
+            <section className="machine" aria-label="唱片机">
+              <div className="plinth">
+                <div className={`record ${playing ? "spinning" : ""}`}>
+                  {currentTrack?.coverUrl ? <img alt="" src={currentTrack.coverUrl} /> : <div className="record-label" />}
+                </div>
+                <div className={`tonearm ${playing ? "is-playing" : ""}`}><span /></div>
+                <div className="machine-meta">
+                  {currentTrack ? (
+                    <>
+                      <p>{playing ? "唱针已落下" : "唱针待命"}</p>
+                      <h1>{currentTrack.title}</h1>
+                      <span>{[currentTrack.artist, currentTrack.album].filter(Boolean).join(" · ")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <p>等待选片</p>
+                      <h1>拉开抽屉，选择一张唱片</h1>
+                      <span>MYusic</span>
+                    </>
+                  )}
+                </div>
+                <div className="machine-controls">
+                  <button
+                    className={`deck-button deck-button-main ${playing ? "is-active" : ""}`}
+                    type="button"
+                    aria-label={playing ? "暂停" : "播放"}
+                    disabled={!currentTrack}
+                    onClick={() => void togglePlayback()}
+                  >
+                    <span className={`deck-button-icon ${playing ? "deck-button-icon-pause" : "deck-button-icon-play"}`} aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="machine-progress-row">
+                  <time>{formatTime(currentTime)}</time>
+                  <input
+                    aria-label="播放进度"
+                    className="machine-progress"
+                    disabled={!currentTrack || !duration}
+                    max="100"
+                    min="0"
+                    onChange={(event) => seek(event.target.value)}
+                    type="range"
+                    value={progress}
+                  />
+                  <time>{formatTime(duration)}</time>
+                </div>
+                {currentTrack && (
+                  <audio
+                    ref={audioRef}
+                    autoPlay
+                    src={currentTrack.streamUrl}
+                    onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
+                    onEnded={() => {
+                      setPlaying(false);
+                      onEnded();
+                    }}
+                    onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
+                    onPause={() => setPlaying(false)}
+                    onPlay={() => setPlaying(true)}
+                    onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+                  />
+                )}
+              </div>
+            </section>
+
+            <SideRecord
+              side="next"
+              track={nextTrack}
+              disabled={!canNext}
+              onClick={onNext}
+            />
+          </div>
+
+          <button
+            className="drawer-pull"
+            type="button"
+            aria-label={drawerOpen ? "收起音乐抽屉" : "拉开音乐抽屉"}
+            aria-expanded={drawerOpen}
+            onPointerDown={drawerPointerDown}
+            onPointerMove={drawerPointerMove}
+            onPointerUp={drawerPointerUp}
+            onPointerCancel={() => {
+              drawerGestureRef.current.active = false;
+              setDrawerDragProgress(null);
+            }}
+          >
+            <span />
+            <strong>{drawerOpen ? "收起音乐抽屉" : "拉开音乐抽屉"}</strong>
+          </button>
+        </section>
       </section>
     </main>
   );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function formatTime(value: number) {
@@ -185,6 +264,38 @@ function formatTime(value: number) {
   return `${minutes}:${seconds}`;
 }
 
+function SideRecord({
+  side,
+  track,
+  disabled,
+  onClick
+}: {
+  side: "previous" | "next";
+  track: PlayerTrack | null;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const label = side === "previous" ? "上一首" : "下一首";
+
+  return (
+    <button
+      className={`side-record side-record-${side}`}
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <span className="side-record-disc">
+        {track?.coverUrl ? <img alt="" src={track.coverUrl} /> : <i />}
+      </span>
+      <span className="side-record-meta">
+        <small>{label}</small>
+        <strong>{track?.title || "暂无唱片"}</strong>
+      </span>
+    </button>
+  );
+}
+
 function RecordDrawer({
   open,
   songs,
@@ -192,7 +303,6 @@ function RecordDrawer({
   error,
   currentTrack,
   currentTrackKey,
-  onOpenChange,
   onQueryChange,
   onSearch,
   onRefresh,
@@ -205,49 +315,16 @@ function RecordDrawer({
   error: string;
   currentTrack: PlayerTrack | null;
   currentTrackKey: string;
-  onOpenChange: (open: boolean) => void;
   onQueryChange: (value: string) => void;
   onSearch: (event: FormEvent) => void;
   onRefresh: () => void;
   onPlay: (song: NavidromeSong) => void;
   onNavigate: (view: Exclude<AppView, "player">) => void;
 }) {
-  const dragStartXRef = useRef(0);
-  const dragMovedRef = useRef(false);
   const currentSong = songs.find((song) => currentTrackKey === `navidrome:${song.id}`);
-
-  function pointerDown(event: PointerEvent<HTMLButtonElement>) {
-    dragStartXRef.current = event.clientX;
-    dragMovedRef.current = false;
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function pointerMove(event: PointerEvent<HTMLButtonElement>) {
-    if (Math.abs(event.clientX - dragStartXRef.current) > 24) dragMovedRef.current = true;
-  }
-
-  function pointerUp(event: PointerEvent<HTMLButtonElement>) {
-    const delta = event.clientX - dragStartXRef.current;
-    if (delta < -28) onOpenChange(true);
-    if (delta > 28) onOpenChange(false);
-    if (!dragMovedRef.current) onOpenChange(!open);
-  }
 
   return (
     <aside className="record-drawer" aria-label="音乐库抽屉" aria-expanded={open}>
-      <button
-        className="drawer-grip"
-        type="button"
-        aria-label={open ? "收起唱片抽屉" : "拉出唱片抽屉"}
-        onPointerDown={pointerDown}
-        onPointerMove={pointerMove}
-        onPointerUp={pointerUp}
-      >
-        <span />
-        <span />
-        <span />
-      </button>
-
       <div className="drawer-head">
         <div>
           <p>音乐库</p>

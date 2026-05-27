@@ -1664,3 +1664,416 @@ pre {
     font-size: 24px;
   }
 }
+
+/* Immersive turntable desk prototype */
+.turntable-page {
+  --drawer-progress: 0;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(227, 177, 94, .16), transparent 42%),
+    linear-gradient(180deg, #12100e 0%, #08090b 100%);
+}
+
+.turntable-topbar {
+  position: fixed;
+  top: 18px;
+  left: 28px;
+  right: 28px;
+  z-index: 10;
+  min-height: 40px;
+  pointer-events: none;
+}
+
+.turntable-stage {
+  position: relative;
+  display: block;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.desktop-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  pointer-events: none;
+  transform: translateY(calc(var(--drawer-progress) * -38vh));
+  transition: transform .55s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+.desktop-surface {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(190px, 24vw) minmax(380px, 1fr) minmax(190px, 24vw);
+  align-items: center;
+  min-height: 100%;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .03), transparent 18%, rgba(0, 0, 0, .12) 52%, transparent 80%),
+    url("./assets/rosewood-table-bg-final-4k.png") center / cover no-repeat,
+    #3c261a;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, .42);
+}
+
+.desktop-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(0, 0, 0, .18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 240, 210, .08), transparent 24%, rgba(0, 0, 0, .18));
+  pointer-events: none;
+}
+
+.machine {
+  z-index: 2;
+  grid-column: 2;
+  pointer-events: auto;
+  padding: 74px 0 90px;
+  transform: none;
+  opacity: 1;
+}
+
+.drawer-open .machine {
+  transform: none;
+  opacity: 1;
+}
+
+.plinth {
+  width: min(580px, 56vw);
+  border-color: rgba(255, 255, 255, .08);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, .11), transparent 18%),
+    linear-gradient(150deg, rgba(255, 255, 255, .085), rgba(255, 255, 255, .025)),
+    #111316;
+  box-shadow:
+    0 34px 82px rgba(0, 0, 0, .42),
+    inset 0 1px 0 rgba(255, 255, 255, .08);
+  padding: 36px 34px 28px;
+}
+
+.record {
+  width: min(320px, 42vw);
+}
+
+.tonearm {
+  top: 68px;
+  right: 74px;
+  transform: rotate(-8deg);
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1), filter .45s ease;
+}
+
+.tonearm.is-playing {
+  transform: rotate(18deg);
+  filter: drop-shadow(0 9px 14px rgba(0, 0, 0, .24));
+}
+
+.machine-meta {
+  margin-top: 20px;
+}
+
+.machine-meta h1 {
+  max-width: 500px;
+  font-size: clamp(24px, 4vw, 46px);
+}
+
+.machine-controls {
+  margin-top: 8px;
+}
+
+.drawer-pull {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 5;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, .025)),
+    rgba(17, 19, 22, .86);
+  color: var(--text);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .32);
+  cursor: grab;
+  pointer-events: auto;
+  padding: 0 18px;
+  transform: translateX(-50%);
+  touch-action: none;
+}
+
+.drawer-pull:active {
+  cursor: grabbing;
+}
+
+.drawer-pull span {
+  width: 32px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(244, 241, 234, .45);
+}
+
+.drawer-pull strong {
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.side-record {
+  position: absolute;
+  top: 47%;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+  width: 330px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  pointer-events: auto;
+  padding: 0;
+  transform: translateY(-50%);
+}
+
+.side-record:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+}
+
+.side-record-previous {
+  left: -166px;
+  justify-items: end;
+  text-align: right;
+}
+
+.side-record-next {
+  right: -166px;
+  justify-items: start;
+  text-align: left;
+}
+
+.side-record-disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 320px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 12deg, rgba(255, 255, 255, .09), transparent 14deg, rgba(255, 255, 255, .06) 92deg, transparent 168deg, rgba(255, 255, 255, .09) 260deg, transparent 340deg),
+    repeating-radial-gradient(circle, #101114 0 7px, #1b1d21 8px 9px);
+  box-shadow:
+    inset 0 0 0 18px #0f1013,
+    0 22px 52px rgba(0, 0, 0, .34);
+}
+
+.side-record-disc img,
+.side-record-disc i {
+  display: block;
+  width: 42%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  object-fit: cover;
+  background: linear-gradient(135deg, var(--warn), var(--ok) 52%, var(--danger));
+  box-shadow: 0 0 0 8px rgba(0, 0, 0, .14);
+}
+
+.side-record-meta {
+  display: grid;
+  gap: 4px;
+  width: min(190px, 58%);
+}
+
+.side-record-meta small {
+  color: rgba(244, 241, 234, .66);
+  font-size: 12px;
+}
+
+.side-record-meta strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-drawer {
+  position: absolute;
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 14px;
+  width: 100%;
+  height: min(62vh, 560px);
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .065), rgba(255, 255, 255, .025)),
+    #121416;
+  box-shadow: inset 0 22px 40px rgba(0, 0, 0, .26);
+  padding: 34px clamp(18px, 5vw, 72px) 24px;
+  transform: translateY(calc((1 - var(--drawer-progress)) * 100%));
+  transition: transform .55s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+.drawer-grip {
+  display: none;
+}
+
+.drawer-head {
+  align-items: center;
+}
+
+.drawer-head h2 {
+  font-size: clamp(26px, 4vw, 44px);
+}
+
+.record-shelf {
+  grid-template-columns: repeat(5, minmax(128px, 1fr));
+  align-content: start;
+}
+
+.sleeve b,
+.sleeve img {
+  border-radius: 50%;
+}
+
+@media (max-width: 900px) {
+  .desktop-surface {
+    grid-template-columns: 80px minmax(0, 1fr) 80px;
+  }
+
+  .machine {
+    padding: 70px 0 88px;
+  }
+
+  .plinth {
+    width: min(480px, 82vw);
+  }
+
+  .side-record {
+    width: 220px;
+  }
+
+  .side-record-disc {
+    width: 220px;
+  }
+
+  .side-record-previous {
+    left: -138px;
+  }
+
+  .side-record-next {
+    right: -138px;
+  }
+
+  .side-record-meta {
+    width: 132px;
+  }
+
+  .record-shelf {
+    grid-template-columns: repeat(3, minmax(112px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .turntable-topbar {
+    top: 12px;
+    left: 18px;
+    right: 18px;
+  }
+
+  .desktop-layer {
+    transform: translateY(calc(var(--drawer-progress) * -34vh));
+  }
+
+  .desktop-surface {
+    grid-template-columns: 36px minmax(0, 1fr) 36px;
+  }
+
+  .machine {
+    padding: 58px 0 84px;
+  }
+
+  .plinth {
+    width: min(360px, 88vw);
+    border-radius: 26px;
+    padding: 24px 16px 22px;
+  }
+
+  .record {
+    width: min(245px, 68vw);
+  }
+
+  .tonearm {
+    display: block;
+    top: 48px;
+    right: 36px;
+    width: 104px;
+    height: 104px;
+    border-top-width: 8px;
+    border-right-width: 8px;
+  }
+
+  .machine-meta h1 {
+    font-size: 24px;
+  }
+
+  .deck-button-main {
+    width: 82px;
+    height: 82px;
+    min-height: 82px;
+  }
+
+  .side-record {
+    top: 44%;
+    width: 164px;
+  }
+
+  .side-record-disc {
+    width: 164px;
+  }
+
+  .side-record-meta {
+    display: none;
+  }
+
+  .side-record-previous {
+    left: -124px;
+  }
+
+  .side-record-next {
+    right: -124px;
+  }
+
+  .drawer-pull {
+    bottom: 14px;
+  }
+
+  .record-drawer {
+    height: 64vh;
+    padding: 28px 16px 18px;
+  }
+
+  .record-shelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

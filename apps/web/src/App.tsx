@@ -79,6 +79,8 @@ export function App() {
   const activeViewRef = useRef<AppView>("player");
   const authStatusRef = useRef<AuthStatus | null>(null);
   const nowPlaying = queueIndex >= 0 ? queue[queueIndex] : null;
+  const previousTrack = queueIndex > 0 ? queue[queueIndex - 1] : null;
+  const nextTrack = queueIndex >= 0 && queueIndex < queue.length - 1 ? queue[queueIndex + 1] : null;
 
   useEffect(() => {
     activeViewRef.current = activeView;
@@ -424,6 +426,8 @@ export function App() {
           error={navidromeError}
           currentTrack={nowPlaying}
           currentTrackKey={nowPlaying?.key || ""}
+          previousTrack={previousTrack}
+          nextTrack={nextTrack}
           drawerOpen={drawerOpen}
           onDrawerOpenChange={setDrawerOpen}
           onQueryChange={setNavidromeQuery}
