@@ -101,16 +101,30 @@ export function TurntablePage({
             </div>
             <div className="tonearm"><span /></div>
             <div className="machine-meta">
-              <p>{currentTrack ? "正在播放" : "等待播放"}</p>
-              <h1>{currentTrack?.title || "MYusic Radio"}</h1>
-              <span>{currentTrack ? [currentTrack.artist, currentTrack.album].filter(Boolean).join(" · ") : "从唱片抽屉选择一首歌"}</span>
+              {currentTrack ? (
+                <>
+                  <p>正在播放</p>
+                  <h1>{currentTrack.title}</h1>
+                  <span>{[currentTrack.artist, currentTrack.album].filter(Boolean).join(" · ")}</span>
+                </>
+              ) : null}
             </div>
             <div className="machine-controls">
-              <button type="button" disabled={!canPrevious} onClick={onPrevious}>上一首</button>
-              <button className="primary-control" type="button" disabled={!currentTrack} onClick={() => void togglePlayback()}>
-                {playing ? "暂停" : "播放"}
+              <button className="deck-button deck-button-side" type="button" aria-label="上一首" disabled={!canPrevious} onClick={onPrevious}>
+                <span className="deck-button-icon deck-button-icon-prev" aria-hidden="true" />
               </button>
-              <button type="button" disabled={!canNext} onClick={onNext}>下一首</button>
+              <button
+                className={`deck-button deck-button-main ${playing ? "is-active" : ""}`}
+                type="button"
+                aria-label={playing ? "暂停" : "播放"}
+                disabled={!currentTrack}
+                onClick={() => void togglePlayback()}
+              >
+                <span className={`deck-button-icon ${playing ? "deck-button-icon-pause" : "deck-button-icon-play"}`} aria-hidden="true" />
+              </button>
+              <button className="deck-button deck-button-side" type="button" aria-label="下一首" disabled={!canNext} onClick={onNext}>
+                <span className="deck-button-icon deck-button-icon-next" aria-hidden="true" />
+              </button>
             </div>
             <div className="machine-progress-row">
               <time>{formatTime(currentTime)}</time>
