@@ -167,9 +167,7 @@ export function TurntablePage({
 
             <section className="machine" aria-label="唱片机">
               <div className="plinth">
-                <div className={`record ${playing ? "spinning" : ""}`}>
-                  {currentTrack?.coverUrl ? <img alt="" src={currentTrack.coverUrl} /> : <div className="record-label" />}
-                </div>
+                <VinylRecord className="record" coverUrl={currentTrack?.coverUrl} spinning={playing} />
                 <div className={`tonearm ${playing ? "is-playing" : ""}`}><span /></div>
                 <div className="machine-meta">
                   {currentTrack ? (
@@ -254,6 +252,24 @@ function formatTime(value: number) {
   return `${minutes}:${seconds}`;
 }
 
+function VinylRecord({
+  coverUrl,
+  className = "",
+  spinning = false
+}: {
+  coverUrl?: string;
+  className?: string;
+  spinning?: boolean;
+}) {
+  return (
+    <span className={`vinyl-record ${className} ${spinning ? "spinning" : ""}`}>
+      <span className="vinyl-record-label">
+        {coverUrl ? <img alt="" src={coverUrl} /> : null}
+      </span>
+    </span>
+  );
+}
+
 function SideRecord({
   side,
   track,
@@ -275,9 +291,7 @@ function SideRecord({
       disabled={disabled}
       onClick={onClick}
     >
-      <span className="side-record-disc">
-        {track?.coverUrl ? <img alt="" src={track.coverUrl} /> : <i />}
-      </span>
+      <VinylRecord className="side-record-disc" coverUrl={track?.coverUrl} />
       <span className="side-record-meta">
         <small>{label}</small>
         <strong>{track?.title || "暂无唱片"}</strong>
@@ -360,10 +374,13 @@ function RecordDrawer({
         {!songs.length && !error ? <Empty>没有歌曲。确认 Navidrome 已扫描音乐库。</Empty> : songs.map((song) => (
           <article className={`sleeve ${currentTrackKey === `navidrome:${song.id}` ? "current" : ""}`} key={song.id}>
             <button type="button" aria-label={`播放 ${song.title}`} onClick={() => onPlay(song)}>
-              {song.coverArt ? <img alt="" src={`/api/navidrome/cover/${encodeURIComponent(song.coverArt)}`} /> : <b />}
+              <VinylRecord
+                className="sleeve-record"
+                coverUrl={song.coverArt ? `/api/navidrome/cover/${encodeURIComponent(song.coverArt)}` : undefined}
+              />
               <span className="sleeve-status">{currentSong?.id === song.id ? "播放中" : formatDuration(song.duration)}</span>
               <strong>{song.title}</strong>
-              <span>{formatSongMeta(song)}</span>
+              <span className="sleeve-meta">{formatSongMeta(song)}</span>
             </button>
           </article>
         ))}

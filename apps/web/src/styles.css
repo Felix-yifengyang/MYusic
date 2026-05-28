@@ -878,7 +878,7 @@ pre {
   pointer-events: none;
 }
 
-.record {
+.vinyl-record {
   position: relative;
   display: grid;
   place-items: center;
@@ -894,7 +894,7 @@ pre {
   overflow: hidden;
 }
 
-.record::before {
+.vinyl-record::before {
   content: "";
   position: absolute;
   inset: 6%;
@@ -904,7 +904,7 @@ pre {
   pointer-events: none;
 }
 
-.record::after {
+.vinyl-record::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -917,16 +917,12 @@ pre {
   pointer-events: none;
 }
 
-.record img {
-  width: 46%;
-  height: 46%;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 0 0 10px rgba(0, 0, 0, .12);
-}
-
-.record-label {
-  width: 34%;
+.vinyl-record-label {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 42%;
   aspect-ratio: 1;
   border-radius: 50%;
   background:
@@ -937,7 +933,15 @@ pre {
     0 0 0 1px rgba(255, 255, 255, .06);
 }
 
-.record.spinning {
+.vinyl-record-label img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.vinyl-record.spinning {
   animation: record-spin 14s linear infinite;
 }
 
@@ -945,7 +949,7 @@ pre {
   to { transform: rotate(360deg); }
 }
 
-.record-label {
+.vinyl-record-label {
   background:
     radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .08), transparent 14%),
     linear-gradient(135deg, rgba(207, 162, 95, .72), rgba(121, 211, 164, .64) 54%, rgba(219, 111, 103, .68));
@@ -1421,15 +1425,11 @@ pre {
   text-align: left;
 }
 
-.sleeve b,
-.sleeve img {
-  display: block;
+.sleeve-record {
+  display: grid;
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 18px;
-  background: linear-gradient(135deg, var(--warn), var(--ok) 52%, var(--danger));
   margin-bottom: 10px;
-  object-fit: cover;
 }
 
 .sleeve-status {
@@ -1446,8 +1446,7 @@ pre {
   padding: 6px 8px;
 }
 
-.sleeve.current b,
-.sleeve.current img {
+.sleeve.current .sleeve-record {
   box-shadow: 0 0 0 2px var(--text);
 }
 
@@ -1457,14 +1456,14 @@ pre {
 }
 
 .sleeve strong,
-.sleeve span {
+.sleeve-meta {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sleeve span {
+.sleeve-meta {
   color: var(--muted);
   font-size: 13px;
   margin-top: 3px;
@@ -1858,29 +1857,7 @@ pre {
 }
 
 .side-record-disc {
-  position: relative;
-  display: grid;
-  place-items: center;
   width: 320px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background:
-    conic-gradient(from 12deg, rgba(255, 255, 255, .09), transparent 14deg, rgba(255, 255, 255, .06) 92deg, transparent 168deg, rgba(255, 255, 255, .09) 260deg, transparent 340deg),
-    repeating-radial-gradient(circle, #101114 0 7px, #1b1d21 8px 9px);
-  box-shadow:
-    inset 0 0 0 18px #0f1013,
-    0 22px 52px rgba(0, 0, 0, .34);
-}
-
-.side-record-disc img,
-.side-record-disc i {
-  display: block;
-  width: 42%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  object-fit: cover;
-  background: linear-gradient(135deg, var(--warn), var(--ok) 52%, var(--danger));
-  box-shadow: 0 0 0 8px rgba(0, 0, 0, .14);
 }
 
 .side-record-meta {
@@ -1917,7 +1894,10 @@ pre {
   border: 0;
   border-top: 1px solid rgba(255, 255, 255, .13);
   border-radius: 0;
-  background: transparent;
+  background:
+    linear-gradient(180deg, rgba(72, 41, 24, .78), rgba(16, 11, 9, .94)),
+    repeating-linear-gradient(92deg, rgba(255, 228, 190, .035) 0 1px, transparent 1px 18px),
+    #1a100c;
   box-shadow:
     inset 0 10px 22px rgba(0, 0, 0, .12),
     0 -14px 26px rgba(0, 0, 0, .18);
@@ -1938,7 +1918,7 @@ pre {
   border-top: 1px solid rgba(255, 255, 255, .13);
   background:
     linear-gradient(180deg, rgba(255, 244, 218, .05), transparent 20%, rgba(0, 0, 0, .05)),
-    url("./assets/turntable/drawer-top-interior.png") center / cover no-repeat,
+    url("./assets/turntable/drawer-top-interior.png") center / 100% 100% no-repeat,
     #4a2819;
   box-shadow: inset 0 10px 22px rgba(0, 0, 0, .12);
   pointer-events: none;
@@ -1978,8 +1958,7 @@ pre {
   align-content: start;
 }
 
-.sleeve b,
-.sleeve img {
+.sleeve-record {
   border-radius: 50%;
 }
 
