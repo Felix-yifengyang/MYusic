@@ -147,6 +147,13 @@ export function TurntablePage({
           onRefresh={onRefresh}
           onPlay={onPlay}
           onNavigate={onNavigate}
+          onPullPointerDown={drawerPointerDown}
+          onPullPointerMove={drawerPointerMove}
+          onPullPointerUp={drawerPointerUp}
+          onPullPointerCancel={() => {
+            drawerGestureRef.current.active = false;
+            setDrawerDragProgress(null);
+          }}
         />
 
         <section className="desktop-layer" aria-label="播放页">
@@ -230,23 +237,6 @@ export function TurntablePage({
               onClick={onNext}
             />
           </div>
-
-          <button
-            className="drawer-pull"
-            type="button"
-            aria-label={drawerOpen ? "收起音乐抽屉" : "拉开音乐抽屉"}
-            aria-expanded={drawerOpen}
-            onPointerDown={drawerPointerDown}
-            onPointerMove={drawerPointerMove}
-            onPointerUp={drawerPointerUp}
-            onPointerCancel={() => {
-              drawerGestureRef.current.active = false;
-              setDrawerDragProgress(null);
-            }}
-          >
-            <span />
-            <strong>{drawerOpen ? "收起音乐抽屉" : "拉开音乐抽屉"}</strong>
-          </button>
         </section>
       </section>
     </main>
@@ -307,7 +297,11 @@ function RecordDrawer({
   onSearch,
   onRefresh,
   onPlay,
-  onNavigate
+  onNavigate,
+  onPullPointerDown,
+  onPullPointerMove,
+  onPullPointerUp,
+  onPullPointerCancel
 }: {
   open: boolean;
   songs: NavidromeSong[];
@@ -320,11 +314,28 @@ function RecordDrawer({
   onRefresh: () => void;
   onPlay: (song: NavidromeSong) => void;
   onNavigate: (view: Exclude<AppView, "player">) => void;
+  onPullPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPullPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPullPointerUp: () => void;
+  onPullPointerCancel: () => void;
 }) {
   const currentSong = songs.find((song) => currentTrackKey === `navidrome:${song.id}`);
 
   return (
     <aside className="record-drawer" aria-label="音乐库抽屉" aria-expanded={open}>
+      <button
+        className="drawer-pull"
+        type="button"
+        aria-label={open ? "收起音乐抽屉" : "拉开音乐抽屉"}
+        aria-expanded={open}
+        onPointerDown={onPullPointerDown}
+        onPointerMove={onPullPointerMove}
+        onPointerUp={onPullPointerUp}
+        onPointerCancel={onPullPointerCancel}
+      >
+        <span aria-hidden="true" />
+      </button>
+
       <div className="drawer-head">
         <div>
           <p>音乐库</p>
