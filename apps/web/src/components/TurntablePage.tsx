@@ -60,12 +60,9 @@ export function TurntablePage({
     source: null
   });
   const [playing, setPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [drawerDragProgress, setDrawerDragProgress] = useState<number | null>(null);
   const [drawerMotionMs, setDrawerMotionMs] = useState(DEFAULT_DRAWER_MOTION_MS);
   const drawerGestureRef = useRef({ active: false, startY: 0, startProgress: 0, moved: false, progress: 0 });
-  const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const drawerProgress = drawerDragProgress ?? (drawerOpen ? 1 : 0);
   const pageStyle = {
     "--drawer-duration": `${drawerMotionMs}ms`,
@@ -73,8 +70,6 @@ export function TurntablePage({
   } as CSSProperties;
 
   useEffect(() => {
-    setCurrentTime(0);
-    setDuration(0);
     setPlaying(false);
   }, [currentTrack?.key]);
 
@@ -107,14 +102,6 @@ export function TurntablePage({
     } else {
       audio.pause();
     }
-  }
-
-  function seek(value: string) {
-    const audio = audioRef.current;
-    if (!audio || !duration) return;
-    const nextTime = (Number(value) / 100) * duration;
-    audio.currentTime = nextTime;
-    setCurrentTime(nextTime);
   }
 
   function drawerPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -189,62 +176,36 @@ export function TurntablePage({
 
             <section className="machine" aria-label="唱片机">
               <div className="plinth">
+                <div className="platter" aria-hidden="true" />
                 <VinylRecord className="record" coverUrl={currentTrack?.coverUrl} spinning={playing} />
-                <div className={`tonearm ${playing ? "is-playing" : ""}`}><span /></div>
-                <div className="machine-meta">
-                  {currentTrack ? (
-                    <>
-                      <p>{playing ? "唱针已落下" : "唱针待命"}</p>
-                      <h1>{currentTrack.title}</h1>
-                      <span>{[currentTrack.artist, currentTrack.album].filter(Boolean).join(" · ")}</span>
-                    </>
-                  ) : (
-                    <>
-                      <p>等待选片</p>
-                      <h1>拉开抽屉，选择一张唱片</h1>
-                      <span>MYusic</span>
-                    </>
-                  )}
-                </div>
-                <div className="machine-controls">
-                  <button
-                    className={`deck-button deck-button-main ${playing ? "is-active" : ""}`}
-                    type="button"
-                    aria-label={playing ? "暂停" : "播放"}
-                    disabled={!currentTrack}
-                    onClick={() => void togglePlayback()}
-                  >
-                    <span className={`deck-button-icon ${playing ? "deck-button-icon-pause" : "deck-button-icon-play"}`} aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="machine-progress-row">
-                  <time>{formatTime(currentTime)}</time>
-                  <input
-                    aria-label="播放进度"
-                    className="machine-progress"
-                    disabled={!currentTrack || !duration}
-                    max="100"
-                    min="0"
-                    onChange={(event) => seek(event.target.value)}
-                    type="range"
-                    value={progress}
-                  />
-                  <time>{formatTime(duration)}</time>
+                <button
+                  className={`tonearm ${playing ? "is-playing" : ""}`}
+                  type="button"
+                  aria-label={playing ? "抬起唱臂" : "落下唱臂"}
+                  disabled={!currentTrack}
+                  onClick={() => void togglePlayback()}
+                >
+                  <span className="tonearm-wand" />
+                  <span className="tonearm-cartridge" />
+                </button>
+                <div className="tonearm-base" aria-hidden="true"><span /></div>
+                <div className="turntable-screws" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
                 </div>
                 {currentTrack && (
                   <audio
                     ref={audioRef}
                     autoPlay
                     src={currentTrack.streamUrl}
-                    onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
                     onEnded={() => {
                       setPlaying(false);
                       onEnded();
                     }}
-                    onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
                     onPause={() => setPlaying(false)}
                     onPlay={() => setPlaying(true)}
-                    onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
                   />
                 )}
               </div>
@@ -265,13 +226,6 @@ export function TurntablePage({
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
-}
-
-function formatTime(value: number) {
-  if (!Number.isFinite(value) || value <= 0) return "0:00";
-  const minutes = Math.floor(value / 60);
-  const seconds = Math.floor(value % 60).toString().padStart(2, "0");
-  return `${minutes}:${seconds}`;
 }
 
 type DrawerSoundDirection = "open" | "close";

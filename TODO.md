@@ -8,4 +8,5 @@
 
 - [x] 中央木桌，参考 docs/turntable-desk-drawer-layout-reference.png，桌面背景使用 apps/web/src/assets/rosewood-table-bg-final-4k.png
 - [x] 下方抽屉，有把手，没被拉开的状态是只拉开一点点，暗示用户这里是可以拉开的，而不是用现在的 button
-- [] 加入抽屉抽拉音效
+- [x] 加入抽屉抽拉音效
+- [x] 改动唱片机
