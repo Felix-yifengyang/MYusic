@@ -62,6 +62,7 @@ export function TurntablePage({
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.8);
   const [drawerDragProgress, setDrawerDragProgress] = useState<number | null>(null);
   const [drawerMotionMs, setDrawerMotionMs] = useState(DEFAULT_DRAWER_MOTION_MS);
   const drawerGestureRef = useRef({ active: false, startY: 0, startProgress: 0, moved: false, progress: 0 });
@@ -71,7 +72,8 @@ export function TurntablePage({
     "--drawer-duration": `${drawerMotionMs}ms`,
     "--drawer-progress": drawerProgress,
     "--play-progress": progress / 100,
-    "--play-progress-percent": `${progress}%`
+    "--play-progress-percent": `${progress}%`,
+    "--volume-inverse": 1 - volume
   } as CSSProperties;
 
   useEffect(() => {
@@ -79,6 +81,10 @@ export function TurntablePage({
     setDuration(0);
     setPlaying(false);
   }, [currentTrack?.key]);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume, currentTrack?.key]);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -117,6 +123,12 @@ export function TurntablePage({
     const nextTime = (Number(value) / 100) * duration;
     audio.currentTime = nextTime;
     setCurrentTime(nextTime);
+  }
+
+  function changeVolume(value: string) {
+    const nextVolume = clamp(Number(value) / 100, 0, 1);
+    setVolume(nextVolume);
+    if (audioRef.current) audioRef.current.volume = nextVolume;
   }
 
   function drawerPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -220,7 +232,10 @@ export function TurntablePage({
                       setPlaying(false);
                       onEnded();
                     }}
-                    onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
+                    onLoadedMetadata={(event) => {
+                      event.currentTarget.volume = volume;
+                      setDuration(event.currentTarget.duration || 0);
+                    }}
                     onPause={() => setPlaying(false)}
                     onPlay={() => setPlaying(true)}
                     onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
@@ -257,6 +272,21 @@ export function TurntablePage({
                 />
               </div>
               <time>{formatTime(duration)}</time>
+            </section>
+
+            <section className="volume-console" aria-label="音量控制">
+              <div className="volume-console-face" aria-hidden="true">
+                <span className="volume-slot" />
+                <span className="volume-tab" />
+              </div>
+              <input
+                aria-label="音量"
+                max="100"
+                min="0"
+                onChange={(event) => changeVolume(event.target.value)}
+                type="range"
+                value={Math.round(volume * 100)}
+              />
             </section>
           </div>
         </section>
