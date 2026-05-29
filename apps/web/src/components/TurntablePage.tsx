@@ -3,6 +3,8 @@ import type { CSSProperties, FormEvent, PointerEvent } from "react";
 import type { NavidromeSong } from "@myusic/shared";
 import type { PlayerTrack } from "./playerTypes";
 import { Empty } from "./common";
+import drawerCloseSoundUrl from "../assets/sound/close.mp3";
+import drawerOpenSoundUrl from "../assets/sound/open.mp3";
 
 export type AppView = "player" | "collect" | "ingestions" | "settings";
 
@@ -50,14 +52,25 @@ export function TurntablePage({
   onEnded
 }: TurntablePageProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const drawerSoundRef = useRef<DrawerSoundState>({
+    context: null,
+    loaded: {},
+    loading: {},
+    playId: 0,
+    source: null
+  });
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [drawerDragProgress, setDrawerDragProgress] = useState<number | null>(null);
+  const [drawerMotionMs, setDrawerMotionMs] = useState(DEFAULT_DRAWER_MOTION_MS);
   const drawerGestureRef = useRef({ active: false, startY: 0, startProgress: 0, moved: false, progress: 0 });
   const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const drawerProgress = drawerDragProgress ?? (drawerOpen ? 1 : 0);
-  const pageStyle = { "--drawer-progress": drawerProgress } as CSSProperties;
+  const pageStyle = {
+    "--drawer-duration": `${drawerMotionMs}ms`,
+    "--drawer-progress": drawerProgress
+  } as CSSProperties;
 
   useEffect(() => {
     setCurrentTime(0);
@@ -69,12 +82,21 @@ export function TurntablePage({
     if (!drawerOpen) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onDrawerOpenChange(false);
+      if (event.key === "Escape") void commitDrawerOpen(false);
     };
 
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [drawerOpen, onDrawerOpenChange]);
+  }, [drawerOpen]);
+
+  async function commitDrawerOpen(nextOpen: boolean) {
+    if (nextOpen !== drawerOpen) {
+      const soundDurationMs = await playDrawerSound(drawerSoundRef, nextOpen ? "open" : "close")
+        .catch(() => DEFAULT_DRAWER_MOTION_MS);
+      setDrawerMotionMs(soundDurationMs);
+    }
+    onDrawerOpenChange(nextOpen);
+  }
 
   async function togglePlayback() {
     const audio = audioRef.current;
@@ -120,16 +142,16 @@ export function TurntablePage({
     const gesture = drawerGestureRef.current;
     if (!gesture.active) return;
     if (gesture.moved) {
-      onDrawerOpenChange(gesture.progress > 0.45);
+      void commitDrawerOpen(gesture.progress > 0.45);
     } else {
-      onDrawerOpenChange(!drawerOpen);
+      void commitDrawerOpen(!drawerOpen);
     }
     gesture.active = false;
     setDrawerDragProgress(null);
   }
 
   return (
-    <main className={`turntable-page ${drawerOpen ? "drawer-open" : ""}`} style={pageStyle}>
+    <main className={`turntable-page ${drawerOpen ? "drawer-open" : ""} ${drawerDragProgress !== null ? "drawer-dragging" : ""}`} style={pageStyle}>
       <header className="turntable-topbar">
         <strong>MYusic</strong>
       </header>
@@ -250,6 +272,63 @@ function formatTime(value: number) {
   const minutes = Math.floor(value / 60);
   const seconds = Math.floor(value % 60).toString().padStart(2, "0");
   return `${minutes}:${seconds}`;
+}
+
+type DrawerSoundDirection = "open" | "close";
+const DEFAULT_DRAWER_MOTION_MS = 550;
+
+interface DrawerSoundState {
+  context: AudioContext | null;
+  loaded: Partial<Record<DrawerSoundDirection, AudioBuffer>>;
+  loading: Partial<Record<DrawerSoundDirection, Promise<AudioBuffer>>>;
+  playId: number;
+  source: AudioBufferSourceNode | null;
+}
+
+async function playDrawerSound(soundRef: { current: DrawerSoundState }, direction: DrawerSoundDirection) {
+  if (typeof window === "undefined") return DEFAULT_DRAWER_MOTION_MS;
+  const AudioContextCtor = window.AudioContext ?? (window as Window & typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+  }).webkitAudioContext;
+  if (!AudioContextCtor) return DEFAULT_DRAWER_MOTION_MS;
+
+  const state = soundRef.current;
+  const playId = state.playId + 1;
+  state.playId = playId;
+  const context = state.context ?? new AudioContextCtor();
+  state.context = context;
+  if (context.state === "suspended") await context.resume();
+
+  if (!state.loading[direction]) {
+    const soundUrl = direction === "open" ? drawerOpenSoundUrl : drawerCloseSoundUrl;
+    state.loading[direction] = fetch(soundUrl)
+      .then((response) => response.arrayBuffer())
+      .then((buffer) => context.decodeAudioData(buffer));
+  }
+
+  state.loaded[direction] = state.loaded[direction] ?? await state.loading[direction];
+  const buffer = state.loaded[direction];
+  if (!buffer) return DEFAULT_DRAWER_MOTION_MS;
+  const soundDurationMs = Math.max(120, Math.round(buffer.duration * 1000));
+  if (playId !== state.playId) return soundDurationMs;
+
+  try {
+    state.source?.stop();
+  } catch {
+    // The previous one-shot source may already have ended.
+  }
+  const source = context.createBufferSource();
+  const gain = context.createGain();
+  source.buffer = buffer;
+  gain.gain.value = 0.72;
+  source.connect(gain);
+  gain.connect(context.destination);
+  source.start();
+  state.source = source;
+  source.onended = () => {
+    if (state.source === source) state.source = null;
+  };
+  return soundDurationMs;
 }
 
 function VinylRecord({

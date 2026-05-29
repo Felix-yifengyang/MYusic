@@ -1666,6 +1666,7 @@ pre {
 
 /* Immersive turntable desk prototype */
 .turntable-page {
+  --drawer-duration: 550ms;
   --drawer-progress: 0;
   --drawer-peek: 92px;
   --drawer-outside-edge: 92px;
@@ -1705,8 +1706,12 @@ pre {
   grid-template-rows: minmax(0, 1fr) auto;
   pointer-events: none;
   transform: translateY(calc((var(--drawer-progress) * -54vh) - var(--drawer-peek)));
-  transition: transform .55s cubic-bezier(.22, 1, .36, 1);
+  transition: transform var(--drawer-duration) cubic-bezier(.22, 1, .36, 1);
   will-change: transform;
+}
+
+.drawer-dragging .desktop-layer {
+  transition: none;
 }
 
 .desktop-surface {
