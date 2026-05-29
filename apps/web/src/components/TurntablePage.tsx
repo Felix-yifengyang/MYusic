@@ -60,16 +60,23 @@ export function TurntablePage({
     source: null
   });
   const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [drawerDragProgress, setDrawerDragProgress] = useState<number | null>(null);
   const [drawerMotionMs, setDrawerMotionMs] = useState(DEFAULT_DRAWER_MOTION_MS);
   const drawerGestureRef = useRef({ active: false, startY: 0, startProgress: 0, moved: false, progress: 0 });
+  const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const drawerProgress = drawerDragProgress ?? (drawerOpen ? 1 : 0);
   const pageStyle = {
     "--drawer-duration": `${drawerMotionMs}ms`,
-    "--drawer-progress": drawerProgress
+    "--drawer-progress": drawerProgress,
+    "--play-progress": progress / 100,
+    "--play-progress-percent": `${progress}%`
   } as CSSProperties;
 
   useEffect(() => {
+    setCurrentTime(0);
+    setDuration(0);
     setPlaying(false);
   }, [currentTrack?.key]);
 
@@ -102,6 +109,14 @@ export function TurntablePage({
     } else {
       audio.pause();
     }
+  }
+
+  function seek(value: string) {
+    const audio = audioRef.current;
+    if (!audio || !duration) return;
+    const nextTime = (Number(value) / 100) * duration;
+    audio.currentTime = nextTime;
+    setCurrentTime(nextTime);
   }
 
   function drawerPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -200,12 +215,15 @@ export function TurntablePage({
                     ref={audioRef}
                     autoPlay
                     src={currentTrack.streamUrl}
+                    onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
                     onEnded={() => {
                       setPlaying(false);
                       onEnded();
                     }}
+                    onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
                     onPause={() => setPlaying(false)}
                     onPlay={() => setPlaying(true)}
+                    onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
                   />
                 )}
               </div>
@@ -217,6 +235,29 @@ export function TurntablePage({
               disabled={!canNext}
               onClick={onNext}
             />
+
+            {currentTrack && (
+              <p className="track-inscription">
+                {[currentTrack.title, currentTrack.artist, currentTrack.album].filter(Boolean).join(" · ")}
+              </p>
+            )}
+
+            <section className="table-progress" aria-label="播放进度">
+              <time>{formatTime(currentTime)}</time>
+              <div className="carved-progress">
+                <span aria-hidden="true" />
+                <input
+                  aria-label="播放进度"
+                  disabled={!currentTrack || !duration}
+                  max="100"
+                  min="0"
+                  onChange={(event) => seek(event.target.value)}
+                  type="range"
+                  value={progress}
+                />
+              </div>
+              <time>{formatTime(duration)}</time>
+            </section>
           </div>
         </section>
       </section>
@@ -226,6 +267,13 @@ export function TurntablePage({
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function formatTime(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "0:00";
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.floor(value % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
 }
 
 type DrawerSoundDirection = "open" | "close";

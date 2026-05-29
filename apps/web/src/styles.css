@@ -20,6 +20,13 @@
   --shadow: 0 18px 60px rgba(0, 0, 0, .28);
 }
 
+@font-face {
+  font-family: "Senty Sandalwood";
+  font-style: normal;
+  font-weight: 400;
+  src: url("./assets/fonts/SentySandalwood.ttf") format("truetype");
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -1714,6 +1721,118 @@ pre {
   pointer-events: none;
 }
 
+.table-progress {
+  position: absolute;
+  right: clamp(180px, 20vw, 340px);
+  bottom: 42px;
+  left: clamp(180px, 20vw, 340px);
+  z-index: 3;
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.track-inscription {
+  position: absolute;
+  right: clamp(180px, 20vw, 340px);
+  bottom: 108px;
+  left: clamp(180px, 20vw, 340px);
+  z-index: 3;
+  margin: 0;
+  overflow: hidden;
+  color: rgba(226, 207, 178, .76);
+  font-family: "Senty Sandalwood", Georgia, serif;
+  font-size: 21px;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, .72),
+    0 -1px 0 rgba(255, 243, 222, .16),
+    0 0 12px rgba(18, 8, 4, .44);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.table-progress time {
+  color: rgba(239, 204, 155, .76);
+  font-family: "Senty Sandalwood", Georgia, serif;
+  font-size: 19px;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, .38),
+    0 0 10px rgba(55, 22, 8, .38);
+}
+
+.carved-progress {
+  position: relative;
+  height: 70px;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(236, 230, 218, .1), transparent 64%);
+  overflow: visible;
+}
+
+.carved-progress::before,
+.carved-progress::after,
+.carved-progress span {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.carved-progress::before {
+  top: 15px;
+  height: 34px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .9), rgba(17, 10, 8, .98) 34%, rgba(0, 0, 0, .96) 64%, rgba(19, 10, 7, .98)),
+    linear-gradient(180deg, rgba(235, 226, 210, .28) 0 12%, rgba(0, 0, 0, .98) 36% 76%, rgba(232, 219, 198, .22) 100%),
+    radial-gradient(ellipse at 50% 56%, rgba(0, 0, 0, .96), transparent 66%);
+  clip-path: polygon(0 54%, 4% 54%, 7% 36%, 10% 66%, 14% 50%, 18% 50%, 21% 25%, 24% 72%, 28% 54%, 34% 54%, 37% 38%, 40% 65%, 44% 50%, 50% 50%, 53% 22%, 57% 76%, 61% 55%, 67% 55%, 70% 40%, 74% 64%, 78% 52%, 84% 52%, 87% 30%, 91% 70%, 94% 55%, 100% 55%, 100% 68%, 94% 68%, 90% 80%, 86% 45%, 83% 64%, 77% 64%, 73% 76%, 69% 48%, 66% 66%, 60% 66%, 56% 84%, 52% 36%, 49% 62%, 43% 62%, 39% 75%, 36% 49%, 33% 66%, 27% 66%, 23% 82%, 20% 37%, 17% 64%, 13% 64%, 9% 76%, 6% 47%, 3% 67%, 0 67%);
+  filter:
+    drop-shadow(0 -3px 0 rgba(235, 226, 210, .36))
+    drop-shadow(0 2px 0 rgba(0, 0, 0, .95))
+    drop-shadow(0 6px 4px rgba(0, 0, 0, .82));
+  opacity: .98;
+}
+
+.carved-progress::after {
+  top: 15px;
+  width: 100%;
+  height: 34px;
+  background:
+    linear-gradient(90deg, rgba(190, 116, 58, .96), rgba(82, 35, 12, .98) 28%, rgba(246, 168, 82, .94) 58%, rgba(96, 39, 12, .98)),
+    linear-gradient(180deg, rgba(255, 224, 157, .76) 0 15%, rgba(55, 18, 4, .98) 40% 70%, rgba(236, 137, 52, .68) 100%),
+    radial-gradient(ellipse at 50% 58%, rgba(68, 22, 5, .92), transparent 66%);
+  clip-path: polygon(0 54%, 4% 54%, 7% 36%, 10% 66%, 14% 50%, 18% 50%, 21% 25%, 24% 72%, 28% 54%, 34% 54%, 37% 38%, 40% 65%, 44% 50%, 50% 50%, 53% 22%, 57% 76%, 61% 55%, 67% 55%, 70% 40%, 74% 64%, 78% 52%, 84% 52%, 87% 30%, 91% 70%, 94% 55%, 100% 55%, 100% 68%, 94% 68%, 90% 80%, 86% 45%, 83% 64%, 77% 64%, 73% 76%, 69% 48%, 66% 66%, 60% 66%, 56% 84%, 52% 36%, 49% 62%, 43% 62%, 39% 75%, 36% 49%, 33% 66%, 27% 66%, 23% 82%, 20% 37%, 17% 64%, 13% 64%, 9% 76%, 6% 47%, 3% 67%, 0 67%);
+  filter:
+    drop-shadow(0 -3px 0 rgba(255, 229, 168, .56))
+    drop-shadow(0 2px 0 rgba(55, 15, 3, .96))
+    drop-shadow(0 6px 4px rgba(0, 0, 0, .8));
+  mask-image: linear-gradient(90deg, #000 0 var(--play-progress-percent), transparent var(--play-progress-percent) 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0 var(--play-progress-percent), transparent var(--play-progress-percent) 100%);
+}
+
+.carved-progress span {
+  display: none;
+}
+
+.carved-progress input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.carved-progress input:disabled {
+  cursor: default;
+}
+
 .machine {
   z-index: 2;
   grid-column: 2;
@@ -2136,6 +2255,18 @@ pre {
   .record-shelf {
     grid-template-columns: repeat(3, minmax(112px, 1fr));
   }
+
+  .table-progress {
+    right: 96px;
+    bottom: 42px;
+    left: 96px;
+  }
+
+  .track-inscription {
+    right: 96px;
+    bottom: 108px;
+    left: 96px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -2242,5 +2373,23 @@ pre {
 
   .record-shelf {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .table-progress {
+    right: 22px;
+    bottom: 40px;
+    left: 22px;
+    gap: 8px;
+  }
+
+  .track-inscription {
+    right: 22px;
+    bottom: 104px;
+    left: 22px;
+    font-size: 17px;
+  }
+
+  .table-progress time {
+    font-size: 16px;
   }
 }
