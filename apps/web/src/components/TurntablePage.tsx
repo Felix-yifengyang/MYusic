@@ -111,6 +111,34 @@ export function TurntablePage({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [drawerOpen]);
 
+  useEffect(() => {
+    const handlePlayerShortcut = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isShortcutBlockedTarget(event.target)) return;
+
+      if (event.code === "Space") {
+        if (!currentTrack) return;
+        event.preventDefault();
+        void togglePlayback();
+        return;
+      }
+
+      if (event.key === "ArrowLeft" && canPrevious) {
+        event.preventDefault();
+        const sourceRecord = pageRef.current?.querySelector<HTMLElement>(".side-record-previous .side-record-disc");
+        changeRecord(onPrevious, sourceRecord ?? undefined);
+      }
+
+      if (event.key === "ArrowRight" && canNext) {
+        event.preventDefault();
+        const sourceRecord = pageRef.current?.querySelector<HTMLElement>(".side-record-next .side-record-disc");
+        changeRecord(onNext, sourceRecord ?? undefined);
+      }
+    };
+
+    window.addEventListener("keydown", handlePlayerShortcut);
+    return () => window.removeEventListener("keydown", handlePlayerShortcut);
+  });
+
   async function commitDrawerOpen(nextOpen: boolean) {
     if (nextOpen !== drawerOpen) {
       const soundDurationMs = await playDrawerSound(drawerSoundRef, nextOpen ? "open" : "close")
@@ -343,7 +371,10 @@ export function TurntablePage({
                     onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
                     onEnded={() => {
                       setPlaying(false);
-                      onEnded();
+                      if (canNext) {
+                        const sourceRecord = pageRef.current?.querySelector<HTMLElement>(".side-record-next .side-record-disc");
+                        changeRecord(onEnded, sourceRecord ?? undefined);
+                      }
                     }}
                     onLoadedMetadata={(event) => {
                       event.currentTarget.volume = volume;
@@ -410,6 +441,17 @@ export function TurntablePage({
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function isShortcutBlockedTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && (
+    target.isContentEditable
+    || target.tagName === "INPUT"
+    || target.tagName === "TEXTAREA"
+    || target.tagName === "SELECT"
+    || target.tagName === "BUTTON"
+    || target.tagName === "A"
+  );
 }
 
 function formatTime(value: number) {
