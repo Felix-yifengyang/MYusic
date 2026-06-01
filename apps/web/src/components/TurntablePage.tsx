@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, FormEvent, PointerEvent } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 import type { NavidromeSong } from "@myusic/shared";
 import type { PlayerTrack } from "./playerTypes";
-import { Empty } from "./common";
 import drawerCloseSoundUrl from "../assets/sound/close.mp3";
 import drawerOpenSoundUrl from "../assets/sound/open.mp3";
 
@@ -10,7 +9,6 @@ export type AppView = "player" | "collect" | "ingestions" | "settings";
 
 export interface TurntablePageProps {
   songs: NavidromeSong[];
-  query: string;
   error: string;
   currentTrack: PlayerTrack | null;
   currentTrackKey: string;
@@ -18,8 +16,6 @@ export interface TurntablePageProps {
   nextTrack: PlayerTrack | null;
   drawerOpen: boolean;
   onDrawerOpenChange: (open: boolean) => void;
-  onQueryChange: (value: string) => void;
-  onSearch: (event: FormEvent) => void;
   onRefresh: () => void;
   onPlay: (song: NavidromeSong) => void;
   onNavigate: (view: Exclude<AppView, "player">) => void;
@@ -32,7 +28,6 @@ export interface TurntablePageProps {
 
 export function TurntablePage({
   songs,
-  query,
   error,
   currentTrack,
   currentTrackKey,
@@ -40,8 +35,6 @@ export function TurntablePage({
   nextTrack,
   drawerOpen,
   onDrawerOpenChange,
-  onQueryChange,
-  onSearch,
   onRefresh,
   onPlay,
   onNavigate,
@@ -174,12 +167,8 @@ export function TurntablePage({
         <RecordDrawer
           open={drawerOpen}
           songs={songs}
-          query={query}
           error={error}
-          currentTrack={currentTrack}
           currentTrackKey={currentTrackKey}
-          onQueryChange={onQueryChange}
-          onSearch={onSearch}
           onRefresh={onRefresh}
           onPlay={onPlay}
           onNavigate={onNavigate}
@@ -414,12 +403,8 @@ function SideRecord({
 function RecordDrawer({
   open,
   songs,
-  query,
   error,
-  currentTrack,
   currentTrackKey,
-  onQueryChange,
-  onSearch,
   onRefresh,
   onPlay,
   onNavigate,
@@ -430,12 +415,8 @@ function RecordDrawer({
 }: {
   open: boolean;
   songs: NavidromeSong[];
-  query: string;
   error: string;
-  currentTrack: PlayerTrack | null;
   currentTrackKey: string;
-  onQueryChange: (value: string) => void;
-  onSearch: (event: FormEvent) => void;
   onRefresh: () => void;
   onPlay: (song: NavidromeSong) => void;
   onNavigate: (view: Exclude<AppView, "player">) => void;
@@ -444,7 +425,37 @@ function RecordDrawer({
   onPullPointerUp: () => void;
   onPullPointerCancel: () => void;
 }) {
-  const currentSong = songs.find((song) => currentTrackKey === `navidrome:${song.id}`);
+  const shelfRef = useRef<HTMLElement | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageCapacity, setPageCapacity] = useState(() => getDrawerPageCapacity());
+  const pageCount = Math.max(1, Math.ceil(songs.length / pageCapacity));
+  const visibleSongs = songs.slice(page * pageCapacity, (page + 1) * pageCapacity);
+
+  useEffect(() => {
+    const shelf = shelfRef.current;
+    if (!shelf) return;
+
+    const updatePageCapacity = () => {
+      setPageCapacity(getDrawerPageCapacity(shelf.clientWidth, shelf.clientHeight));
+    };
+    const observer = new ResizeObserver(updatePageCapacity);
+    observer.observe(shelf);
+    updatePageCapacity();
+    window.addEventListener("resize", updatePageCapacity);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updatePageCapacity);
+    };
+  }, []);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, pageCount - 1));
+  }, [pageCount]);
+
+  useEffect(() => {
+    const currentIndex = songs.findIndex((song) => currentTrackKey === `navidrome:${song.id}`);
+    if (currentIndex >= 0) setPage(Math.floor(currentIndex / pageCapacity));
+  }, [currentTrackKey, pageCapacity, songs]);
 
   return (
     <aside className="record-drawer" aria-label="音乐库抽屉" aria-expanded={open}>
@@ -461,57 +472,82 @@ function RecordDrawer({
         <span aria-hidden="true" />
       </button>
 
-      <div className="drawer-head">
-        <div>
-          <p>音乐库</p>
-          <h2>{songs.length} 张唱片</h2>
-        </div>
-        <button className="drawer-refresh" type="button" onClick={onRefresh}>刷新</button>
+      <div className="drawer-tools">
+        {pageCount > 1 ? (
+          <div className="drawer-pagination">
+            <button
+              className="drawer-icon-button drawer-page-previous"
+              type="button"
+              aria-label="上一页唱片"
+              disabled={page === 0}
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+            >
+              <span aria-hidden="true" />
+            </button>
+            <button
+              className="drawer-icon-button drawer-page-next"
+              type="button"
+              aria-label="下一页唱片"
+              disabled={page === pageCount - 1}
+              onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}
+            >
+              <span aria-hidden="true" />
+            </button>
+          </div>
+        ) : null}
+        <button className="drawer-refresh drawer-icon-button" type="button" aria-label="刷新" onClick={onRefresh}>
+          <span aria-hidden="true" />
+        </button>
+        <nav className="drawer-actions" aria-label="功能入口">
+          <button className="drawer-icon-button drawer-action-collect" type="button" aria-label="收集" onClick={() => onNavigate("collect")}><span aria-hidden="true" /></button>
+          <button className="drawer-icon-button drawer-action-ingestions" type="button" aria-label="入库" onClick={() => onNavigate("ingestions")}><span aria-hidden="true" /></button>
+          <button className="drawer-icon-button drawer-action-settings" type="button" aria-label="设置" onClick={() => onNavigate("settings")}><span aria-hidden="true" /></button>
+        </nav>
       </div>
 
-      <div className="drawer-now">
-        <span>当前播放</span>
-        <strong>{currentTrack?.title || "未选择唱片"}</strong>
-        <small>{currentTrack ? [currentTrack.artist, currentTrack.album].filter(Boolean).join(" · ") : "从抽屉中挑一张唱片"}</small>
-      </div>
+      {error ? <div className="drawer-error-light" role="status" aria-label={error} /> : null}
 
-      <form className="drawer-search" onSubmit={onSearch}>
-        <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="搜索唱片、歌手、专辑" />
-      </form>
-
-      {error ? <div className="error">{error}</div> : null}
-
-      <section className="record-shelf" aria-label="歌曲列表">
-        {!songs.length && !error ? <Empty>没有歌曲。确认 Navidrome 已扫描音乐库。</Empty> : songs.map((song) => (
+      <section ref={shelfRef} className="record-shelf" aria-label={`歌曲列表，第 ${page + 1} 页`}>
+        {!songs.length && !error ? <div className="drawer-empty" aria-label="没有歌曲"><span /><span /><span /></div> : visibleSongs.map((song) => (
           <article className={`sleeve ${currentTrackKey === `navidrome:${song.id}` ? "current" : ""}`} key={song.id}>
             <button type="button" aria-label={`播放 ${song.title}`} onClick={() => onPlay(song)}>
               <VinylRecord
                 className="sleeve-record"
                 coverUrl={song.coverArt ? `/api/navidrome/cover/${encodeURIComponent(song.coverArt)}` : undefined}
               />
-              <span className="sleeve-status">{currentSong?.id === song.id ? "播放中" : formatDuration(song.duration)}</span>
-              <strong>{song.title}</strong>
-              <span className="sleeve-meta">{formatSongMeta(song)}</span>
+              <span className="record-note">
+                <strong>{song.title}</strong>
+                <span>{song.artist || "Unknown"}</span>
+                {song.album ? <span>{song.album}</span> : null}
+                <small>{formatDuration(song.duration)}</small>
+              </span>
             </button>
           </article>
         ))}
       </section>
-
-      <nav className="drawer-actions" aria-label="功能入口">
-        <button type="button" onClick={() => onNavigate("collect")}>收集</button>
-        <button type="button" onClick={() => onNavigate("ingestions")}>入库</button>
-        <button type="button" onClick={() => onNavigate("settings")}>设置</button>
-      </nav>
     </aside>
   );
 }
 
-function formatSongMeta(song: NavidromeSong) {
-  return [song.artist || "Unknown", song.album].filter(Boolean).join(" · ");
+function getDrawerPageCapacity(shelfWidth?: number, shelfHeight?: number) {
+  if (typeof window === "undefined") return 12;
+  const cardWidth = window.innerWidth <= 600 ? 145 : window.innerWidth <= 900 ? 155 : 180;
+  const columns = window.innerWidth <= 600
+    ? 2
+    : shelfWidth
+      ? Math.max(1, Math.floor((shelfWidth + DRAWER_SHELF_GAP) / (cardWidth + DRAWER_SHELF_GAP)))
+      : window.innerWidth <= 900 ? 4 : 6;
+  const rows = shelfHeight
+    ? Math.max(1, Math.floor((shelfHeight + DRAWER_SHELF_GAP) / (cardWidth + DRAWER_NOTE_SPACE + DRAWER_SHELF_GAP)))
+    : 2;
+  return columns * rows;
 }
 
+const DRAWER_SHELF_GAP = 12;
+const DRAWER_NOTE_SPACE = 10;
+
 function formatDuration(seconds?: number) {
-  if (!seconds) return "播放";
+  if (!seconds) return "--:--";
   const minutes = Math.floor(seconds / 60);
   const rest = Math.floor(seconds % 60).toString().padStart(2, "0");
   return `${minutes}:${rest}`;

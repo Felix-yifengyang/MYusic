@@ -1652,6 +1652,9 @@ pre {
   --drawer-progress: 0;
   --drawer-peek: 92px;
   --drawer-outside-edge: 92px;
+  --drawer-height: 72vh;
+  --drawer-content-top: calc(var(--drawer-peek) + 44px);
+  --drawer-open-travel: calc(var(--drawer-height) - var(--drawer-content-top) - var(--drawer-peek));
   width: 100%;
   min-height: 100vh;
   margin: 0;
@@ -1687,7 +1690,7 @@ pre {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   pointer-events: none;
-  transform: translateY(calc((var(--drawer-progress) * -54vh) - var(--drawer-peek)));
+  transform: translateY(calc((var(--drawer-progress) * var(--drawer-open-travel) * -1) - var(--drawer-peek)));
   transition: transform var(--drawer-duration) cubic-bezier(.22, 1, .36, 1);
   will-change: transform;
 }
@@ -2230,10 +2233,10 @@ pre {
   left: 0;
   z-index: auto;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 14px;
   width: 100%;
-  height: 72vh;
+  height: var(--drawer-height);
   border: 0;
   border-top: 1px solid rgba(255, 255, 255, .13);
   border-radius: 0;
@@ -2244,7 +2247,7 @@ pre {
   box-shadow:
     inset 0 10px 22px rgba(0, 0, 0, .12),
     0 -14px 26px rgba(0, 0, 0, .18);
-  padding: calc(var(--drawer-peek) + 24px) clamp(18px, 5vw, 72px) calc(var(--drawer-outside-edge) + 24px);
+  padding: var(--drawer-content-top) clamp(18px, 5vw, 72px) calc(var(--drawer-outside-edge) + 24px);
   pointer-events: none;
   transform: none;
   transition: none;
@@ -2297,12 +2300,270 @@ pre {
 }
 
 .record-shelf {
-  grid-template-columns: repeat(5, minmax(128px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(128px, 180px));
+  justify-content: center;
   align-content: start;
+  overflow: hidden;
 }
 
 .sleeve-record {
   border-radius: 50%;
+}
+
+.turntable-page .sleeve button {
+  padding-bottom: 0;
+}
+
+.record-note {
+  position: absolute;
+  right: 7%;
+  bottom: 8%;
+  left: 9%;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 6px;
+  min-height: 48px;
+  overflow: hidden;
+  border: 1px solid rgba(82, 55, 34, .28);
+  border-radius: 1px;
+  background:
+    linear-gradient(104deg, rgba(255, 255, 255, .16), transparent 34% 78%, rgba(110, 76, 45, .08)),
+    repeating-linear-gradient(180deg, transparent 0 16px, rgba(112, 84, 54, .11) 17px 18px),
+    #d8c39a;
+  color: rgba(55, 37, 25, .86);
+  font-family: "Senty Sandalwood", Georgia, serif;
+  line-height: 1.05;
+  padding: 6px 8px 4px;
+  text-shadow: 0 1px 0 rgba(255, 247, 224, .4);
+  transform: rotate(-1.2deg);
+  transform-origin: center;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, .3),
+    inset 0 0 0 1px rgba(255, 247, 223, .16);
+}
+
+.sleeve:nth-child(3n) .record-note {
+  transform: rotate(.8deg);
+}
+
+.sleeve:nth-child(4n) .record-note {
+  transform: rotate(-.35deg);
+}
+
+.sleeve.current .record-note {
+  background:
+    linear-gradient(104deg, rgba(255, 255, 255, .18), transparent 34% 78%, rgba(110, 76, 45, .1)),
+    repeating-linear-gradient(180deg, transparent 0 16px, rgba(112, 84, 54, .12) 17px 18px),
+    #e6ca8b;
+}
+
+.record-note strong,
+.record-note span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-note strong {
+  grid-column: 1 / -1;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.record-note span {
+  grid-column: 1;
+  color: rgba(70, 48, 31, .72);
+  font-size: 12px;
+}
+
+.record-note small {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  align-self: end;
+  color: rgba(70, 48, 31, .68);
+  font-family: Georgia, serif;
+  font-size: 10px;
+}
+
+.drawer-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+}
+
+.drawer-pagination {
+  display: flex;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.turntable-page .drawer-actions {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.turntable-page .drawer-icon-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  height: 36px;
+  min-height: 36px;
+  border: 1px solid rgba(235, 198, 142, .3);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(255, 240, 204, .12), rgba(80, 47, 27, .16)),
+    rgba(53, 31, 20, .72);
+  color: rgba(238, 208, 164, .8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 194, .12),
+    0 3px 7px rgba(0, 0, 0, .2);
+  padding: 0;
+}
+
+.turntable-page .drawer-icon-button:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 240, 204, .18), rgba(80, 47, 27, .2)),
+    rgba(67, 40, 24, .82);
+}
+
+.turntable-page .drawer-icon-button:disabled {
+  cursor: default;
+  opacity: .34;
+}
+
+.drawer-icon-button span,
+.drawer-icon-button span::before,
+.drawer-icon-button span::after {
+  position: absolute;
+  display: block;
+  content: "";
+}
+
+.drawer-refresh span {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(240, 207, 160, .74);
+  border-left-color: transparent;
+  border-radius: 50%;
+}
+
+.drawer-refresh span::after {
+  top: -3px;
+  left: -3px;
+  border: 4px solid transparent;
+  border-top-color: rgba(240, 207, 160, .74);
+  transform: rotate(-20deg);
+}
+
+.drawer-page-previous span,
+.drawer-page-next span {
+  width: 11px;
+  height: 11px;
+  border-bottom: 2px solid rgba(240, 207, 160, .74);
+  border-left: 2px solid rgba(240, 207, 160, .74);
+}
+
+.drawer-page-previous span {
+  transform: translateX(2px) rotate(45deg);
+}
+
+.drawer-page-next span {
+  transform: translateX(-2px) rotate(-135deg);
+}
+
+.drawer-action-collect span {
+  width: 16px;
+  height: 12px;
+  border: 2px solid rgba(240, 207, 160, .74);
+  border-radius: 2px;
+}
+
+.drawer-action-collect span::before {
+  top: -6px;
+  left: 4px;
+  width: 6px;
+  height: 6px;
+  border: 2px solid rgba(240, 207, 160, .74);
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+}
+
+.drawer-action-ingestions span {
+  width: 16px;
+  height: 14px;
+  border: 2px solid rgba(240, 207, 160, .74);
+  border-top: 0;
+  border-radius: 0 0 2px 2px;
+}
+
+.drawer-action-ingestions span::before {
+  top: -7px;
+  left: 5px;
+  width: 2px;
+  height: 10px;
+  background: rgba(240, 207, 160, .74);
+}
+
+.drawer-action-ingestions span::after {
+  top: -2px;
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid rgba(240, 207, 160, .74);
+  border-bottom: 2px solid rgba(240, 207, 160, .74);
+  transform: rotate(45deg);
+}
+
+.drawer-action-settings span {
+  width: 15px;
+  height: 15px;
+  border: 2px dotted rgba(240, 207, 160, .86);
+  border-radius: 50%;
+}
+
+.drawer-action-settings span::after {
+  top: 3px;
+  left: 3px;
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgba(240, 207, 160, .74);
+  border-radius: 50%;
+}
+
+.turntable-page .record-drawer > .drawer-error-light {
+  position: absolute;
+  top: calc(var(--drawer-peek) + 30px);
+  left: clamp(18px, 5vw, 72px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #a83b2b;
+  box-shadow: 0 0 12px rgba(190, 56, 39, .72);
+}
+
+.drawer-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 52px 0;
+}
+
+.drawer-empty span {
+  width: 42px;
+  height: 74px;
+  border-radius: 3px 3px 8px 8px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, .54), rgba(23, 12, 8, .8)),
+    #25140e;
+  box-shadow:
+    inset 0 8px 12px rgba(0, 0, 0, .44),
+    inset 0 -1px 0 rgba(255, 218, 168, .08);
 }
 
 @media (max-width: 900px) {
@@ -2352,7 +2613,8 @@ pre {
   }
 
   .record-shelf {
-    grid-template-columns: repeat(3, minmax(112px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(112px, 155px));
+    justify-content: center;
   }
 
   .table-progress {
@@ -2403,16 +2665,14 @@ pre {
   .turntable-page {
     --drawer-peek: 80px;
     --drawer-outside-edge: 80px;
+    --drawer-height: 76vh;
+    --drawer-content-top: calc(var(--drawer-peek) + 32px);
   }
 
   .turntable-topbar {
     top: 12px;
     left: 18px;
     right: 18px;
-  }
-
-  .desktop-layer {
-    transform: translateY(calc((var(--drawer-progress) * -56vh) - var(--drawer-peek)));
   }
 
   .desktop-surface {
@@ -2497,12 +2757,14 @@ pre {
   }
 
   .record-drawer {
-    height: 76vh;
-    padding: calc(var(--drawer-peek) + 20px) 16px calc(var(--drawer-outside-edge) + 18px);
+    padding-right: 16px;
+    padding-bottom: calc(var(--drawer-outside-edge) + 18px);
+    padding-left: 16px;
   }
 
   .record-shelf {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 145px));
+    justify-content: center;
   }
 
   .table-progress {

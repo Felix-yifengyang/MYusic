@@ -55,7 +55,6 @@ export function App() {
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [ingestions, setIngestions] = useState<IngestionRecord[]>([]);
   const [navidromeSongs, setNavidromeSongs] = useState<NavidromeSong[]>([]);
-  const [navidromeQuery, setNavidromeQuery] = useState("");
   const [navidromeError, setNavidromeError] = useState("");
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
@@ -234,9 +233,9 @@ export function App() {
     setCookieStatus(await getBilibiliCookieStatus());
   }
 
-  async function loadNavidromeSongs(query = navidromeQuery) {
+  async function loadNavidromeSongs() {
     setNavidromeError("");
-    await getNavidromeSongs(query)
+    await getNavidromeSongs("")
       .then((body) => setNavidromeSongs(body.songs))
       .catch((caught) => {
         setNavidromeSongs([]);
@@ -376,11 +375,6 @@ export function App() {
     setSettings((current) => current ? { ...current, [key]: value } : current);
   }
 
-  function searchNavidrome(event: FormEvent) {
-    event.preventDefault();
-    void loadNavidromeSongs(navidromeQuery);
-  }
-
   function playSong(song: NavidromeSong) {
     const tracks = navidromeSongs.map(navidromePlayerTrack);
     const index = Math.max(0, navidromeSongs.findIndex((item) => item.id === song.id));
@@ -422,7 +416,6 @@ export function App() {
       {activeView === "player" && (
         <TurntablePage
           songs={navidromeSongs}
-          query={navidromeQuery}
           error={navidromeError}
           currentTrack={nowPlaying}
           currentTrackKey={nowPlaying?.key || ""}
@@ -430,8 +423,6 @@ export function App() {
           nextTrack={nextTrack}
           drawerOpen={drawerOpen}
           onDrawerOpenChange={setDrawerOpen}
-          onQueryChange={setNavidromeQuery}
-          onSearch={searchNavidrome}
           onRefresh={() => loadNavidromeSongs()}
           onPlay={playSong}
           onNavigate={openManagedView}
