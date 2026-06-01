@@ -52,9 +52,9 @@ export async function getNavidromeSongs(config: ApiConfig, query: string): Promi
     };
   }
 
-  const response = await requestJson<RandomSongsPayload>(config, "getRandomSongs", { size: "80" });
+  const response = await requestJson<RandomSongsPayload>(config, "getRandomSongs", { size: "500" });
   return {
-    songs: normalizeArray(response.randomSongs?.song)
+    songs: normalizeArray(response.randomSongs?.song).sort(compareNavidromeSongs)
   };
 }
 
@@ -218,4 +218,15 @@ function normalizeScanStatus(value: ScanStatusPayload["scanStatus"]): NavidromeS
     scanning: Boolean(value?.scanning),
     count: typeof value?.count === "number" ? value.count : undefined
   };
+}
+
+function compareNavidromeSongs(left: NavidromeSong, right: NavidromeSong) {
+  return compareSongText(left.title, right.title)
+    || compareSongText(left.artist, right.artist)
+    || compareSongText(left.album, right.album)
+    || left.id.localeCompare(right.id);
+}
+
+function compareSongText(left = "", right = "") {
+  return left.localeCompare(right, "zh-CN", { numeric: true, sensitivity: "base" });
 }
