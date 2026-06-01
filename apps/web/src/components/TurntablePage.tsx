@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import type { NavidromeSong } from "@myusic/shared";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
 import type { PlayerTrack } from "./playerTypes";
 import drawerCloseSoundUrl from "../assets/sound/close.mp3";
 import drawerOpenSoundUrl from "../assets/sound/open.mp3";
+
+gsap.registerPlugin(useGSAP);
 
 export type AppView = "player" | "collect" | "ingestions" | "settings";
 
@@ -44,7 +48,14 @@ export function TurntablePage({
   onNext,
   onEnded
 }: TurntablePageProps) {
+  const pageRef = useRef<HTMLElement | null>(null);
+  const recordRef = useRef<HTMLSpanElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recordChangeTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  const flyingRecordRef = useRef<HTMLElement | null>(null);
+  const hiddenSourceRecordRef = useRef<HTMLElement | null>(null);
+  const recordChangeIdRef = useRef(0);
+  const recordChangeLockedRef = useRef(false);
   const drawerSoundRef = useRef<DrawerSoundState>({
     context: null,
     loaded: {},
@@ -56,6 +67,7 @@ export function TurntablePage({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
+  const [recordChangeLocked, setRecordChangeLocked] = useState(false);
   const [drawerDragProgress, setDrawerDragProgress] = useState<number | null>(null);
   const [drawerMotionMs, setDrawerMotionMs] = useState(DEFAULT_DRAWER_MOTION_MS);
   const drawerGestureRef = useRef({ active: false, startY: 0, startProgress: 0, moved: false, progress: 0 });
@@ -68,6 +80,15 @@ export function TurntablePage({
     "--play-progress-percent": `${progress}%`,
     "--volume-inverse": 1 - volume
   } as CSSProperties;
+
+  useGSAP(() => {
+    return () => {
+      recordChangeTimelineRef.current?.kill();
+      flyingRecordRef.current?.remove();
+      restoreHiddenSourceRecord(hiddenSourceRecordRef);
+      recordChangeLockedRef.current = false;
+    };
+  }, { scope: pageRef });
 
   useEffect(() => {
     setCurrentTime(0);
@@ -110,6 +131,107 @@ export function TurntablePage({
     }
   }
 
+  function changeRecord(selectTrack: () => void, sourceRecord?: HTMLElement, closeDrawer = false) {
+    const record = recordRef.current;
+    if (!record) {
+      selectTrack();
+      return;
+    }
+
+    const changeId = recordChangeIdRef.current + 1;
+    recordChangeIdRef.current = changeId;
+    recordChangeTimelineRef.current?.kill();
+    flyingRecordRef.current?.remove();
+    flyingRecordRef.current = null;
+    restoreHiddenSourceRecord(hiddenSourceRecordRef);
+    recordChangeLockedRef.current = true;
+    drawerGestureRef.current.active = false;
+    setDrawerDragProgress(null);
+    setRecordChangeLocked(true);
+    audioRef.current?.pause();
+
+    const reducedMotion = prefersReducedMotion();
+    const timeline = gsap.timeline({
+      defaults: { overwrite: "auto" },
+      onComplete: () => {
+        if (recordChangeIdRef.current !== changeId) return;
+        recordChangeTimelineRef.current = null;
+        flyingRecordRef.current?.remove();
+        flyingRecordRef.current = null;
+        restoreHiddenSourceRecord(hiddenSourceRecordRef);
+        gsap.set(record, { clearProps: "opacity,visibility,scale" });
+        recordChangeLockedRef.current = false;
+        setRecordChangeLocked(false);
+      }
+    });
+    recordChangeTimelineRef.current = timeline;
+
+    if (reducedMotion) {
+      timeline.call(selectTrack);
+      if (closeDrawer) timeline.call(() => void commitDrawerOpen(false));
+      return;
+    }
+
+    timeline
+      .to({}, { duration: 0.22 })
+      .to(record, { autoAlpha: 0, scale: 0.94, duration: 0.22, ease: "power2.inOut" });
+
+    if (sourceRecord) {
+      const flyingRecord = createFlyingRecord(sourceRecord, record);
+      flyingRecordRef.current = flyingRecord;
+      hiddenSourceRecordRef.current = sourceRecord;
+      gsap.set(sourceRecord, { autoAlpha: 0 });
+      pageRef.current?.appendChild(flyingRecord);
+      const flight = getRecordFlight(flyingRecord, record);
+      timeline
+        .to(flyingRecord, {
+          x: flight.liftX,
+          y: flight.liftY,
+          scale: 0.96,
+          rotation: -4,
+          duration: 0.16,
+          ease: "power2.out"
+        })
+        .to(flyingRecord, {
+          x: flight.approachX,
+          y: flight.approachY,
+          scale: flight.targetScale * 0.94,
+          rotation: 3,
+          duration: 0.46,
+          ease: "power2.inOut"
+        })
+        .to(flyingRecord, {
+          x: flight.targetX,
+          y: flight.targetY,
+          scale: flight.targetScale,
+          rotation: 0,
+          duration: 0.2,
+          ease: "power2.out"
+        })
+        .call(() => {
+          if (recordChangeIdRef.current !== changeId) return;
+          selectTrack();
+        })
+        .to(flyingRecord, { autoAlpha: 0, scale: flight.targetScale * 0.985, duration: 0.08, ease: "power1.out" })
+        .call(() => {
+          flyingRecord.remove();
+          if (flyingRecordRef.current === flyingRecord) flyingRecordRef.current = null;
+          restoreHiddenSourceRecord(hiddenSourceRecordRef);
+        })
+        .call(() => {
+          if (closeDrawer) void commitDrawerOpen(false);
+        }, undefined, "-=0.04");
+    } else {
+      timeline.call(selectTrack);
+    }
+
+    timeline.fromTo(
+      record,
+      { autoAlpha: 0, scale: 0.9 },
+      { autoAlpha: 1, scale: 1, duration: 0.24, ease: "power2.out" }
+    );
+  }
+
   function seek(value: string) {
     const audio = audioRef.current;
     if (!audio || !duration) return;
@@ -125,6 +247,7 @@ export function TurntablePage({
   }
 
   function drawerPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    if (recordChangeLockedRef.current) return;
     drawerGestureRef.current = {
       active: true,
       startY: event.clientY,
@@ -158,7 +281,7 @@ export function TurntablePage({
   }
 
   return (
-    <main className={`turntable-page ${drawerOpen ? "drawer-open" : ""} ${drawerDragProgress !== null ? "drawer-dragging" : ""}`} style={pageStyle}>
+    <main ref={pageRef} className={`turntable-page ${drawerOpen ? "drawer-open" : ""} ${drawerDragProgress !== null ? "drawer-dragging" : ""}`} style={pageStyle}>
       <header className="turntable-topbar">
         <strong>MYusic</strong>
       </header>
@@ -169,8 +292,9 @@ export function TurntablePage({
           songs={songs}
           error={error}
           currentTrackKey={currentTrackKey}
+          drawerLocked={recordChangeLocked}
           onRefresh={onRefresh}
-          onPlay={onPlay}
+          onPlay={(song, sourceRecord) => changeRecord(() => onPlay(song), sourceRecord, true)}
           onNavigate={onNavigate}
           onPullPointerDown={drawerPointerDown}
           onPullPointerMove={drawerPointerMove}
@@ -187,13 +311,13 @@ export function TurntablePage({
               side="previous"
               track={previousTrack}
               disabled={!canPrevious}
-              onClick={onPrevious}
+              onClick={(sourceRecord) => changeRecord(onPrevious, sourceRecord)}
             />
 
             <section className="machine" aria-label="唱片机">
               <div className="plinth">
                 <div className="platter" aria-hidden="true" />
-                <VinylRecord className="record" coverUrl={currentTrack?.coverUrl} spinning={playing} />
+                <VinylRecord ref={recordRef} className="record" coverUrl={currentTrack?.coverUrl} spinning={playing} />
                 <button
                   className={`tonearm ${playing ? "is-playing" : ""}`}
                   type="button"
@@ -237,7 +361,7 @@ export function TurntablePage({
               side="next"
               track={nextTrack}
               disabled={!canNext}
-              onClick={onNext}
+              onClick={(sourceRecord) => changeRecord(onNext, sourceRecord)}
             />
 
             {currentTrack && (
@@ -352,23 +476,23 @@ async function playDrawerSound(soundRef: { current: DrawerSoundState }, directio
   return soundDurationMs;
 }
 
-function VinylRecord({
-  coverUrl,
-  className = "",
-  spinning = false
-}: {
+const VinylRecord = forwardRef<HTMLSpanElement, {
   coverUrl?: string;
   className?: string;
   spinning?: boolean;
-}) {
+}>(function VinylRecord({
+  coverUrl,
+  className = "",
+  spinning = false
+}, ref) {
   return (
-    <span className={`vinyl-record ${className} ${spinning ? "spinning" : ""}`}>
+    <span ref={ref} className={`vinyl-record ${className} ${spinning ? "spinning" : ""}`}>
       <span className="vinyl-record-label">
         {coverUrl ? <img alt="" src={coverUrl} /> : null}
       </span>
     </span>
   );
-}
+});
 
 function SideRecord({
   side,
@@ -379,7 +503,7 @@ function SideRecord({
   side: "previous" | "next";
   track: PlayerTrack | null;
   disabled: boolean;
-  onClick: () => void;
+  onClick: (sourceRecord: HTMLElement | undefined) => void;
 }) {
   const label = side === "previous" ? "上一首" : "下一首";
 
@@ -389,7 +513,7 @@ function SideRecord({
       type="button"
       aria-label={label}
       disabled={disabled}
-      onClick={onClick}
+      onClick={(event) => onClick(event.currentTarget.querySelector<HTMLElement>(".side-record-disc") ?? undefined)}
     >
       <VinylRecord className="side-record-disc" coverUrl={track?.coverUrl} />
       <span className="side-record-meta">
@@ -405,6 +529,7 @@ function RecordDrawer({
   songs,
   error,
   currentTrackKey,
+  drawerLocked,
   onRefresh,
   onPlay,
   onNavigate,
@@ -417,8 +542,9 @@ function RecordDrawer({
   songs: NavidromeSong[];
   error: string;
   currentTrackKey: string;
+  drawerLocked: boolean;
   onRefresh: () => void;
-  onPlay: (song: NavidromeSong) => void;
+  onPlay: (song: NavidromeSong, sourceRecord: HTMLElement | undefined) => void;
   onNavigate: (view: Exclude<AppView, "player">) => void;
   onPullPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
   onPullPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -464,6 +590,7 @@ function RecordDrawer({
         type="button"
         aria-label={open ? "收起音乐抽屉" : "拉开音乐抽屉"}
         aria-expanded={open}
+        disabled={drawerLocked}
         onPointerDown={onPullPointerDown}
         onPointerMove={onPullPointerMove}
         onPointerUp={onPullPointerUp}
@@ -510,7 +637,11 @@ function RecordDrawer({
       <section ref={shelfRef} className="record-shelf" aria-label={`歌曲列表，第 ${page + 1} 页`}>
         {!songs.length && !error ? <div className="drawer-empty" aria-label="没有歌曲"><span /><span /><span /></div> : visibleSongs.map((song) => (
           <article className={`sleeve ${currentTrackKey === `navidrome:${song.id}` ? "current" : ""}`} key={song.id}>
-            <button type="button" aria-label={`播放 ${song.title}`} onClick={() => onPlay(song)}>
+            <button
+              type="button"
+              aria-label={`播放 ${song.title}`}
+              onClick={(event) => onPlay(song, event.currentTarget.querySelector<HTMLElement>(".sleeve-record") ?? undefined)}
+            >
               <VinylRecord
                 className="sleeve-record"
                 coverUrl={song.coverArt ? `/api/navidrome/cover/${encodeURIComponent(song.coverArt)}` : undefined}
@@ -527,6 +658,49 @@ function RecordDrawer({
       </section>
     </aside>
   );
+}
+
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function createFlyingRecord(sourceRecord: HTMLElement, targetRecord: HTMLElement) {
+  const flyingRecord = sourceRecord.cloneNode(true) as HTMLElement;
+  const sourceRect = sourceRecord.getBoundingClientRect();
+  flyingRecord.classList.add("flying-record");
+  flyingRecord.classList.remove("spinning");
+  flyingRecord.dataset.from = JSON.stringify({
+    autoAlpha: 1,
+    x: sourceRect.left,
+    y: sourceRect.top,
+    width: sourceRect.width,
+    height: sourceRect.height,
+    scale: 1
+  });
+  gsap.set(flyingRecord, JSON.parse(flyingRecord.dataset.from));
+  return flyingRecord;
+}
+
+function getRecordFlight(flyingRecord: HTMLElement, targetRecord: HTMLElement) {
+  const sourceRect = flyingRecord.getBoundingClientRect();
+  const targetRect = targetRecord.getBoundingClientRect();
+  const targetScale = targetRect.width / sourceRect.width;
+  const liftY = sourceRect.top - Math.max(42, window.innerHeight * 0.07);
+  return {
+    liftX: sourceRect.left,
+    liftY,
+    approachX: targetRect.left + targetRect.width * 0.04,
+    approachY: targetRect.top - Math.max(30, targetRect.height * 0.1),
+    targetX: targetRect.left,
+    targetY: targetRect.top,
+    targetScale
+  };
+}
+
+function restoreHiddenSourceRecord(sourceRecordRef: { current: HTMLElement | null }) {
+  if (!sourceRecordRef.current) return;
+  gsap.set(sourceRecordRef.current, { clearProps: "opacity,visibility" });
+  sourceRecordRef.current = null;
 }
 
 function getDrawerPageCapacity(shelfWidth?: number, shelfHeight?: number) {
