@@ -521,16 +521,18 @@ async function playDrawerSound(soundRef: { current: DrawerSoundState }, directio
 const VinylRecord = forwardRef<HTMLSpanElement, {
   coverUrl?: string;
   className?: string;
+  loading?: "eager" | "lazy";
   spinning?: boolean;
 }>(function VinylRecord({
   coverUrl,
   className = "",
+  loading,
   spinning = false
 }, ref) {
   return (
     <span ref={ref} className={`vinyl-record ${className} ${spinning ? "spinning" : ""}`}>
       <span className="vinyl-record-label">
-        {coverUrl ? <img alt="" src={coverUrl} /> : null}
+        {coverUrl ? <img alt="" loading={loading} src={coverUrl} /> : null}
       </span>
     </span>
   );
@@ -594,10 +596,15 @@ function RecordDrawer({
   onPullPointerCancel: () => void;
 }) {
   const shelfRef = useRef<HTMLElement | null>(null);
+  const [assetsLoaded, setAssetsLoaded] = useState(open);
   const [page, setPage] = useState(0);
   const [pageCapacity, setPageCapacity] = useState(() => getDrawerPageCapacity());
   const pageCount = Math.max(1, Math.ceil(songs.length / pageCapacity));
   const visibleSongs = songs.slice(page * pageCapacity, (page + 1) * pageCapacity);
+
+  useEffect(() => {
+    if (open) setAssetsLoaded(true);
+  }, [open]);
 
   useEffect(() => {
     const shelf = shelfRef.current;
@@ -626,14 +633,17 @@ function RecordDrawer({
   }, [currentTrackKey, pageCapacity, songs]);
 
   return (
-    <aside className="record-drawer" aria-label="音乐库抽屉" aria-expanded={open}>
+    <aside className={`record-drawer ${assetsLoaded ? "drawer-assets-loaded" : ""}`} aria-label="音乐库抽屉" aria-expanded={open}>
       <button
         className="drawer-pull"
         type="button"
         aria-label={open ? "收起音乐抽屉" : "拉开音乐抽屉"}
         aria-expanded={open}
         disabled={drawerLocked}
-        onPointerDown={onPullPointerDown}
+        onPointerDown={(event) => {
+          setAssetsLoaded(true);
+          onPullPointerDown(event);
+        }}
         onPointerMove={onPullPointerMove}
         onPointerUp={onPullPointerUp}
         onPointerCancel={onPullPointerCancel}
@@ -677,7 +687,7 @@ function RecordDrawer({
       {error ? <div className="drawer-error-light" role="status" aria-label={error} /> : null}
 
       <section ref={shelfRef} className="record-shelf" aria-label={`歌曲列表，第 ${page + 1} 页`}>
-        {!songs.length && !error ? <div className="drawer-empty" aria-label="没有歌曲"><span /><span /><span /></div> : visibleSongs.map((song) => (
+        {assetsLoaded && (!songs.length && !error ? <div className="drawer-empty" aria-label="没有歌曲"><span /><span /><span /></div> : visibleSongs.map((song) => (
           <article className={`sleeve ${currentTrackKey === `navidrome:${song.id}` ? "current" : ""}`} key={song.id}>
             <button
               type="button"
@@ -687,6 +697,7 @@ function RecordDrawer({
               <VinylRecord
                 className="sleeve-record"
                 coverUrl={song.coverArt ? `/api/navidrome/cover/${encodeURIComponent(song.coverArt)}` : undefined}
+                loading="lazy"
               />
               <span className="record-note">
                 <strong>{song.title}</strong>
@@ -696,7 +707,7 @@ function RecordDrawer({
               </span>
             </button>
           </article>
-        ))}
+        )))}
       </section>
     </aside>
   );

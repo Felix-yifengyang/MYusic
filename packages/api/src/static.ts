@@ -18,12 +18,25 @@ async function serveStaticFile(request: FastifyRequest, reply: FastifyReply, web
     return;
   }
 
-  const target = fs.existsSync(filePath) && fs.statSync(filePath).isFile()
+  const requestedFileExists = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+  const target = requestedFileExists
     ? filePath
     : path.join(webDir, "index.html");
 
   if (!fs.existsSync(target)) {
     reply.code(404).send("Web console has not been built. Run pnpm build first.");
+    return;
+  }
+
+  const stat = fs.statSync(target);
+  const etag = `W/"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}"`;
+  const immutableAsset = requestedFileExists && rawPath.startsWith("/static/");
+  reply.header("cache-control", immutableAsset ? "public, max-age=31536000, immutable" : "no-cache");
+  reply.header("etag", etag);
+  reply.header("last-modified", stat.mtime.toUTCString());
+
+  if (request.headers["if-none-match"] === etag) {
+    reply.code(304).send();
     return;
   }
 
@@ -39,5 +52,9 @@ function contentType(filePath: string): string {
   if (ext === ".svg") return "image/svg+xml";
   if (ext === ".png") return "image/png";
   if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".webp") return "image/webp";
+  if (ext === ".mp3") return "audio/mpeg";
+  if (ext === ".ttf") return "font/ttf";
+  if (ext === ".woff2") return "font/woff2";
   return "application/octet-stream";
 }

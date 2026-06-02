@@ -6,10 +6,13 @@
 
 ## 进度
 
-- [x] 中央木桌，参考 docs/turntable-desk-drawer-layout-reference.png，桌面背景使用 apps/web/src/assets/rosewood-table-bg-final-4k.png
+- [x] 中央木桌，参考 docs/turntable-desk-drawer-layout-reference.png，桌面背景使用 apps/web/src/assets/rosewood-table-bg-final-4k.jpg
 - [x] 下方抽屉，有把手，没被拉开的状态是只拉开一点点，暗示用户这里是可以拉开的，而不是用现在的 button
 - [x] 加入抽屉抽拉音效
 - [x] 改动唱片机
 - [x] 桌上控制区：进度条、歌曲信息
-- [x] 桌上音量调节按钮1
+- [x] 桌上音量调节按钮
 - [x] 抽屉拟真化
+- [] 优化线上体验，assets过大，加载时间长问题
+- [] 优化用户系统
+- [] 下载、记录、设置等页面
