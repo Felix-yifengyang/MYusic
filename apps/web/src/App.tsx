@@ -33,7 +33,7 @@ import {
   retryDownloadJob,
   saveBilibiliCookie as saveBilibiliCookieApi,
   saveSettings as saveSettingsApi,
-  setupAdmin as setupAdminApi
+  initializeAdmin as initializeAdminApi
 } from "./api/client";
 import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
@@ -165,8 +165,8 @@ export function App() {
     ]);
   }
 
-  async function setupAdmin(username: string, password: string) {
-    await setupAdminApi(username, password);
+  async function initializeAdmin(username: string, password: string) {
+    await initializeAdminApi(username, password);
     await verifySession();
     await boot();
   }
@@ -404,7 +404,7 @@ export function App() {
   }
 
   if (authStatus.enabled && !authStatus.authenticated) {
-    return <AuthPanel status={authStatus} onSetup={setupAdmin} onLogin={login} />;
+    return <AuthPanel status={authStatus} onInitializeAdmin={initializeAdmin} onLogin={login} />;
   }
 
   function openManagedView(view: ManagedView) {

@@ -17,7 +17,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService | und
 
   app.post<{ Body: { username?: string; password?: string } }>("/api/auth/setup", async (request, reply) => {
     if (!auth) return { enabled: false };
-    return handleAuthResult(reply, auth, () => auth.setupAdmin(String(request.body?.username || ""), String(request.body?.password || "")));
+    return handleAuthResult(reply, auth, () => auth.initializeAdmin(String(request.body?.username || ""), String(request.body?.password || "")));
   });
 
   app.post<{ Body: { username?: string; password?: string } }>("/api/auth/login", async (request, reply) => {

@@ -44,7 +44,7 @@ export async function getAuthStatus() {
   return getJson<AuthStatus>("/api/auth/status");
 }
 
-export async function setupAdmin(username: string, password: string) {
+export async function initializeAdmin(username: string, password: string) {
   return postJson<AuthLoginResult>("/api/auth/setup", { username, password });
 }
 
