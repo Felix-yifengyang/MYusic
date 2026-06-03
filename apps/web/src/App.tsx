@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import type {
   AppSettings,
   AuthStatus,
@@ -38,6 +38,7 @@ import {
 import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
+import { ManagedPage } from "./components/ManagedPage";
 import type { PlayerTrack } from "./components/playerTypes";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { StatusPanel } from "./components/StatusPanel";
@@ -517,40 +518,6 @@ export function App() {
 
 function errorMessage(caught: unknown) {
   return caught instanceof Error ? caught.message : "\u64cd\u4f5c\u5931\u8d25";
-}
-
-function ManagedPage({
-  title,
-  subtitle,
-  authStatus,
-  onBack,
-  onLogout,
-  children
-}: {
-  title: string;
-  subtitle: string;
-  authStatus: AuthStatus;
-  onBack: () => void;
-  onLogout: () => Promise<void>;
-  children: ReactNode;
-}) {
-  return (
-    <main className="managed-page">
-      <header className="managed-topbar">
-        <button className="managed-brand" type="button" onClick={onBack}>MYusic</button>
-        <div className="managed-actions">
-          {authStatus.user && <span>{authStatus.user.username}</span>}
-          <button type="button" onClick={onBack}>播放</button>
-          {authStatus.enabled && <button type="button" onClick={() => void onLogout()}>退出</button>}
-        </div>
-      </header>
-      <section className="managed-head">
-        <p>{subtitle}</p>
-        <h1>{title}</h1>
-      </section>
-      {children}
-    </main>
-  );
 }
 
 function navidromePlayerTrack(song: NavidromeSong): PlayerTrack {

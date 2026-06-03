@@ -1,0 +1,128 @@
+﻿.settings-form,
+.account-security,
+.cookie-manager {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-form label,
+.account-security label,
+.cookie-manager label {
+  display: grid;
+  gap: 7px;
+}
+
+.settings-form label span,
+.account-security label span,
+.cookie-manager label span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.cookie-manager {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.settings-page {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.settings-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, .045);
+  padding: 18px;
+}
+
+.settings-card.wide {
+  grid-column: 1 / -1;
+}
+
+.settings-card-header {
+  display: grid;
+  gap: 6px;
+}
+
+.settings-card-header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.settings-card-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.settings-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-primary {
+  width: fit-content;
+  min-height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+  font-weight: 850;
+  padding: 0 20px;
+}
+
+.settings-card .button {
+  border-radius: 999px;
+}
+
+.settings-card .facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-card .fact,
+.settings-card .diagnostic,
+.settings-card .diagnostics-summary {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.settings-card .cookie-manager {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.lan-settings {
+  margin-top: 14px;
+}
+
+.settings-message {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+@media (max-width: 760px) {
+  .settings-page,
+  .settings-field-grid,
+  .settings-card .facts {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-primary {
+    width: 100%;
+  }
+
+  .settings-form > .button {
+    width: 100%;
+  }
+}

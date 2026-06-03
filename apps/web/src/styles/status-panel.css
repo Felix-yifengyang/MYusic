@@ -1,0 +1,42 @@
+﻿.facts {
+  display: grid;
+  gap: 10px;
+}
+
+.fact,
+.diagnostic {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 12px;
+}
+.diagnostics {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.diagnostics-summary {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-weight: 800;
+}
+
+.diagnostics-summary.ok { color: var(--ok); }
+.diagnostics-summary.error { color: var(--danger); }
+
+.diagnostic.ok { border-color: rgba(117, 214, 159, .38); }
+.diagnostic.warning { border-color: rgba(227, 177, 94, .48); }
+.diagnostic.error { border-color: rgba(223, 117, 111, .55); }
+
+.diagnostic.ok .row span { color: var(--ok); }
+.diagnostic.warning .row span { color: var(--warn); }
+.diagnostic.error .row span { color: var(--danger); }
+
+.suggestion {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
