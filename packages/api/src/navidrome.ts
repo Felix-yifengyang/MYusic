@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import path from "node:path";
-import { Readable } from "node:stream";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { IngestionMatchMethod, IngestionRecord, NavidromeScanStatus, NavidromeSong, NavidromeSongsResult } from "@myusic/shared";
 import type { ApiConfig } from "./config";
@@ -152,7 +151,9 @@ async function proxyNavidromeBinary(
     return;
   }
 
-  reply.send(Readable.fromWeb(upstream.body as Parameters<typeof Readable.fromWeb>[0]));
+  const body = Buffer.from(await upstream.arrayBuffer());
+  reply.header("content-length", String(body.length));
+  reply.send(body);
 }
 
 function buildUrl(config: ApiConfig, endpoint: string, params: Record<string, string>) {
