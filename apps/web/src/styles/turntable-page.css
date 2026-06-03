@@ -215,9 +215,7 @@
 }
 
 .drawer-actions button,
-.drawer-refresh,
-.managed-actions button,
-.managed-brand {
+.drawer-refresh {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -810,7 +808,7 @@
 .table-progress {
   position: absolute;
   right: clamp(180px, 20vw, 340px);
-  bottom: 42px;
+  bottom: 70px;
   left: clamp(180px, 20vw, 340px);
   z-index: 3;
   display: grid;
@@ -823,7 +821,7 @@
 .track-inscription {
   position: absolute;
   right: clamp(180px, 20vw, 340px);
-  bottom: 108px;
+  bottom: 226px;
   left: clamp(180px, 20vw, 340px);
   z-index: 3;
   margin: 0;
@@ -1022,7 +1020,7 @@
   z-index: 2;
   grid-column: 2;
   pointer-events: auto;
-  padding: 74px 0 90px;
+  padding: 66px 0 116px;
   transform: none;
   opacity: 1;
 }
@@ -1666,7 +1664,7 @@
   }
 
   .machine {
-    padding: 70px 0 88px;
+    padding: 62px 0 112px;
   }
 
   .plinth {
@@ -1713,13 +1711,13 @@
 
   .table-progress {
     right: 96px;
-    bottom: 42px;
+    bottom: 64px;
     left: 96px;
   }
 
   .track-inscription {
     right: 96px;
-    bottom: 108px;
+    bottom: 210px;
     left: 96px;
   }
 
@@ -1863,14 +1861,14 @@
 
   .table-progress {
     right: 22px;
-    bottom: 40px;
+    bottom: 54px;
     left: 22px;
     gap: 8px;
   }
 
   .track-inscription {
     right: 22px;
-    bottom: 132px;
+    bottom: 192px;
     left: 22px;
     font-size: 17px;
   }

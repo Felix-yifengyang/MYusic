@@ -161,8 +161,20 @@ export function TurntablePage({
 
   function changeRecord(selectTrack: () => void, sourceRecord?: HTMLElement, closeDrawer = false) {
     const record = recordRef.current;
-    if (!record) {
+    if (!record || isDocumentHidden()) {
+      recordChangeIdRef.current += 1;
+      recordChangeTimelineRef.current?.kill();
+      recordChangeTimelineRef.current = null;
+      flyingRecordRef.current?.remove();
+      flyingRecordRef.current = null;
+      restoreHiddenSourceRecord(hiddenSourceRecordRef);
+      recordChangeLockedRef.current = false;
+      drawerGestureRef.current.active = false;
+      setDrawerDragProgress(null);
+      setRecordChangeLocked(false);
+      audioRef.current?.pause();
       selectTrack();
+      if (closeDrawer) onDrawerOpenChange(false);
       return;
     }
 
@@ -560,10 +572,6 @@ function SideRecord({
       onClick={(event) => onClick(event.currentTarget.querySelector<HTMLElement>(".side-record-disc") ?? undefined)}
     >
       <VinylRecord className="side-record-disc" coverUrl={track?.coverUrl} />
-      <span className="side-record-meta">
-        <small>{label}</small>
-        <strong>{track?.title || "暂无唱片"}</strong>
-      </span>
     </button>
   );
 }
@@ -715,6 +723,10 @@ function RecordDrawer({
 
 function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function isDocumentHidden() {
+  return typeof document !== "undefined" && document.visibilityState === "hidden";
 }
 
 function createFlyingRecord(sourceRecord: HTMLElement, targetRecord: HTMLElement) {
