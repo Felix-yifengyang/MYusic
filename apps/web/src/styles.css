@@ -1721,7 +1721,7 @@ pre {
   border-bottom: 1px solid rgba(255, 255, 255, .08);
   background:
     linear-gradient(90deg, rgba(255, 255, 255, .03), transparent 18%, rgba(0, 0, 0, .12) 52%, transparent 80%),
-    url("./assets/rosewood-table-bg-final-4k.jpg") center / cover no-repeat,
+    url("./assets/images/bg-table.jpg") center / cover no-repeat,
     #3c261a;
   box-shadow: 0 26px 70px rgba(0, 0, 0, .42);
 }
@@ -2182,7 +2182,7 @@ pre {
 .drawer-pull span {
   width: 100%;
   height: 100%;
-  background: url("./assets/turntable/drawer-external-handle-tight.png") center / contain no-repeat;
+  background: url("./assets/images/handle.png") center / contain no-repeat;
   filter: drop-shadow(0 7px 10px rgba(0, 0, 0, .36));
 }
 
@@ -2289,7 +2289,7 @@ pre {
 .turntable-page .record-drawer.drawer-assets-loaded::before {
   background:
     linear-gradient(180deg, rgba(255, 244, 218, .05), transparent 20%, rgba(0, 0, 0, .05)),
-    url("./assets/turntable/drawer-top-interior.jpg") center / 100% 100% no-repeat,
+    url("./assets/images/bg-drawer.jpg") center / 100% 100% no-repeat,
     #4a2819;
 }
 
