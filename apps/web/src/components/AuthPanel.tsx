@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import type { AuthStatus } from "@myusic/shared";
+import { Button, Field } from "./ui";
 
 export interface AuthPanelProps {
   status: AuthStatus;
@@ -33,24 +34,22 @@ export function AuthPanel(props: AuthPanelProps) {
 
         {error && <div className="error">{error}</div>}
 
-        <label>
-          <span>用户名</span>
+        <Field label="用户名">
           <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />
-        </label>
+        </Field>
 
-        <label>
-          <span>密码</span>
+        <Field label="密码">
           <input
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             type="password"
             autoComplete={initializing ? "new-password" : "current-password"}
           />
-        </label>
+        </Field>
 
-        <button className="button" type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting}>
           {submitting ? "处理中..." : initializing ? "初始化并登录" : "登录"}
-        </button>
+        </Button>
       </form>
     </main>
   );

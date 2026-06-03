@@ -1,3 +1,1 @@
-export function Empty({ children }: { children: string }) {
-  return <div className="empty">{children}</div>;
-}
+export { EmptyState as Empty } from "./ui";

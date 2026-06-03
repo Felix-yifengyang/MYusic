@@ -1,128 +1,115 @@
-﻿.collect-panel {
+.collect-panel {
   display: grid;
   gap: 18px;
 }
 
-.collect-hero {
-  min-height: 180px;
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 18% 20%, rgba(227, 177, 94, .18), transparent 32%),
-    linear-gradient(145deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .035)),
-    var(--surface);
-  padding: 24px;
-}
-
-.collect-hero span {
+.collect-command {
   display: block;
-  margin-bottom: 8px;
-  color: var(--ok);
-  font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.collect-hero h2 {
-  max-width: 560px;
-  margin: 0;
-  font-size: clamp(28px, 4vw, 48px);
-  line-height: 1;
-}
-
-.collect-hero p {
-  max-width: 620px;
-  margin: 16px 0 0;
-  color: var(--muted);
-  line-height: 1.6;
 }
 
 .collect-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, .045);
-  padding: 8px;
+  gap: 10px;
+  border: 1px solid rgba(227, 177, 94, .28);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, .28), rgba(255, 255, 255, .025)),
+    rgba(7, 9, 11, .72);
+  box-shadow: inset 0 2px 18px rgba(0, 0, 0, .42);
+  padding: 10px;
 }
 
 .collect-form input {
-  min-height: 52px;
+  min-height: 58px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 12px;
   background: transparent;
   box-shadow: none;
-  padding: 0 16px;
+  font-size: 16px;
+  padding: 0 14px;
 }
 
 .collect-form input:focus {
   box-shadow: none;
 }
 
-.collect-form button,
-.collect-section-heading button {
-  min-height: 52px;
+.collect-form .button {
+  aspect-ratio: 1;
+  min-height: 58px;
+  width: 58px;
   border: 0;
-  border-radius: 999px;
-  background: var(--text);
-  color: var(--bg);
+  border-radius: 0;
+  background: transparent;
+  color: #f3f0e8;
   cursor: pointer;
-  font-weight: 850;
-  padding: 0 20px;
+  font-weight: 900;
+  padding: 0;
   white-space: nowrap;
+  box-shadow: none;
 }
 
-.collect-form button:disabled,
-.collect-section-heading button:disabled {
-  cursor: not-allowed;
-  opacity: .55;
+.collect-submit svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.6;
+  filter: drop-shadow(0 3px 12px rgba(0, 0, 0, .55));
+  transition: color .16s ease, transform .16s ease;
+}
+
+.collect-form .button:hover:not(:disabled) {
+  background: transparent;
+  color: #ffe6a8;
+}
+
+.collect-form .button:hover:not(:disabled) svg {
+  transform: translateX(2px);
 }
 
 .collect-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.collect-section-heading {
+.section-heading {
   display: flex;
   justify-content: space-between;
   gap: 16px;
   align-items: end;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
-.collect-section-heading h3 {
+.section-heading h3 {
   margin: 0;
-  font-size: 22px;
+  font-family: "Senty Sandalwood", system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
 }
 
-.collect-section-heading p {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.collect-section-heading button {
+.section-heading .button {
   min-height: 40px;
-  background: transparent;
-  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .12);
   color: var(--muted);
 }
-
 
 .duplicate-notice {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin: 0 0 14px;
   border: 1px solid rgba(227, 177, 94, .45);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--warn-soft);
   color: var(--warn);
-  padding: 10px;
+  padding: 12px;
   font-size: 13px;
 }
 
@@ -130,50 +117,42 @@
   overflow-wrap: anywhere;
 }
 
-
-.jobs {
-  display: grid;
-  gap: 10px;
-}
-
 .job {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-2);
-  padding: 12px;
-}
-.collect-job {
-  display: grid;
-  gap: 10px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, .045);
+  border: 1px solid rgba(255, 255, 255, .11);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .065), rgba(255, 255, 255, .025)),
+    rgba(20, 24, 28, .82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
   padding: 14px;
 }
 
-.collect-job.running {
-  border-color: rgba(227, 177, 94, .38);
-}
+.collect-job.running { border-color: rgba(227, 177, 94, .38); }
+.collect-job.done { border-color: rgba(117, 214, 159, .35); }
+.collect-job.failed { border-color: rgba(223, 117, 111, .45); }
 
-.collect-job.done {
-  border-color: rgba(117, 214, 159, .35);
-}
-
-.collect-job.failed {
-  border-color: rgba(223, 117, 111, .45);
+.collect-job-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
 }
 
 .collect-job-main {
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
-.collect-job-status {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
+.job-details {
+  margin-top: 10px;
 }
 
+.job-details summary {
+  min-height: 34px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
 
 .sync-status {
   display: inline-flex;
@@ -192,10 +171,7 @@
   line-height: 1.35;
 }
 
-.sync-status strong {
-  color: var(--text);
-}
-
+.sync-status strong { color: var(--text); }
 .sync-status.synced strong { color: var(--ok); }
 .sync-status.scanning strong,
 .sync-status.pending strong { color: var(--warn); }
@@ -220,20 +196,21 @@
   color: var(--muted);
 }
 
-
 @media (max-width: 760px) {
   .collect-form,
-  .collect-stats {
+  .collect-job-row {
     grid-template-columns: 1fr;
-    border-radius: 24px;
   }
 
-  .collect-form button,
-  .collect-section-heading button {
+  .collect-form .button {
+    justify-self: end;
+  }
+
+  .section-heading .button {
     width: 100%;
   }
 
-  .collect-section-heading {
+  .section-heading {
     display: grid;
   }
 }

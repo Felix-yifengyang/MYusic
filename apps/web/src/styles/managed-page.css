@@ -1,44 +1,89 @@
-﻿.managed-page {
-  width: min(1180px, calc(100% - 36px));
+.managed-page {
+  width: min(1040px, calc(100% - 36px));
   min-height: 100vh;
   margin: 0 auto;
-  padding: 28px 0 56px;
+  padding: 34px 0 64px;
+  position: relative;
+  isolation: isolate;
 }
 
-.managed-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
+.managed-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(16, 17, 20, .76), rgba(16, 17, 20, .95) 48%, #101114),
+    radial-gradient(circle at 18% 12%, rgba(117, 214, 159, .12), transparent 28%),
+    radial-gradient(circle at 88% 8%, rgba(227, 177, 94, .1), transparent 26%),
+    url("../assets/images/bg-table.jpg") center / cover fixed;
 }
 
-.managed-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.managed-actions span {
-  color: var(--muted);
-  font-size: 13px;
+.managed-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .024) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .018) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .55), transparent 70%);
 }
 
 .managed-head {
-  padding: 48px 0 28px;
-}
-
-.managed-head p {
-  margin: 0 0 10px;
-  color: var(--muted);
+  display: grid;
+  gap: 8px;
+  padding: 12px 0 26px;
+  position: relative;
 }
 
 .managed-head h1 {
   margin: 0;
-  font-size: clamp(42px, 7vw, 82px);
-  line-height: .95;
+  width: fit-content;
+  font-family: "Senty Sandalwood", system-ui, sans-serif;
+  font-size: clamp(44px, 7vw, 74px);
+  font-weight: 400;
+  line-height: .92;
   letter-spacing: 0;
+  position: relative;
+  text-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+}
+
+.managed-head h1::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: -22px;
+  bottom: -8px;
+  height: 6px;
+  z-index: -1;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(227, 177, 94, .42), rgba(117, 214, 159, .18), transparent);
+}
+
+.managed-return {
+  width: fit-content;
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  color: rgba(243, 240, 232, .82);
+  cursor: pointer;
+  font-family: "Senty Sandalwood", system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0;
+  padding: 0;
+  text-shadow: 0 8px 22px rgba(0, 0, 0, .34);
+}
+
+.managed-return:hover {
+  color: var(--text);
+}
+
+.managed-head::after {
+  content: none;
 }
 
 .managed-grid {
@@ -51,11 +96,11 @@
 @media (max-width: 760px) {
   .managed-page {
     width: min(100% - 20px, 1180px);
-    padding-top: 16px;
+    padding-top: 10px;
   }
 
-  .managed-topbar {
-    justify-content: flex-start;
+  .managed-head {
+    padding: 28px 0 22px;
   }
 
   .managed-grid {

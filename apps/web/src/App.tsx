@@ -436,8 +436,7 @@ export function App() {
       )}
 
       {activeView === "collect" && (
-        <ManagedPage title="收集" subtitle="粘贴链接，加入音乐库" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
-          <section className="managed-grid">
+        <ManagedPage title="收集" onBack={() => setActiveView("player")}>
           <DownloadPanel
             jobs={jobs}
             url={url}
@@ -460,18 +459,11 @@ export function App() {
               setError("");
             }}
           />
-
-          <aside className="block">
-            <h2>当前状态</h2>
-            <StatusPanel status={status} diagnostics={diagnostics} compactDiagnostics />
-          </aside>
-          </section>
         </ManagedPage>
       )}
 
       {activeView === "ingestions" && (
-        <ManagedPage title="入库" subtitle="同步与匹配记录" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
-          <section className="block">
+        <ManagedPage title="入库" onBack={() => setActiveView("player")}>
           <IngestionPanel
             ingestions={ingestions}
             message={ingestionMessage}
@@ -479,12 +471,11 @@ export function App() {
             onRefresh={loadIngestions}
             onRematch={rematchIngestion}
           />
-          </section>
         </ManagedPage>
       )}
 
       {activeView === "settings" && (
-        <ManagedPage title="设置" subtitle="路径、账号和连接" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
+        <ManagedPage title="设置" onBack={() => setActiveView("player")}>
         <SettingsPanel
           settings={settings}
           status={status}
