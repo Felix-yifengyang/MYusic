@@ -747,6 +747,14 @@
     linear-gradient(180deg, #12100e 0%, #08090b 100%);
 }
 
+.turntable-page.is-inactive {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .turntable-topbar {
   position: fixed;
   top: 18px;

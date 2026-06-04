@@ -58,6 +58,8 @@ export function TurntablePage({
   const hiddenSourceRecordRef = useRef<HTMLElement | null>(null);
   const recordChangeIdRef = useRef(0);
   const recordChangeLockedRef = useRef(false);
+  const currentTrackKeyRef = useRef(currentTrackKey);
+  const audioRetryRef = useRef({ trackKey: "", attempts: 0 });
   const drawerSoundRef = useRef<DrawerSoundState>({
     context: null,
     loaded: {},
@@ -83,6 +85,10 @@ export function TurntablePage({
     "--volume-inverse": 1 - volume
   } as CSSProperties;
 
+  useEffect(() => {
+    currentTrackKeyRef.current = currentTrackKey;
+  }, [currentTrackKey]);
+
   useGSAP(() => {
     return () => {
       recordChangeTimelineRef.current?.kill();
@@ -96,6 +102,7 @@ export function TurntablePage({
     setCurrentTime(0);
     setDuration(0);
     setPlaying(false);
+    audioRetryRef.current = { trackKey: currentTrack?.key || "", attempts: 0 };
   }, [currentTrack?.key]);
 
   useEffect(() => {
@@ -165,7 +172,7 @@ export function TurntablePage({
 
   function changeRecord(selectTrack: () => void, sourceRecord?: HTMLElement, closeDrawer = false) {
     const record = recordRef.current;
-    if (!record || isDocumentHidden()) {
+    if (!active || !record || isDocumentHidden()) {
       recordChangeIdRef.current += 1;
       recordChangeTimelineRef.current?.kill();
       recordChangeTimelineRef.current = null;
@@ -291,6 +298,40 @@ export function TurntablePage({
     if (audioRef.current) audioRef.current.volume = nextVolume;
   }
 
+  function advanceToNextTrack() {
+    setPlaying(false);
+    if (!canNext) return;
+
+    const sourceRecord = active
+      ? pageRef.current?.querySelector<HTMLElement>(".side-record-next .side-record-disc")
+      : undefined;
+    changeRecord(onEnded, sourceRecord ?? undefined);
+  }
+
+  function handleAudioError() {
+    if (!currentTrack) return;
+
+    const retryState = audioRetryRef.current;
+    if (retryState.trackKey !== currentTrack.key) {
+      retryState.trackKey = currentTrack.key;
+      retryState.attempts = 0;
+    }
+
+    if (retryState.attempts < 1) {
+      retryState.attempts += 1;
+      setPlaying(false);
+      window.setTimeout(() => {
+        const audio = audioRef.current;
+        if (!audio || currentTrackKeyRef.current !== currentTrack.key) return;
+        audio.load();
+        void audio.play().catch(() => advanceToNextTrack());
+      }, 700);
+      return;
+    }
+
+    advanceToNextTrack();
+  }
+
   function drawerPointerDown(event: PointerEvent<HTMLButtonElement>) {
     if (recordChangeLockedRef.current) return;
     drawerGestureRef.current = {
@@ -326,7 +367,7 @@ export function TurntablePage({
   }
 
   return (
-    <main ref={pageRef} className={`turntable-page ${drawerOpen ? "drawer-open" : ""} ${drawerDragProgress !== null ? "drawer-dragging" : ""}`} hidden={!active} style={pageStyle}>
+    <main ref={pageRef} className={`turntable-page ${!active ? "is-inactive" : ""} ${drawerOpen ? "drawer-open" : ""} ${drawerDragProgress !== null ? "drawer-dragging" : ""}`} aria-hidden={!active} style={pageStyle}>
       <header className="turntable-topbar">
         <strong>MYusic</strong>
       </header>
@@ -384,15 +425,11 @@ export function TurntablePage({
                   <audio
                     ref={audioRef}
                     autoPlay
+                    preload="auto"
                     src={currentTrack.streamUrl}
                     onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
-                    onEnded={() => {
-                      setPlaying(false);
-                      if (canNext) {
-                        const sourceRecord = pageRef.current?.querySelector<HTMLElement>(".side-record-next .side-record-disc");
-                        changeRecord(onEnded, sourceRecord ?? undefined);
-                      }
-                    }}
+                    onEnded={advanceToNextTrack}
+                    onError={handleAudioError}
                     onLoadedMetadata={(event) => {
                       event.currentTarget.volume = volume;
                       setDuration(event.currentTarget.duration || 0);
