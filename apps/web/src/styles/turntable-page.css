@@ -733,9 +733,10 @@
   --drawer-progress: 0;
   --drawer-peek: 92px;
   --drawer-outside-edge: 92px;
-  --drawer-height: 72vh;
+  --drawer-open-travel: 300px;
+  --drawer-height: calc(var(--drawer-peek) + var(--drawer-open-travel) + var(--drawer-outside-edge) + 44px);
   --drawer-content-top: calc(var(--drawer-peek) + 44px);
-  --drawer-open-travel: calc(var(--drawer-height) - var(--drawer-content-top) - var(--drawer-peek));
+  --plinth-width: clamp(360px, min(72vw, 74dvh), 840px);
   width: 100%;
   min-height: 100vh;
   margin: 0;
@@ -783,7 +784,7 @@
 .desktop-surface {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(190px, 24vw) minmax(380px, 1fr) minmax(190px, 24vw);
+  grid-template-columns: clamp(72px, 20vw, 280px) minmax(0, 1fr) clamp(72px, 20vw, 280px);
   align-items: center;
   min-height: 100%;
   overflow: hidden;
@@ -807,9 +808,9 @@
 
 .table-progress {
   position: absolute;
-  right: clamp(180px, 20vw, 340px);
-  bottom: 70px;
-  left: clamp(180px, 20vw, 340px);
+  right: clamp(72px, 18vw, 320px);
+  bottom: clamp(48px, 8vh, 70px);
+  left: clamp(72px, 18vw, 320px);
   z-index: 3;
   display: grid;
   grid-template-columns: auto minmax(180px, 1fr) auto;
@@ -820,9 +821,9 @@
 
 .track-inscription {
   position: absolute;
-  right: clamp(180px, 20vw, 340px);
-  bottom: 226px;
-  left: clamp(180px, 20vw, 340px);
+  right: clamp(72px, 18vw, 320px);
+  bottom: clamp(112px, 16vh, 150px);
+  left: clamp(72px, 18vw, 320px);
   z-index: 3;
   margin: 0;
   overflow: hidden;
@@ -920,7 +921,8 @@
 .volume-console {
   position: absolute;
   top: 50%;
-  right: calc(50% - min(500px, 42vw));
+  right: auto;
+  left: calc(100% + 20px);
   z-index: 4;
   --volume-travel: 130px;
   width: 56px;
@@ -1019,8 +1021,10 @@
 .machine {
   z-index: 2;
   grid-column: 2;
+  justify-self: center;
+  width: var(--plinth-width);
   pointer-events: auto;
-  padding: 66px 0 116px;
+  padding: clamp(46px, 7vh, 66px) 0 clamp(86px, 13vh, 116px);
   transform: none;
   opacity: 1;
 }
@@ -1031,8 +1035,9 @@
 }
 
 .plinth {
-  width: min(840px, 76vw);
-  min-height: 590px;
+  width: var(--plinth-width);
+  min-height: 0;
+  aspect-ratio: 840 / 590;
   border: 1px solid rgba(246, 238, 222, .55);
   border-radius: 26px;
   background:
@@ -1050,11 +1055,11 @@
 
 .platter {
   position: absolute;
-  top: 52px;
-  left: 52px;
+  top: 8.8%;
+  left: 6.2%;
   display: grid;
   place-items: center;
-  width: min(520px, 47vw);
+  width: 61.9%;
   aspect-ratio: 1;
   border-radius: 50%;
   background:
@@ -1072,9 +1077,9 @@
 
 .record {
   position: absolute;
-  top: 78px;
-  left: 78px;
-  width: min(468px, 42vw);
+  top: 13.2%;
+  left: 9.3%;
+  width: 55.7%;
   box-shadow:
     inset 0 0 0 18px #101114,
     0 18px 34px rgba(0, 0, 0, .34);
@@ -1082,11 +1087,12 @@
 
 .tonearm {
   position: absolute;
-  top: 134px;
-  right: 118px;
+  display: block;
+  top: 22.7%;
+  right: 14%;
   z-index: 5;
-  width: 380px;
-  height: 54px;
+  width: 45.2%;
+  height: 9.2%;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -1108,10 +1114,10 @@
 
 .tonearm-wand {
   position: absolute;
-  top: 22px;
-  right: 46px;
-  left: 74px;
-  height: 9px;
+  top: 41%;
+  right: 12%;
+  left: 19.5%;
+  height: 17%;
   border-radius: 999px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, .88), rgba(210, 198, 174, .92) 45%, rgba(82, 71, 58, .74));
@@ -1123,10 +1129,10 @@
 .tonearm-wand::before {
   content: "";
   position: absolute;
-  right: -28px;
-  top: -10px;
-  width: 48px;
-  height: 28px;
+  right: -9%;
+  top: -115%;
+  width: 16%;
+  height: 320%;
   border-radius: 999px;
   background:
     radial-gradient(circle at 34% 26%, rgba(255, 255, 255, .8), transparent 18%),
@@ -1138,10 +1144,10 @@
 
 .tonearm-cartridge {
   position: absolute;
-  top: 6px;
-  left: 20px;
-  width: 66px;
-  height: 42px;
+  top: 11%;
+  left: 5.3%;
+  width: 17.4%;
+  height: 78%;
   border-radius: 5px 10px 10px 5px;
   background:
     linear-gradient(90deg, #2b2521 0 18%, #e7d0aa 19% 68%, #9a8464);
@@ -1153,20 +1159,20 @@
 .tonearm-cartridge::after {
   content: "";
   position: absolute;
-  left: 6px;
-  bottom: -9px;
-  width: 13px;
-  height: 15px;
+  left: 9%;
+  bottom: -21%;
+  width: 20%;
+  height: 36%;
   clip-path: polygon(40% 0, 100% 0, 68% 100%, 0 100%);
   background: #2a1612;
 }
 
 .tonearm-base {
   position: absolute;
-  top: 96px;
-  right: 88px;
+  top: 16.3%;
+  right: 10.5%;
   z-index: 4;
-  width: 132px;
+  width: 15.7%;
   aspect-ratio: 1;
   border-radius: 50%;
   background:
@@ -1181,7 +1187,7 @@
 
 .tonearm-base span {
   position: absolute;
-  inset: 39px;
+  inset: 29.5%;
   border-radius: 50%;
   background:
     radial-gradient(circle at 34% 26%, rgba(255, 255, 255, .84), transparent 20%),
@@ -1192,7 +1198,7 @@
 .turntable-screws span {
   position: absolute;
   z-index: 6;
-  width: 24px;
+  width: clamp(14px, 2.86%, 24px);
   aspect-ratio: 1;
   border-radius: 50%;
   background:
@@ -1204,10 +1210,10 @@
     0 2px 5px rgba(0, 0, 0, .22);
 }
 
-.turntable-screws span:nth-child(1) { top: 28px; left: 28px; }
-.turntable-screws span:nth-child(2) { top: 28px; right: 28px; }
-.turntable-screws span:nth-child(3) { bottom: 28px; left: 28px; }
-.turntable-screws span:nth-child(4) { right: 28px; bottom: 28px; }
+.turntable-screws span:nth-child(1) { top: 4.8%; left: 3.3%; }
+.turntable-screws span:nth-child(2) { top: 4.8%; right: 3.3%; }
+.turntable-screws span:nth-child(3) { bottom: 4.8%; left: 3.3%; }
+.turntable-screws span:nth-child(4) { right: 3.3%; bottom: 4.8%; }
 
 .machine-controls,
 .machine-progress-row {
@@ -1261,7 +1267,7 @@
   z-index: 1;
   display: grid;
   gap: 12px;
-  width: 330px;
+  width: clamp(180px, 22vw, 330px);
   border: 0;
   background: transparent;
   color: var(--text);
@@ -1277,19 +1283,19 @@
 }
 
 .side-record-previous {
-  left: -166px;
+  left: calc(clamp(94px, 11vw, 166px) * -1);
   justify-items: end;
   text-align: right;
 }
 
 .side-record-next {
-  right: -166px;
+  right: calc(clamp(94px, 11vw, 166px) * -1);
   justify-items: start;
   text-align: left;
 }
 
 .side-record-disc {
-  width: 320px;
+  width: clamp(176px, 21vw, 320px);
 }
 
 .side-record-meta {
@@ -1395,7 +1401,13 @@
   grid-template-columns: repeat(auto-fill, minmax(128px, 180px));
   justify-content: center;
   align-content: start;
-  overflow: hidden;
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.record-shelf::-webkit-scrollbar {
+  display: none;
 }
 
 .sleeve-record {
@@ -1659,45 +1671,49 @@
 }
 
 @media (max-width: 900px) {
+  .turntable-page {
+    --plinth-width: clamp(340px, min(82vw, 68dvh), 560px);
+  }
+
   .desktop-surface {
-    grid-template-columns: 80px minmax(0, 1fr) 80px;
+    grid-template-columns: 64px minmax(0, 1fr) 64px;
   }
 
   .machine {
-    padding: 62px 0 112px;
+    padding: clamp(34px, 6vh, 62px) 0 clamp(62px, 10vh, 96px);
   }
 
   .plinth {
-    width: min(560px, 82vw);
-    min-height: 430px;
+    width: var(--plinth-width);
+    min-height: 0;
   }
 
   .platter {
-    top: 44px;
-    left: 38px;
-    width: min(350px, 50vw);
+    top: 8.8%;
+    left: 6.8%;
+    width: 62.5%;
   }
 
   .record {
-    top: 64px;
-    left: 58px;
-    width: min(310px, 45vw);
+    top: 14.8%;
+    left: 10.4%;
+    width: 55.4%;
   }
 
   .side-record {
-    width: 220px;
+    width: clamp(158px, 25vw, 220px);
   }
 
   .side-record-disc {
-    width: 220px;
+    width: clamp(154px, 24vw, 220px);
   }
 
   .side-record-previous {
-    left: -138px;
+    left: calc(clamp(96px, 15vw, 138px) * -1);
   }
 
   .side-record-next {
-    right: -138px;
+    right: calc(clamp(96px, 15vw, 138px) * -1);
   }
 
   .side-record-meta {
@@ -1710,46 +1726,43 @@
   }
 
   .table-progress {
-    right: 96px;
-    bottom: 64px;
-    left: 96px;
+    right: 76px;
+    bottom: clamp(48px, 7vh, 64px);
+    left: 76px;
   }
 
   .track-inscription {
-    right: 96px;
-    bottom: 210px;
-    left: 96px;
+    right: 76px;
+    bottom: clamp(108px, 15vh, 138px);
+    left: 76px;
   }
 
   .volume-console {
     top: 50%;
-    right: 28px;
-    width: 50px;
-    height: 132px;
-    --volume-travel: 88px;
+    left: calc(100% + 20px);
   }
 
   .volume-console-face::before {
-    top: 14px;
-    bottom: 14px;
-    left: 6px;
-    width: 38px;
+    top: 18px;
+    bottom: 18px;
+    left: 8px;
+    width: 40px;
   }
 
   .volume-slot {
-    top: 18px;
-    bottom: 18px;
-    left: 20px;
+    top: 22px;
+    bottom: 22px;
+    left: 23px;
   }
 
   .volume-tab {
-    top: calc(18px + var(--volume-travel) * var(--volume-inverse));
-    left: 9px;
+    top: calc(22px + var(--volume-travel) * var(--volume-inverse));
+    left: 12px;
   }
 
   .volume-console input {
-    width: 116px;
-    height: 50px;
+    width: 154px;
+    height: 56px;
   }
 }
 
@@ -1757,8 +1770,9 @@
   .turntable-page {
     --drawer-peek: 80px;
     --drawer-outside-edge: 80px;
-    --drawer-height: 76vh;
+    --drawer-height: calc(var(--drawer-peek) + var(--drawer-open-travel) + var(--drawer-outside-edge) + 32px);
     --drawer-content-top: calc(var(--drawer-peek) + 32px);
+    --plinth-width: clamp(280px, min(86vw, 54dvh), 360px);
   }
 
   .turntable-topbar {
@@ -1768,37 +1782,37 @@
   }
 
   .desktop-surface {
-    grid-template-columns: 36px minmax(0, 1fr) 36px;
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
   }
 
   .machine {
-    padding: 58px 0 84px;
+    padding: clamp(26px, 5vh, 44px) 0 clamp(46px, 8vh, 66px);
   }
 
   .plinth {
-    width: min(360px, 88vw);
-    min-height: 350px;
+    width: var(--plinth-width);
+    min-height: 0;
     border-radius: 26px;
-    padding: 24px 16px 22px;
+    padding: 0;
   }
 
   .platter {
-    top: 34px;
-    left: 28px;
-    width: min(240px, 56vw);
+    top: 9.7%;
+    left: 7.8%;
+    width: 66.7%;
   }
 
   .record {
-    top: 52px;
-    left: 46px;
-    width: min(205px, 49vw);
+    top: 14.9%;
+    left: 12.8%;
+    width: 57%;
   }
 
   .tonearm {
-    top: 66px;
-    right: 30px;
-    width: 210px;
-    height: 38px;
+    top: 18.9%;
+    right: 8.3%;
+    width: 58.3%;
+    height: 10.9%;
   }
 
   .tonearm-wand {
@@ -1816,18 +1830,18 @@
   }
 
   .tonearm-base {
-    top: 60px;
-    right: 36px;
-    width: 78px;
+    top: 17.1%;
+    right: 10%;
+    width: 21.7%;
   }
 
   .side-record {
     top: 44%;
-    width: 164px;
+    width: clamp(126px, 27vw, 164px);
   }
 
   .side-record-disc {
-    width: 164px;
+    width: clamp(124px, 26vw, 164px);
   }
 
   .side-record-meta {
@@ -1835,11 +1849,11 @@
   }
 
   .side-record-previous {
-    left: -124px;
+    left: calc(clamp(90px, 21vw, 124px) * -1);
   }
 
   .side-record-next {
-    right: -124px;
+    right: calc(clamp(90px, 21vw, 124px) * -1);
   }
 
   .drawer-pull {
@@ -1868,7 +1882,7 @@
 
   .track-inscription {
     right: 22px;
-    bottom: 192px;
+    bottom: 118px;
     left: 22px;
     font-size: 17px;
   }
@@ -1879,42 +1893,111 @@
 
   .volume-console {
     top: 50%;
-    right: 12px;
-    width: 44px;
-    height: 124px;
-    --volume-travel: 82px;
+    left: calc(100% + 20px);
   }
 
   .volume-console-face::before {
-    top: 13px;
-    bottom: 13px;
-    left: 5px;
-    width: 34px;
+    top: 18px;
+    bottom: 18px;
+    left: 8px;
+    width: 40px;
   }
 
   .volume-slot {
-    top: 18px;
-    bottom: 18px;
-    left: 17px;
-    width: 9px;
+    top: 22px;
+    bottom: 22px;
+    left: 23px;
+    width: 10px;
   }
 
   .volume-tab {
-    top: calc(18px + var(--volume-travel) * var(--volume-inverse));
-    left: 8px;
-    width: 28px;
-    height: 22px;
+    top: calc(22px + var(--volume-travel) * var(--volume-inverse));
+    left: 12px;
+    width: 32px;
+    height: 24px;
   }
 
   .volume-tab::after {
-    top: 6px;
-    right: 6px;
-    bottom: 4px;
-    left: 6px;
+    top: 7px;
+    right: 7px;
+    bottom: 5px;
+    left: 7px;
   }
 
   .volume-console input {
-    width: 108px;
-    height: 44px;
+    width: 154px;
+    height: 56px;
+  }
+}
+
+@media (max-height: 650px) {
+  .turntable-page {
+    --plinth-width: clamp(220px, min(66vw, 42dvh), 480px);
+  }
+
+  .machine {
+    padding: 22px 0 42px;
+  }
+
+  .plinth {
+    width: var(--plinth-width);
+  }
+
+  .platter {
+    top: 8%;
+    left: 9%;
+    width: 60%;
+  }
+
+  .record {
+    top: 13%;
+    left: 13%;
+    width: 53%;
+  }
+
+  .drawer-open .table-progress,
+  .drawer-open .volume-console,
+  .drawer-open .track-inscription {
+    display: none;
+  }
+
+  .turntable-page .record-drawer {
+    gap: 10px;
+    padding-right: clamp(14px, 4vw, 38px);
+    padding-left: clamp(14px, 4vw, 38px);
+  }
+
+  .drawer-tools {
+    gap: 6px;
+  }
+
+  .turntable-page .drawer-icon-button {
+    width: 32px;
+    min-width: 32px;
+    height: 30px;
+    min-height: 30px;
+  }
+
+  .record-shelf {
+    grid-template-columns: repeat(auto-fill, minmax(82px, 108px));
+    gap: 8px;
+    overflow: auto;
+  }
+
+  .record-note {
+    right: 5%;
+    bottom: 5%;
+    left: 6%;
+    min-height: 34px;
+    padding: 4px 5px 3px;
+  }
+
+  .record-note strong {
+    font-size: 11px;
+  }
+
+  .record-note span,
+  .record-note small {
+    font-size: 9px;
   }
 }

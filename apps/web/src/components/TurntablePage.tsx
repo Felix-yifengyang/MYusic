@@ -398,6 +398,20 @@ export function TurntablePage({
                   />
                 )}
               </div>
+              <section className="volume-console" aria-label="闊抽噺鎺у埗">
+                <div className="volume-console-face" aria-hidden="true">
+                  <span className="volume-slot" />
+                  <span className="volume-tab" />
+                </div>
+                <input
+                  aria-label="闊抽噺"
+                  max="100"
+                  min="0"
+                  onChange={(event) => changeVolume(event.target.value)}
+                  type="range"
+                  value={Math.round(volume * 100)}
+                />
+              </section>
             </section>
 
             <SideRecord
@@ -430,20 +444,6 @@ export function TurntablePage({
               <time>{formatTime(duration)}</time>
             </section>
 
-            <section className="volume-console" aria-label="音量控制">
-              <div className="volume-console-face" aria-hidden="true">
-                <span className="volume-slot" />
-                <span className="volume-tab" />
-              </div>
-              <input
-                aria-label="音量"
-                max="100"
-                min="0"
-                onChange={(event) => changeVolume(event.target.value)}
-                type="range"
-                value={Math.round(volume * 100)}
-              />
-            </section>
           </div>
         </section>
       </section>
@@ -603,42 +603,11 @@ function RecordDrawer({
   onPullPointerUp: () => void;
   onPullPointerCancel: () => void;
 }) {
-  const shelfRef = useRef<HTMLElement | null>(null);
   const [assetsLoaded, setAssetsLoaded] = useState(open);
-  const [page, setPage] = useState(0);
-  const [pageCapacity, setPageCapacity] = useState(() => getDrawerPageCapacity());
-  const pageCount = Math.max(1, Math.ceil(songs.length / pageCapacity));
-  const visibleSongs = songs.slice(page * pageCapacity, (page + 1) * pageCapacity);
 
   useEffect(() => {
     if (open) setAssetsLoaded(true);
   }, [open]);
-
-  useEffect(() => {
-    const shelf = shelfRef.current;
-    if (!shelf) return;
-
-    const updatePageCapacity = () => {
-      setPageCapacity(getDrawerPageCapacity(shelf.clientWidth, shelf.clientHeight));
-    };
-    const observer = new ResizeObserver(updatePageCapacity);
-    observer.observe(shelf);
-    updatePageCapacity();
-    window.addEventListener("resize", updatePageCapacity);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updatePageCapacity);
-    };
-  }, []);
-
-  useEffect(() => {
-    setPage((current) => Math.min(current, pageCount - 1));
-  }, [pageCount]);
-
-  useEffect(() => {
-    const currentIndex = songs.findIndex((song) => currentTrackKey === `navidrome:${song.id}`);
-    if (currentIndex >= 0) setPage(Math.floor(currentIndex / pageCapacity));
-  }, [currentTrackKey, pageCapacity, songs]);
 
   return (
     <aside className={`record-drawer ${assetsLoaded ? "drawer-assets-loaded" : ""}`} aria-label="音乐库抽屉" aria-expanded={open}>
@@ -660,28 +629,6 @@ function RecordDrawer({
       </button>
 
       <div className="drawer-tools">
-        {pageCount > 1 ? (
-          <div className="drawer-pagination">
-            <button
-              className="drawer-icon-button drawer-page-previous"
-              type="button"
-              aria-label="上一页唱片"
-              disabled={page === 0}
-              onClick={() => setPage((current) => Math.max(0, current - 1))}
-            >
-              <span aria-hidden="true" />
-            </button>
-            <button
-              className="drawer-icon-button drawer-page-next"
-              type="button"
-              aria-label="下一页唱片"
-              disabled={page === pageCount - 1}
-              onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}
-            >
-              <span aria-hidden="true" />
-            </button>
-          </div>
-        ) : null}
         <button className="drawer-refresh drawer-icon-button" type="button" aria-label="刷新" onClick={onRefresh}>
           <span aria-hidden="true" />
         </button>
@@ -694,8 +641,8 @@ function RecordDrawer({
 
       {error ? <div className="drawer-error-light" role="status" aria-label={error} /> : null}
 
-      <section ref={shelfRef} className="record-shelf" aria-label={`歌曲列表，第 ${page + 1} 页`}>
-        {assetsLoaded && (!songs.length && !error ? <div className="drawer-empty" aria-label="没有歌曲"><span /><span /><span /></div> : visibleSongs.map((song) => (
+      <section className="record-shelf" aria-label="歌曲列表">
+        {assetsLoaded && (!songs.length && !error ? <div className="drawer-empty" aria-label="没有歌曲"><span /><span /><span /></div> : songs.map((song) => (
           <article className={`sleeve ${currentTrackKey === `navidrome:${song.id}` ? "current" : ""}`} key={song.id}>
             <button
               type="button"
@@ -767,23 +714,6 @@ function restoreHiddenSourceRecord(sourceRecordRef: { current: HTMLElement | nul
   gsap.set(sourceRecordRef.current, { clearProps: "opacity,visibility" });
   sourceRecordRef.current = null;
 }
-
-function getDrawerPageCapacity(shelfWidth?: number, shelfHeight?: number) {
-  if (typeof window === "undefined") return 12;
-  const cardWidth = window.innerWidth <= 600 ? 145 : window.innerWidth <= 900 ? 155 : 180;
-  const columns = window.innerWidth <= 600
-    ? 2
-    : shelfWidth
-      ? Math.max(1, Math.floor((shelfWidth + DRAWER_SHELF_GAP) / (cardWidth + DRAWER_SHELF_GAP)))
-      : window.innerWidth <= 900 ? 4 : 6;
-  const rows = shelfHeight
-    ? Math.max(1, Math.floor((shelfHeight + DRAWER_SHELF_GAP) / (cardWidth + DRAWER_NOTE_SPACE + DRAWER_SHELF_GAP)))
-    : 2;
-  return columns * rows;
-}
-
-const DRAWER_SHELF_GAP = 12;
-const DRAWER_NOTE_SPACE = 10;
 
 function formatDuration(seconds?: number) {
   if (!seconds) return "--:--";
