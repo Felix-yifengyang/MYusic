@@ -66,7 +66,7 @@ export function TurntablePage({
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.8);
+  const [volume, setVolume] = useState(getInitialVolume);
   const [recordChangeLocked, setRecordChangeLocked] = useState(false);
   const [drawerDragProgress, setDrawerDragProgress] = useState<number | null>(null);
   const [drawerMotionMs, setDrawerMotionMs] = useState(DEFAULT_DRAWER_MOTION_MS);
@@ -283,6 +283,7 @@ export function TurntablePage({
   function changeVolume(value: string) {
     const nextVolume = clamp(Number(value) / 100, 0, 1);
     setVolume(nextVolume);
+    persistVolume(nextVolume);
     if (audioRef.current) audioRef.current.volume = nextVolume;
   }
 
@@ -474,7 +475,32 @@ function formatTime(value: number) {
 }
 
 type DrawerSoundDirection = "open" | "close";
+const DEFAULT_VOLUME = 0.8;
+const PLAYER_VOLUME_STORAGE_KEY = "myusic.player.volume";
 const DEFAULT_DRAWER_MOTION_MS = 550;
+
+function getInitialVolume() {
+  if (typeof window === "undefined") return DEFAULT_VOLUME;
+
+  let stored: string | null = null;
+  try {
+    stored = window.localStorage.getItem(PLAYER_VOLUME_STORAGE_KEY);
+  } catch {
+    return DEFAULT_VOLUME;
+  }
+
+  const parsed = Number(stored);
+  return Number.isFinite(parsed) ? clamp(parsed, 0, 1) : DEFAULT_VOLUME;
+}
+
+function persistVolume(value: number) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PLAYER_VOLUME_STORAGE_KEY, String(clamp(value, 0, 1)));
+  } catch {
+    // Storage can be unavailable in hardened browser contexts; playback should still work.
+  }
+}
 
 interface DrawerSoundState {
   context: AudioContext | null;
