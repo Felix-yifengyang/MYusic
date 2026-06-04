@@ -1,0 +1,180 @@
+.ingestion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.ingestion-toolbar {
+  display: block;
+}
+
+.ingestion-toolbar .button,
+.ingestion-actions .button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+.ingestion-actions .button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.ingestion-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ingestion-field {
+  min-width: 0;
+}
+
+.ingestion-field span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ingestion-field div {
+  color: var(--text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.ingestion-page,
+.ingestion-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ingestion-card {
+  border: 1px solid rgba(255, 255, 255, .11);
+  display: grid;
+  gap: 10px;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025)),
+    rgba(20, 24, 28, .82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+  padding: 14px;
+}
+
+.ingestion-card.unmatched {
+  border-color: rgba(227, 177, 94, .42);
+}
+
+.ingestion-card.matched {
+  border-color: rgba(117, 214, 159, .32);
+  background:
+    linear-gradient(90deg, rgba(117, 214, 159, .12), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025)),
+    rgba(20, 24, 28, .82);
+}
+
+.ingestion-main {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.ingestion-status-mark {
+  width: 4px;
+  height: 42px;
+  border-radius: 999px;
+  background: var(--warn);
+}
+
+.ingestion-card.matched .ingestion-status-mark {
+  background: var(--ok);
+}
+
+.ingestion-title {
+  min-width: 0;
+}
+
+.ingestion-title strong,
+.ingestion-title span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ingestion-title strong {
+  font-size: 16px;
+}
+
+.ingestion-title span {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.ingestion-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+
+.ingestion-details-toggle {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.ingestion-details-toggle summary {
+  min-height: 34px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.match-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid rgba(227, 177, 94, .5);
+  border-radius: 999px;
+  color: var(--warn);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.match-badge.matched {
+  border-color: rgba(117, 214, 159, .45);
+  color: var(--ok);
+}
+
+@media (max-width: 760px) {
+  .ingestion-toolbar,
+  .ingestion-stats,
+  .ingestion-main,
+  .ingestion-details {
+    grid-template-columns: 1fr;
+  }
+
+  .ingestion-toolbar {
+    padding: 16px;
+  }
+
+  .ingestion-toolbar .button,
+  .ingestion-actions .button {
+    width: 100%;
+  }
+
+  .ingestion-grid {
+    grid-template-columns: 1fr;
+  }
+}

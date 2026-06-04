@@ -1,5 +1,5 @@
 import type { IngestionRecord } from "@myusic/shared";
-import { Empty } from "./common";
+import { Button, EmptyState, StatPill } from "./ui";
 
 export interface IngestionPanelProps {
   ingestions: IngestionRecord[];
@@ -20,23 +20,20 @@ export function IngestionPanel({
 
   return (
     <div className="ingestion-page">
-      <div className="ingestion-hero">
-        <div>
-          <span>Ingestion</span>
-          <h2>同步与匹配记录</h2>
-          <p>{counts.unmatched ? `${counts.unmatched} 条记录需要重新匹配。` : "所有入库记录都已经关联到音乐库。"}</p>
-        </div>
-        <button type="button" onClick={onRefresh}>刷新</button>
-      </div>
-
-      {!!ingestions.length && (
+      <div className="ingestion-toolbar">
         <div className="ingestion-stats">
-          <div className="summary-pill ok"><span>已关联</span><strong>{counts.matched}</strong></div>
-          <div className={`summary-pill ${counts.unmatched ? "warn" : "neutral"}`}><span>待关联</span><strong>{counts.unmatched}</strong></div>
+          <StatPill label="已关联" value={counts.matched} tone="ok" />
+          <StatPill label="待关联" value={counts.unmatched} tone={counts.unmatched ? "warn" : "neutral"} />
         </div>
-      )}
+      </div>
+      <div className="section-heading">
+        <div>
+          <h3>入库列表</h3>
+        </div>
+        <Button variant="secondary" type="button" onClick={onRefresh}>刷新</Button>
+      </div>
       {message && <div className="settings-message">{message}</div>}
-      {!ingestions.length ? <Empty>暂无入库记录。下载完成的新音频会进入这里。</Empty> : (
+      {!ingestions.length ? <EmptyState>暂无入库记录。下载完成的新音频会进入这里。</EmptyState> : (
         <div className="ingestion-list">
           {ingestions.map((ingestion) => (
             <article className={`ingestion-card ${ingestion.navidromeSongId ? "matched" : "unmatched"}`} key={ingestion.id}>
@@ -49,23 +46,27 @@ export function IngestionPanel({
                 <span className={`match-badge ${ingestion.navidromeSongId ? "matched" : ""}`}>
                   {ingestion.navidromeSongId ? "已关联" : "未关联"}
                 </span>
-                <div className="ingestion-actions">
-                  <button
-                    type="button"
-                    disabled={rematchingId === ingestion.id}
-                    onClick={() => onRematch(ingestion.id)}
-                  >
-                    {rematchingId === ingestion.id ? "匹配中" : "重新匹配"}
-                  </button>
-                </div>
               </div>
 
-              <div className="ingestion-details">
-                <IngestionField label="入库 ID" value={ingestion.id} />
-                <IngestionField label="文件" value={ingestion.relativeOutputPath || ingestion.outputPath || "未识别"} />
-                <IngestionField label="Navidrome ID" value={formatNavidromeMatch(ingestion)} />
-                <IngestionField label="源站" value={ingestion.webpageUrl || ingestion.sourceUrl} />
-                <IngestionField label="最近匹配" value={formatMatchAttempt(ingestion)} />
+              <details className="ingestion-details-toggle">
+                <summary>详细信息</summary>
+                <div className="ingestion-details">
+                  <IngestionField label="入库 ID" value={ingestion.id} />
+                  <IngestionField label="文件" value={ingestion.relativeOutputPath || ingestion.outputPath || "未识别"} />
+                  <IngestionField label="Navidrome ID" value={formatNavidromeMatch(ingestion)} />
+                  <IngestionField label="源站" value={ingestion.webpageUrl || ingestion.sourceUrl} />
+                  <IngestionField label="最近匹配" value={formatMatchAttempt(ingestion)} />
+                </div>
+              </details>
+              <div className="ingestion-actions">
+                <Button
+                  variant="secondary"
+                  type="button"
+                  disabled={rematchingId === ingestion.id}
+                  onClick={() => onRematch(ingestion.id)}
+                >
+                  {rematchingId === ingestion.id ? "匹配中" : "重新匹配"}
+                </Button>
               </div>
             </article>
           ))}

@@ -1,47 +1,30 @@
 # MYusic
 
-一个自用的个人音乐收集和播放系统。
+**MYusic 是一个可触摸的私人音乐房间。**
 
-当前形态是本地 Web 控制台：在浏览器里完成链接下载、音乐列表、入库记录、播放、Cookie 管理、用户登录和设置管理。当前主存储已经切到 Postgres，后续目标是部署到云端，让电脑和手机都连接同一个服务。
+它想做的事情很简单：把你散落在网页里的音乐，收进一个属于自己的音乐房间里。你可以在浏览器里添加音乐链接、等待它下载入库，然后像打开一个私人唱片柜一样播放、整理和管理它们。
 
-## 核心链路
+## 你可以用它做什么
 
-```text
-网页链接
--> API 调用 yt-dlp + ffmpeg 下载音频
--> 音频进入音乐目录
--> Navidrome 扫描音乐库
--> Web 控制台播放 / iPhone 使用 Amperfy 播放
-```
+- 把音乐链接放进 MYusic，让它下载成自己的音乐文件。
+- 在网页里浏览和播放已经收藏的音乐。
+- 在手机上通过支持 Navidrome 的播放器连接音乐库，例如 Amperfy。
 
-## 项目结构
+## 启动前准备
 
-```text
-apps/web              React + TypeScript + Rsbuild 前端控制台
-packages/api          Fastify + TypeScript API 服务
-packages/runtime      本地运行时，负责启动 API + Navidrome
-packages/downloader   yt-dlp 参数和输出处理
-packages/shared       前后端共享类型
-services/navidrome    Navidrome 可执行文件目录
-scripts               初始化脚本
-bin                   本地工具缓存，不提交 Git
-```
+本地运行需要先准备：
 
-## 配置
+- Node.js 18 或更新版本
+- pnpm
+- Windows PowerShell
 
-复制 `.env.example` 为 `.env`，按需要修改。当前推荐使用 Postgres：
+如果你只是想先在本机跑起来，可以先不改配置。MYusic 会把运行数据放在项目旁边的 `MYusic-data` 文件夹里。
 
-```env
-MYUSIC_STORAGE=postgres
-DATABASE_URL=postgres://myusic:your_password@127.0.0.1:5432/myusic
-MYUSIC_DATA_DIR=D:\project\MYusic-data
-MYUSIC_API_PORT=8787
-MYUSIC_NAVIDROME_PORT=4533
-MYUSIC_NAVIDROME_URL=http://127.0.0.1:4533
-MYUSIC_AUTH_ENABLED=true
-```
+如果你已经准备好数据库，或者想改音乐文件保存位置，可以复制 `.env.example` 为 `.env` 后再修改里面的配置。
 
-## 启动
+## 本地启动
+
+第一次启动：
 
 ```powershell
 cd D:\project\MYusic
@@ -50,108 +33,58 @@ pnpm setup
 pnpm start
 ```
 
-打开：
+启动完成后打开：
 
 ```text
 http://127.0.0.1:8787
 ```
 
-开发前端时可以单独运行：
-```powershell
-pnpm dev:web
-```
+之后日常启动通常只需要：
 
-`dev:web` 只启动前端页面，登录、下载、设置等功能仍然需要后端 API。先在另一个终端运行完整服务，再打开前端开发地址：
 ```powershell
 pnpm start
-pnpm dev:web
 ```
 
-前端开发服务器会把 `/api` 转发到 `http://127.0.0.1:8787`。如果后端端口不同，设置：
-```powershell
-$env:MYUSIC_API_PROXY_TARGET="http://127.0.0.1:你的端口"
-pnpm dev:web
+## 第一次使用
+
+1. 打开 `http://127.0.0.1:8787`。
+2. 如果页面要求创建管理员账号，按提示创建即可。
+3. 进入下载页面，粘贴音乐链接并开始下载。
+4. 下载完成后，回到音乐房间播放。
+5. 如果下载 Bilibili 内容失败，可以到设置页上传或粘贴 Cookie。
+
+## 常用页面
+
+- 音乐房间：播放和浏览你的音乐。
+- 下载：添加新的音乐链接。
+- 记录：查看下载和入库状态。
+- 设置：管理账号、Cookie 和基础配置。
+
+## 手机播放
+
+MYusic 会同时准备一个音乐库服务。你可以用支持 Navidrome / Subsonic 的手机播放器连接它。
+
+本地默认地址：
+
+```text
+http://127.0.0.1:4533
 ```
 
-## 生产启动
-
-```powershell
-pnpm build
-pnpm start:prod
-```
-
-`pnpm start` 会先构建再启动，适合本地验证；`pnpm start:prod` 不会重复构建，适合后续交给 pm2、systemd 或 Docker 托管。
+如果要在手机上访问，需要让手机和电脑在同一个局域网里，并把地址里的 `127.0.0.1` 换成电脑的局域网 IP。
 
 ## 数据位置
 
-默认运行数据目录：
+默认数据目录在项目旁边：
 
 ```text
 D:\project\MYusic-data
-|-- config\api.json
-|-- collector\jobs.json
-|-- collector\ingestions.json
-|-- cookies\bilibili.txt
-|-- library
-`-- navidrome
 ```
 
-说明：
+里面主要会保存：
 
-- `library` 保存下载后的音乐文件。
-- 当前主数据存储是 Postgres。
-- `collector\jobs.json` 和 `collector\ingestions.json` 是旧 JSON 存储，可作为迁移来源或备份。
-- Bilibili Cookie 可以在设置页上传、粘贴、查看状态或清空。
+- 下载后的音乐文件
+- Cookie 文件
+- 播放服务的数据
+- 下载和入库记录
 
-## JSON 数据迁移到 Postgres
-
-```powershell
-pnpm migrate:json-to-postgres
-```
-
-迁移脚本只做 upsert，不会删除数据库中已有的新数据。
-
-## 登录鉴权
-
-Postgres 模式下默认启用登录鉴权。首次打开页面时，如果数据库里还没有用户，会进入创建管理员流程。
-
-用户和会话都保存在 Postgres：
-
-```text
-users
-user_sessions
-```
-
-说明：
-
-- 密码不会明文保存，后端使用 `crypto.scrypt` 保存哈希。
-- 登录态保存在 HttpOnly Cookie 中。
-- 设置页可以修改当前用户密码。
-- 设置页可以退出所有设备。
-- 云端 HTTPS 部署时应设置 `MYUSIC_AUTH_SECURE_COOKIE=true`。
-
-## 云端部署前提
-
-第一阶段云端仍然保留 Navidrome：
-
-- Web 控制台负责产品体验、下载入口、记录管理和内嵌播放。
-- API 负责调用 yt-dlp、读写 Postgres、调用 Navidrome API。
-- Navidrome 负责音乐库扫描、封面、播放流和 Subsonic 兼容能力。
-
-上云前必须补齐：
-
-- 反向代理配置，例如把公网域名转发到 API 端口。
-- 服务器磁盘目录规划，至少包含 music library、cookies、Navidrome data。
-- Bilibili Cookie 需要从本机浏览器导出后上传到服务器。
-
-详细部署说明：
-
-- [部署说明](docs/user/deploy.html)
-
-## 常用检查
-
-```powershell
-pnpm typecheck
-pnpm build
-```
-
+备份这个文件夹，就能保留大部分本地使用数据。

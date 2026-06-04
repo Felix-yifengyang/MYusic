@@ -1,5 +1,9 @@
 import crypto from "node:crypto";
+import http from "node:http";
+import https from "node:https";
 import path from "node:path";
+import { pipeline } from "node:stream";
+import type { IncomingMessage, OutgoingHttpHeaders } from "node:http";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { IngestionMatchMethod, IngestionRecord, NavidromeScanStatus, NavidromeSong, NavidromeSongsResult } from "@myusic/shared";
 import type { ApiConfig } from "./config";
@@ -52,9 +56,9 @@ export async function getNavidromeSongs(config: ApiConfig, query: string): Promi
     };
   }
 
-  const response = await requestJson<RandomSongsPayload>(config, "getRandomSongs", { size: "80" });
+  const response = await requestJson<RandomSongsPayload>(config, "getRandomSongs", { size: "500" });
   return {
-    songs: normalizeArray(response.randomSongs?.song)
+    songs: normalizeArray(response.randomSongs?.song).sort(compareNavidromeSongs)
   };
 }
 
@@ -134,23 +138,32 @@ async function proxyNavidromeBinary(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const headers: HeadersInit = {};
+  const headers: OutgoingHttpHeaders = {};
   const range = request.headers.range;
-  if (range) headers.range = range;
+  if (range) headers.Range = range;
 
-  const upstream = await fetch(buildUrl(config, endpoint, params), { headers });
-  reply.code(upstream.status);
+  const upstream = await requestNavidromeBinary(buildUrl(config, endpoint, params), headers);
+  reply.hijack();
+  reply.raw.statusCode = upstream.statusCode || 502;
 
-  for (const header of ["accept-ranges", "content-length", "content-range", "content-type"]) {
-    const value = upstream.headers.get(header);
-    if (value) reply.header(header, value);
+  for (const header of ["accept-ranges", "content-length", "content-range", "content-type"] as const) {
+    const value = upstream.headers[header];
+    if (value) reply.raw.setHeader(header, value);
   }
 
-  const body = Buffer.from(await upstream.arrayBuffer());
-  if (!upstream.headers.get("content-length")) {
-    reply.header("content-length", String(body.length));
-  }
-  reply.send(body);
+  pipeline(upstream, reply.raw, (error) => {
+    if (error && !reply.raw.destroyed) reply.raw.destroy(error);
+  });
+}
+
+function requestNavidromeBinary(url: string, headers: OutgoingHttpHeaders): Promise<IncomingMessage> {
+  return new Promise((resolve, reject) => {
+    const upstreamUrl = new URL(url);
+    const transport = upstreamUrl.protocol === "https:" ? https : http;
+    const upstreamRequest = transport.request(upstreamUrl, { headers, method: "GET" }, resolve);
+    upstreamRequest.on("error", reject);
+    upstreamRequest.end();
+  });
 }
 
 function buildUrl(config: ApiConfig, endpoint: string, params: Record<string, string>) {
@@ -218,4 +231,15 @@ function normalizeScanStatus(value: ScanStatusPayload["scanStatus"]): NavidromeS
     scanning: Boolean(value?.scanning),
     count: typeof value?.count === "number" ? value.count : undefined
   };
+}
+
+function compareNavidromeSongs(left: NavidromeSong, right: NavidromeSong) {
+  return compareSongText(left.title, right.title)
+    || compareSongText(left.artist, right.artist)
+    || compareSongText(left.album, right.album)
+    || left.id.localeCompare(right.id);
+}
+
+function compareSongText(left = "", right = "") {
+  return left.localeCompare(right, "zh-CN", { numeric: true, sensitivity: "base" });
 }

@@ -1,5 +1,5 @@
 import type { DiagnosticCheck, DiagnosticsReport, RuntimeStatus } from "@myusic/shared";
-import { Empty } from "./common";
+import { EmptyState } from "./ui";
 
 export function StatusPanel({
   status,
@@ -12,7 +12,7 @@ export function StatusPanel({
 }) {
   return (
     <>
-      {status ? <QuickStatus status={status} /> : <Empty>正在读取状态</Empty>}
+      {status ? <QuickStatus status={status} compact={compactDiagnostics} /> : <EmptyState>正在读取状态</EmptyState>}
       {diagnostics && <DiagnosticsList diagnostics={diagnostics} compact={compactDiagnostics} />}
     </>
   );
@@ -33,7 +33,17 @@ export function DiagnosticsList({ diagnostics, compact = false }: { diagnostics:
   );
 }
 
-function QuickStatus({ status }: { status: RuntimeStatus }) {
+function QuickStatus({ status, compact = false }: { status: RuntimeStatus; compact?: boolean }) {
+  if (compact) {
+    return (
+      <div className="facts compact-facts">
+        <Fact label="下载服务" value={status.collectorUrl ? "可用" : "未连接"} />
+        <Fact label="音乐库服务" value={status.navidromeUrl ? "可用" : "未连接"} />
+        <Fact label="Cookie" value={formatCookieStatus(status)} />
+      </div>
+    );
+  }
+
   return (
     <div className="facts">
       <Fact label="下载服务" value={status.collectorUrl} />

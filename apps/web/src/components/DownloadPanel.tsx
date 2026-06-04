@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import type { DownloadJob, IngestionRecord } from "@myusic/shared";
-import { Empty } from "./common";
+import { Button, EmptyState, StatPill } from "./ui";
 
 export interface DownloadPanelProps {
   jobs: DownloadJob[];
@@ -37,11 +37,11 @@ export function DownloadPanel({
 
   return (
     <section className="collect-panel">
-      <div className="collect-hero">
-        <div>
-          <span>Collect</span>
-          <h2>把网页音频收进 MYusic</h2>
-          <p>{counts.running ? `${counts.running} 个任务正在处理，完成后会进入音乐库。` : "粘贴一个链接，MYusic 会下载、转码并同步到音乐库。"}</p>
+      <div className="collect-command">
+        <div className="collect-stats">
+          <StatPill label="进行中" value={counts.running} tone={counts.running ? "warn" : "neutral"} />
+          <StatPill label="已完成" value={counts.done} tone="ok" />
+          <StatPill label="失败" value={counts.failed} tone={counts.failed ? "danger" : "neutral"} />
         </div>
       </div>
 
@@ -50,36 +50,33 @@ export function DownloadPanel({
           id="download-url"
           name="url"
           type="url"
-          placeholder="粘贴 Bilibili / YouTube / 网页链接"
+          placeholder="粘贴链接"
           value={url}
           onChange={(event) => onUrlChange(event.target.value)}
           required
         />
-        <button type="submit" disabled={submitting}>{submitting ? "提交中..." : "开始收集"}</button>
+        <Button className="collect-submit" type="submit" disabled={submitting} aria-label={submitting ? "提交中" : "开始收集"}>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M5 12h13" />
+            <path d="m13 6 6 6-6 6" />
+          </svg>
+        </Button>
       </form>
-
-      <div className="collect-stats">
-        <SummaryPill label="进行中" value={counts.running} tone={counts.running ? "warn" : "neutral"} />
-        <SummaryPill label="已完成" value={counts.done} tone="ok" />
-        <SummaryPill label="失败" value={counts.failed} tone={counts.failed ? "danger" : "neutral"} />
-        <SummaryPill label="已取消" value={counts.canceled} tone="neutral" />
-      </div>
 
       {error && <p className="error">{error}</p>}
       {duplicateIngestion && (
         <div className="duplicate-notice">
           <span>已存在入库记录，未创建下载任务：{duplicateIngestion.id}</span>
-          <button className="button secondary compact" type="button" onClick={onOpenIngestions}>查看</button>
-          <button className="button secondary compact" type="button" onClick={onDismissDuplicate}>关闭</button>
+          <Button variant="secondary" size="compact" type="button" onClick={onOpenIngestions}>查看</Button>
+          <Button variant="secondary" size="compact" type="button" onClick={onDismissDuplicate}>关闭</Button>
         </div>
       )}
 
-      <div className="collect-section-heading">
+      <div className="section-heading">
         <div>
-          <h3>收集任务</h3>
-          <p>{jobs.length ? `${jobs.length} 条任务记录` : "暂无任务记录"}</p>
+          <h3>任务列表</h3>
         </div>
-        <button type="button" onClick={onClearJobs} disabled={!jobs.length}>清空任务</button>
+        <Button variant="secondary" type="button" onClick={onClearJobs} disabled={!jobs.length}>清空任务</Button>
       </div>
 
       <JobList
@@ -90,23 +87,6 @@ export function DownloadPanel({
         onOpenIngestions={onOpenIngestions}
       />
     </section>
-  );
-}
-
-function SummaryPill({
-  label,
-  value,
-  tone
-}: {
-  label: string;
-  value: number;
-  tone: "ok" | "warn" | "danger" | "neutral";
-}) {
-  return (
-    <div className={`summary-pill ${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
   );
 }
 
@@ -123,32 +103,35 @@ function JobList({
   onRetry: (id: string) => void;
   onOpenIngestions: () => void;
 }) {
-  if (!jobs.length) return <Empty>暂无下载任务</Empty>;
+  if (!jobs.length) return <EmptyState>暂无下载任务</EmptyState>;
 
   return (
     <div className="jobs">
       {jobs.map((job) => (
         <article className={`job collect-job ${job.status}`} key={job.id}>
-          <div className="collect-job-main">
-            <div className="collect-job-status">
+          <div className="collect-job-row">
+            <div className="collect-job-main">
               <span className={`status ${job.status}`}>{statusLabel(job.status)}</span>
+              <div className="url">{job.url}</div>
               <span className="meta">{formatDate(job.createdAt)}</span>
             </div>
-            <div className="url">{job.url}</div>
+            <div className="job-actions">
+              {job.status === "running" && (
+                <Button variant="secondary" size="compact" type="button" onClick={() => onCancel(job.id)}>取消</Button>
+              )}
+              {(job.status === "failed" || job.status === "canceled") && (
+                <Button variant="secondary" size="compact" type="button" onClick={() => onRetry(job.id)}>重试</Button>
+              )}
+              <Button variant="secondary" size="compact" type="button" onClick={() => onDelete(job.id)}>删除</Button>
+            </div>
           </div>
-          <SyncStatus job={job} />
-          <JobIngestionSummary job={job} onOpenIngestions={onOpenIngestions} />
-          <div className="job-actions">
-            {job.status === "running" && (
-              <button className="button secondary compact" type="button" onClick={() => onCancel(job.id)}>取消</button>
-            )}
-            {(job.status === "failed" || job.status === "canceled") && (
-              <button className="button secondary compact" type="button" onClick={() => onRetry(job.id)}>重试</button>
-            )}
-            <button className="button secondary compact" type="button" onClick={() => onDelete(job.id)}>删除</button>
-          </div>
-          {job.error && <pre>{job.error}</pre>}
-          {job.output && <pre>{job.output}</pre>}
+          <details className="job-details">
+            <summary>任务详情</summary>
+            <SyncStatus job={job} />
+            <JobIngestionSummary job={job} onOpenIngestions={onOpenIngestions} />
+            {job.error && <pre>{job.error}</pre>}
+            {job.output && <pre>{job.output}</pre>}
+          </details>
         </article>
       ))}
     </div>
@@ -178,7 +161,7 @@ function JobIngestionSummary({ job, onOpenIngestions }: { job: DownloadJob; onOp
   return (
     <div className="job-ingestion-summary">
       <span>入库记录：{ingestionId}</span>
-      <button className="button secondary compact" type="button" onClick={onOpenIngestions}>查看</button>
+      <Button variant="secondary" size="compact" type="button" onClick={onOpenIngestions}>查看</Button>
     </div>
   );
 }

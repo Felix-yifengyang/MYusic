@@ -1,9 +1,10 @@
 import { FormEvent, useState } from "react";
 import type { AuthStatus } from "@myusic/shared";
+import { Button, Field } from "./ui";
 
 export interface AuthPanelProps {
   status: AuthStatus;
-  onSetup: (username: string, password: string) => Promise<void>;
+  onInitializeAdmin: (username: string, password: string) => Promise<void>;
   onLogin: (username: string, password: string) => Promise<void>;
 }
 
@@ -12,13 +13,13 @@ export function AuthPanel(props: AuthPanelProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const mode = props.status.setupRequired ? "setup" : "login";
+  const initializing = props.status.setupRequired;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
     setSubmitting(true);
-    await (mode === "setup" ? props.onSetup(username, password) : props.onLogin(username, password))
+    await (initializing ? props.onInitializeAdmin(username, password) : props.onLogin(username, password))
       .catch((caught) => setError(caught instanceof Error ? caught.message : "\u8ba4\u8bc1\u5931\u8d25"))
       .finally(() => setSubmitting(false));
   }
@@ -28,29 +29,27 @@ export function AuthPanel(props: AuthPanelProps) {
       <form className="auth-card" onSubmit={submit}>
         <div>
           <h1>MYusic</h1>
-          <p>{mode === "setup" ? "创建管理员账号" : "登录控制台"}</p>
+          <p>{initializing ? "初始化管理员" : "登录控制台"}</p>
         </div>
 
         {error && <div className="error">{error}</div>}
 
-        <label>
-          <span>用户名</span>
+        <Field label="用户名">
           <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />
-        </label>
+        </Field>
 
-        <label>
-          <span>密码</span>
+        <Field label="密码">
           <input
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             type="password"
-            autoComplete={mode === "setup" ? "new-password" : "current-password"}
+            autoComplete={initializing ? "new-password" : "current-password"}
           />
-        </label>
+        </Field>
 
-        <button className="button" type="submit" disabled={submitting}>
-          {submitting ? "处理中..." : mode === "setup" ? "创建并登录" : "登录"}
-        </button>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "处理中..." : initializing ? "初始化并登录" : "登录"}
+        </Button>
       </form>
     </main>
   );

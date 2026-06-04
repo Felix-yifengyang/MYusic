@@ -40,7 +40,7 @@ export class AuthService {
     };
   }
 
-  async setupAdmin(username: string, password: string): Promise<AuthSession & { token: string }> {
+  async initializeAdmin(username: string, password: string): Promise<AuthSession & { token: string }> {
     await this.ensureMigrated();
     if (!(await this.isSetupRequired())) {
       throw new AuthError(409, "管理员已经创建，请直接登录。");

@@ -1,0 +1,126 @@
+﻿.settings-form,
+.account-security,
+.cookie-manager {
+  display: grid;
+  gap: 12px;
+}
+
+.cookie-manager {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.settings-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.settings-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025)),
+    rgba(19, 23, 27, .86);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .07);
+  padding: 18px;
+}
+
+.settings-card.wide {
+  grid-column: auto;
+}
+
+.settings-card-header {
+  display: grid;
+  gap: 6px;
+  border-left: 3px solid rgba(227, 177, 94, .72);
+  padding-left: 12px;
+}
+
+.settings-card-header h2 {
+  font-family: "Senty Sandalwood", system-ui, sans-serif;
+  font-weight: 400;
+  margin: 0;
+  font-size: 28px;
+}
+
+.settings-card-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.settings-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-primary {
+  width: fit-content;
+  min-height: 46px;
+  border: 0;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, .04)),
+    #efe7d6;
+  color: #141414;
+  cursor: pointer;
+  font-weight: 850;
+  padding: 0 20px;
+}
+
+.settings-card .button {
+  border-radius: 10px;
+}
+
+.settings-card .facts {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.settings-card .fact,
+.settings-card .diagnostic,
+.settings-card .diagnostics-summary {
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .065), rgba(255, 255, 255, .025)),
+    rgba(10, 12, 14, .28);
+}
+
+.settings-card .cookie-manager {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.lan-settings {
+  margin-top: 0;
+}
+
+.settings-message {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+@media (max-width: 760px) {
+  .settings-page,
+  .settings-field-grid,
+  .settings-card .facts {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-primary {
+    width: 100%;
+  }
+
+  .settings-form > .button {
+    width: 100%;
+  }
+}

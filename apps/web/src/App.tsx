@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import type {
   AppSettings,
   AuthStatus,
@@ -33,11 +33,12 @@ import {
   retryDownloadJob,
   saveBilibiliCookie as saveBilibiliCookieApi,
   saveSettings as saveSettingsApi,
-  setupAdmin as setupAdminApi
+  initializeAdmin as initializeAdminApi
 } from "./api/client";
 import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
+import { ManagedPage } from "./components/ManagedPage";
 import type { PlayerTrack } from "./components/playerTypes";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { StatusPanel } from "./components/StatusPanel";
@@ -55,7 +56,6 @@ export function App() {
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [ingestions, setIngestions] = useState<IngestionRecord[]>([]);
   const [navidromeSongs, setNavidromeSongs] = useState<NavidromeSong[]>([]);
-  const [navidromeQuery, setNavidromeQuery] = useState("");
   const [navidromeError, setNavidromeError] = useState("");
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
@@ -165,8 +165,8 @@ export function App() {
     ]);
   }
 
-  async function setupAdmin(username: string, password: string) {
-    await setupAdminApi(username, password);
+  async function initializeAdmin(username: string, password: string) {
+    await initializeAdminApi(username, password);
     await verifySession();
     await boot();
   }
@@ -234,9 +234,9 @@ export function App() {
     setCookieStatus(await getBilibiliCookieStatus());
   }
 
-  async function loadNavidromeSongs(query = navidromeQuery) {
+  async function loadNavidromeSongs() {
     setNavidromeError("");
-    await getNavidromeSongs(query)
+    await getNavidromeSongs("")
       .then((body) => setNavidromeSongs(body.songs))
       .catch((caught) => {
         setNavidromeSongs([]);
@@ -376,11 +376,6 @@ export function App() {
     setSettings((current) => current ? { ...current, [key]: value } : current);
   }
 
-  function searchNavidrome(event: FormEvent) {
-    event.preventDefault();
-    void loadNavidromeSongs(navidromeQuery);
-  }
-
   function playSong(song: NavidromeSong) {
     const tracks = navidromeSongs.map(navidromePlayerTrack);
     const index = Math.max(0, navidromeSongs.findIndex((item) => item.id === song.id));
@@ -409,7 +404,7 @@ export function App() {
   }
 
   if (authStatus.enabled && !authStatus.authenticated) {
-    return <AuthPanel status={authStatus} onSetup={setupAdmin} onLogin={login} />;
+    return <AuthPanel status={authStatus} onInitializeAdmin={initializeAdmin} onLogin={login} />;
   }
 
   function openManagedView(view: ManagedView) {
@@ -419,33 +414,28 @@ export function App() {
 
   return (
     <>
-      {activeView === "player" && (
-        <TurntablePage
-          songs={navidromeSongs}
-          query={navidromeQuery}
-          error={navidromeError}
-          currentTrack={nowPlaying}
-          currentTrackKey={nowPlaying?.key || ""}
-          previousTrack={previousTrack}
-          nextTrack={nextTrack}
-          drawerOpen={drawerOpen}
-          onDrawerOpenChange={setDrawerOpen}
-          onQueryChange={setNavidromeQuery}
-          onSearch={searchNavidrome}
-          onRefresh={() => loadNavidromeSongs()}
-          onPlay={playSong}
-          onNavigate={openManagedView}
-          canPrevious={queueIndex > 0}
-          canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
-          onPrevious={playPrevious}
-          onNext={playNext}
-          onEnded={playNext}
-        />
-      )}
+      <TurntablePage
+        active={activeView === "player"}
+        songs={navidromeSongs}
+        error={navidromeError}
+        currentTrack={nowPlaying}
+        currentTrackKey={nowPlaying?.key || ""}
+        previousTrack={previousTrack}
+        nextTrack={nextTrack}
+        drawerOpen={drawerOpen}
+        onDrawerOpenChange={setDrawerOpen}
+        onRefresh={() => loadNavidromeSongs()}
+        onPlay={playSong}
+        onNavigate={openManagedView}
+        canPrevious={queueIndex > 0}
+        canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
+        onPrevious={playPrevious}
+        onNext={playNext}
+        onEnded={playNext}
+      />
 
       {activeView === "collect" && (
-        <ManagedPage title="收集" subtitle="粘贴链接，加入音乐库" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
-          <section className="managed-grid">
+        <ManagedPage title="收集" onBack={() => setActiveView("player")}>
           <DownloadPanel
             jobs={jobs}
             url={url}
@@ -468,18 +458,11 @@ export function App() {
               setError("");
             }}
           />
-
-          <aside className="block">
-            <h2>当前状态</h2>
-            <StatusPanel status={status} diagnostics={diagnostics} compactDiagnostics />
-          </aside>
-          </section>
         </ManagedPage>
       )}
 
       {activeView === "ingestions" && (
-        <ManagedPage title="入库" subtitle="同步与匹配记录" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
-          <section className="block">
+        <ManagedPage title="入库" onBack={() => setActiveView("player")}>
           <IngestionPanel
             ingestions={ingestions}
             message={ingestionMessage}
@@ -487,12 +470,11 @@ export function App() {
             onRefresh={loadIngestions}
             onRematch={rematchIngestion}
           />
-          </section>
         </ManagedPage>
       )}
 
       {activeView === "settings" && (
-        <ManagedPage title="设置" subtitle="路径、账号和连接" onBack={() => setActiveView("player")} authStatus={authStatus} onLogout={logout}>
+        <ManagedPage title="设置" onBack={() => setActiveView("player")}>
         <SettingsPanel
           settings={settings}
           status={status}
@@ -526,40 +508,6 @@ export function App() {
 
 function errorMessage(caught: unknown) {
   return caught instanceof Error ? caught.message : "\u64cd\u4f5c\u5931\u8d25";
-}
-
-function ManagedPage({
-  title,
-  subtitle,
-  authStatus,
-  onBack,
-  onLogout,
-  children
-}: {
-  title: string;
-  subtitle: string;
-  authStatus: AuthStatus;
-  onBack: () => void;
-  onLogout: () => Promise<void>;
-  children: ReactNode;
-}) {
-  return (
-    <main className="managed-page">
-      <header className="managed-topbar">
-        <button className="managed-brand" type="button" onClick={onBack}>MYusic</button>
-        <div className="managed-actions">
-          {authStatus.user && <span>{authStatus.user.username}</span>}
-          <button type="button" onClick={onBack}>播放</button>
-          {authStatus.enabled && <button type="button" onClick={() => void onLogout()}>退出</button>}
-        </div>
-      </header>
-      <section className="managed-head">
-        <p>{subtitle}</p>
-        <h1>{title}</h1>
-      </section>
-      {children}
-    </main>
-  );
 }
 
 function navidromePlayerTrack(song: NavidromeSong): PlayerTrack {
