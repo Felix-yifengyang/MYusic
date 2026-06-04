@@ -12,6 +12,7 @@ gsap.registerPlugin(useGSAP);
 export type AppView = "player" | "collect" | "ingestions" | "settings";
 
 export interface TurntablePageProps {
+  active: boolean;
   songs: NavidromeSong[];
   error: string;
   currentTrack: PlayerTrack | null;
@@ -31,6 +32,7 @@ export interface TurntablePageProps {
 }
 
 export function TurntablePage({
+  active,
   songs,
   error,
   currentTrack,
@@ -101,7 +103,7 @@ export function TurntablePage({
   }, [volume, currentTrack?.key]);
 
   useEffect(() => {
-    if (!drawerOpen) return;
+    if (!active || !drawerOpen) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") void commitDrawerOpen(false);
@@ -109,9 +111,11 @@ export function TurntablePage({
 
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [drawerOpen]);
+  }, [active, drawerOpen]);
 
   useEffect(() => {
+    if (!active) return;
+
     const handlePlayerShortcut = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat || isShortcutBlockedTarget(event.target)) return;
 
@@ -322,7 +326,7 @@ export function TurntablePage({
   }
 
   return (
-    <main ref={pageRef} className={`turntable-page ${drawerOpen ? "drawer-open" : ""} ${drawerDragProgress !== null ? "drawer-dragging" : ""}`} style={pageStyle}>
+    <main ref={pageRef} className={`turntable-page ${drawerOpen ? "drawer-open" : ""} ${drawerDragProgress !== null ? "drawer-dragging" : ""}`} hidden={!active} style={pageStyle}>
       <header className="turntable-topbar">
         <strong>MYusic</strong>
       </header>

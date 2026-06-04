@@ -414,26 +414,25 @@ export function App() {
 
   return (
     <>
-      {activeView === "player" && (
-        <TurntablePage
-          songs={navidromeSongs}
-          error={navidromeError}
-          currentTrack={nowPlaying}
-          currentTrackKey={nowPlaying?.key || ""}
-          previousTrack={previousTrack}
-          nextTrack={nextTrack}
-          drawerOpen={drawerOpen}
-          onDrawerOpenChange={setDrawerOpen}
-          onRefresh={() => loadNavidromeSongs()}
-          onPlay={playSong}
-          onNavigate={openManagedView}
-          canPrevious={queueIndex > 0}
-          canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
-          onPrevious={playPrevious}
-          onNext={playNext}
-          onEnded={playNext}
-        />
-      )}
+      <TurntablePage
+        active={activeView === "player"}
+        songs={navidromeSongs}
+        error={navidromeError}
+        currentTrack={nowPlaying}
+        currentTrackKey={nowPlaying?.key || ""}
+        previousTrack={previousTrack}
+        nextTrack={nextTrack}
+        drawerOpen={drawerOpen}
+        onDrawerOpenChange={setDrawerOpen}
+        onRefresh={() => loadNavidromeSongs()}
+        onPlay={playSong}
+        onNavigate={openManagedView}
+        canPrevious={queueIndex > 0}
+        canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
+        onPrevious={playPrevious}
+        onNext={playNext}
+        onEnded={playNext}
+      />
 
       {activeView === "collect" && (
         <ManagedPage title="收集" onBack={() => setActiveView("player")}>
