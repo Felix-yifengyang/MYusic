@@ -92,11 +92,11 @@ export function TurntablePage({
 
   useGSAP(() => {
     return () => {
-      pendingRecordSelectionRef.current?.();
       pendingRecordSelectionRef.current = null;
       recordChangeTimelineRef.current?.kill();
       flyingRecordRef.current?.remove();
       restoreHiddenSourceRecord(hiddenSourceRecordRef);
+      restoreTurntableRecord(recordRef);
       recordChangeLockedRef.current = false;
     };
   }, { scope: pageRef });
@@ -318,6 +318,7 @@ export function TurntablePage({
     flyingRecordRef.current?.remove();
     flyingRecordRef.current = null;
     restoreHiddenSourceRecord(hiddenSourceRecordRef);
+    restoreTurntableRecord(recordRef);
     recordChangeLockedRef.current = false;
     drawerGestureRef.current.active = false;
     setDrawerDragProgress(null);
@@ -827,6 +828,11 @@ function restoreHiddenSourceRecord(sourceRecordRef: { current: HTMLElement | nul
   if (!sourceRecordRef.current) return;
   gsap.set(sourceRecordRef.current, { clearProps: "opacity,visibility" });
   sourceRecordRef.current = null;
+}
+
+function restoreTurntableRecord(recordRef: { current: HTMLElement | null }) {
+  if (!recordRef.current) return;
+  gsap.set(recordRef.current, { clearProps: "opacity,visibility,scale" });
 }
 
 function formatDuration(seconds?: number) {
