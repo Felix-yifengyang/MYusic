@@ -28,7 +28,7 @@ export function AgentPanel() {
     if (!content || sending) return;
 
     const userTurn: AgentTurn = {
-      id: crypto.randomUUID(),
+      id: createTurnId(),
       role: "user",
       content
     };
@@ -48,7 +48,7 @@ export function AgentPanel() {
         setTurns((current) => [
           ...current,
           {
-            id: crypto.randomUUID(),
+            id: createTurnId(),
             role: "assistant",
             content: body.reply
           }
@@ -114,4 +114,9 @@ export function AgentPanel() {
       </form>
     </section>
   );
+}
+
+function createTurnId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `turn:${Date.now()}:${Math.random().toString(36).slice(2)}`;
 }
