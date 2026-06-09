@@ -728,6 +728,10 @@
   }
 }
 /* Immersive turntable desk prototype */
+.turntable-page button:focus {
+  outline: none;
+}
+
 .turntable-page {
   --drawer-duration: 550ms;
   --drawer-progress: 0;
