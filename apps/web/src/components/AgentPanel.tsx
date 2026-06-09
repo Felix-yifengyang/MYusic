@@ -9,11 +9,6 @@ interface AgentTurn {
   content: string;
 }
 
-const SYSTEM_MESSAGE: AgentChatMessage = {
-  role: "system",
-  content: "你是 MYusic 里的音乐助手。请用中文简洁回答，专注音乐推荐、歌手、歌曲、歌单和流行趋势。"
-};
-
 const PROMPTS = [
   "推荐 5 首最近适合通勤听的中文歌。",
   "找几首类似《凄美地》的歌。",
@@ -43,13 +38,12 @@ export function AgentPanel() {
     setError("");
     setSending(true);
 
-    await chatWithAgent([
-      SYSTEM_MESSAGE,
-      ...nextTurns.map((turn): AgentChatMessage => ({
+    await chatWithAgent(
+      nextTurns.map((turn): AgentChatMessage => ({
         role: turn.role,
         content: turn.content
       }))
-    ])
+    )
       .then((body) => {
         setTurns((current) => [
           ...current,
