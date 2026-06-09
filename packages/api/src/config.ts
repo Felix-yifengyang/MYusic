@@ -33,6 +33,11 @@ export interface ApiConfig {
     sessionDays: number;
     secureCookie: boolean;
   };
+  agent: {
+    deepseekApiKey?: string;
+    deepseekBaseUrl: string;
+    model: string;
+  };
   webDir: string;
 }
 
@@ -76,6 +81,11 @@ export function loadApiConfig(configPath: string): ApiConfig {
       sessionDays: readNumberEnv("MYUSIC_AUTH_SESSION_DAYS", Number(parsed.auth?.sessionDays || 30)),
       secureCookie: readBooleanEnv("MYUSIC_AUTH_SECURE_COOKIE", Boolean(parsed.auth?.secureCookie))
     },
+    agent: {
+      deepseekApiKey: process.env.MYUSIC_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY,
+      deepseekBaseUrl: process.env.MYUSIC_DEEPSEEK_BASE_URL || parsed.agent?.deepseekBaseUrl || "https://api.deepseek.com",
+      model: process.env.MYUSIC_AGENT_MODEL || parsed.agent?.model || "deepseek-chat"
+    },
     webDir: parsed.webDir || path.join(rootDir, "apps", "web", "dist")
   };
 }
@@ -96,6 +106,10 @@ export function saveApiConfig(config: ApiConfig) {
     ingestionStorePath: config.ingestionStorePath,
     database: config.database,
     auth: config.auth,
+    agent: {
+      deepseekBaseUrl: config.agent.deepseekBaseUrl,
+      model: config.agent.model
+    },
     webDir: config.webDir
   };
 

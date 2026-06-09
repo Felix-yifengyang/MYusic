@@ -10,6 +10,7 @@ import { getLanAddresses } from "./network";
 import { createRepository } from "./persistence";
 import type { AppStateRepository } from "./persistence/repository";
 import { registerAuthGuard, registerAuthRoutes } from "./routes/auth";
+import { registerAgentRoutes } from "./routes/agent";
 import { registerIngestionRoutes } from "./routes/ingestions";
 import { registerJobRoutes } from "./routes/jobs";
 import { registerNavidromeRoutes } from "./routes/navidrome";
@@ -42,6 +43,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
 
   registerAuthRoutes(app, auth);
   registerAuthGuard(app, auth);
+  registerAgentRoutes(app, config);
 
   app.get("/api/health", async (request): Promise<RuntimeStatus> => {
     const navidromeUrl = config.navidrome.baseUrl || "http://127.0.0.1:4533";
