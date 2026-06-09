@@ -1,0 +1,123 @@
+import { useRef, useState } from "react";
+import type { FormEvent } from "react";
+import { chatWithAgent, type AgentChatMessage } from "../api/client";
+import { Button, EmptyState } from "./ui";
+
+interface AgentTurn {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
+
+const SYSTEM_MESSAGE: AgentChatMessage = {
+  role: "system",
+  content: "你是 MYusic 里的音乐助手。请用中文简洁回答，专注音乐推荐、歌手、歌曲、歌单和流行趋势。"
+};
+
+const PROMPTS = [
+  "推荐 5 首最近适合通勤听的中文歌。",
+  "找几首类似《凄美地》的歌。",
+  "今天有什么值得听的新歌？"
+];
+
+export function AgentPanel() {
+  const [turns, setTurns] = useState<AgentTurn[]>([]);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content || sending) return;
+
+    const userTurn: AgentTurn = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content
+    };
+    const nextTurns = [...turns, userTurn];
+    setTurns(nextTurns);
+    setDraft("");
+    setError("");
+    setSending(true);
+
+    await chatWithAgent([
+      SYSTEM_MESSAGE,
+      ...nextTurns.map((turn): AgentChatMessage => ({
+        role: turn.role,
+        content: turn.content
+      }))
+    ])
+      .then((body) => {
+        setTurns((current) => [
+          ...current,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: body.reply
+          }
+        ]);
+      })
+      .catch((caught) => {
+        setError(caught instanceof Error ? caught.message : "音乐助手暂时没有回应。");
+      })
+      .finally(() => {
+        setSending(false);
+        inputRef.current?.focus();
+      });
+  }
+
+  function usePrompt(prompt: string) {
+    setDraft(prompt);
+    inputRef.current?.focus();
+  }
+
+  return (
+    <section className="agent-panel">
+      <div className="agent-thread" aria-live="polite">
+        {turns.length ? turns.map((turn) => (
+          <article className={`agent-bubble ${turn.role}`} key={turn.id}>
+            {turn.content.split("\n").map((line, index) => (
+              <p key={`${turn.id}:${index}`}>{line || "\u00a0"}</p>
+            ))}
+          </article>
+        )) : (
+          <EmptyState>问我歌曲推荐、歌手、歌单或者最近流行趋势。</EmptyState>
+        )}
+        {sending ? <div className="agent-loading">正在思考...</div> : null}
+      </div>
+
+      {error ? <div className="error">{error}</div> : null}
+
+      <div className="agent-prompts">
+        {PROMPTS.map((prompt) => (
+          <button type="button" key={prompt} onClick={() => usePrompt(prompt)}>
+            {prompt}
+          </button>
+        ))}
+      </div>
+
+      <form className="agent-composer" onSubmit={submit}>
+        <textarea
+          ref={inputRef}
+          aria-label="音乐问题"
+          placeholder="问一个音乐问题..."
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
+        />
+        <div className="agent-actions">
+          <Button type="submit" disabled={sending || !draft.trim()}>
+            {sending ? "发送中" : "发送"}
+          </Button>
+        </div>
+      </form>
+    </section>
+  );
+}

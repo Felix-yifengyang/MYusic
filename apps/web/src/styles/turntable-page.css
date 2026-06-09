@@ -1631,6 +1631,32 @@
   transform: rotate(45deg);
 }
 
+.drawer-action-agent span {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(240, 207, 160, .78);
+  border-radius: 50%;
+}
+
+.drawer-action-agent span::before {
+  top: 3px;
+  left: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(240, 207, 160, .78);
+}
+
+.drawer-action-agent span::after {
+  right: -5px;
+  bottom: -2px;
+  width: 7px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(240, 207, 160, .78);
+  transform: rotate(42deg);
+}
+
 .drawer-action-settings span {
   width: 15px;
   height: 15px;

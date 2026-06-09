@@ -11,6 +11,17 @@ import type {
   RuntimeStatus
 } from "@myusic/shared";
 
+export type AgentChatRole = "system" | "user" | "assistant";
+
+export interface AgentChatMessage {
+  role: AgentChatRole;
+  content: string;
+}
+
+export interface AgentChatResponse {
+  reply: string;
+}
+
 export interface DownloadErrorBody {
   error?: string;
   code?: string;
@@ -89,6 +100,10 @@ export async function getDiagnostics() {
 
 export async function getNavidromeSongs(query: string) {
   return getJson<NavidromeSongsResult>(`/api/navidrome/songs?q=${encodeURIComponent(query)}`);
+}
+
+export async function chatWithAgent(messages: AgentChatMessage[]) {
+  return postJson<AgentChatResponse>("/api/agent/chat", { messages });
 }
 
 export async function createDownload(url: string) {

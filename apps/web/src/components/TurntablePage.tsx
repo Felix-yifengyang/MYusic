@@ -9,7 +9,7 @@ import drawerOpenSoundUrl from "../assets/sound/open.mp3";
 
 gsap.registerPlugin(useGSAP);
 
-export type AppView = "player" | "collect" | "ingestions" | "settings";
+export type AppView = "player" | "agent" | "collect" | "ingestions" | "settings";
 
 export interface TurntablePageProps {
   active: boolean;
@@ -701,6 +701,7 @@ function RecordDrawer({
         </button>
         <nav className="drawer-actions" aria-label="功能入口">
           <button className="drawer-icon-button drawer-action-collect" type="button" aria-label="收集" onClick={() => onNavigate("collect")}><span aria-hidden="true" /></button>
+          <button className="drawer-icon-button drawer-action-agent" type="button" aria-label="音乐问答" onClick={() => onNavigate("agent")}><span aria-hidden="true" /></button>
           <button className="drawer-icon-button drawer-action-ingestions" type="button" aria-label="入库" onClick={() => onNavigate("ingestions")}><span aria-hidden="true" /></button>
           <button className="drawer-icon-button drawer-action-settings" type="button" aria-label="设置" onClick={() => onNavigate("settings")}><span aria-hidden="true" /></button>
         </nav>

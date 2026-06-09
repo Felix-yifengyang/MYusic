@@ -35,6 +35,7 @@ import {
   saveSettings as saveSettingsApi,
   initializeAdmin as initializeAdminApi
 } from "./api/client";
+import { AgentPanel } from "./components/AgentPanel";
 import { AuthPanel } from "./components/AuthPanel";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
@@ -458,6 +459,12 @@ export function App() {
               setError("");
             }}
           />
+        </ManagedPage>
+      )}
+
+      {activeView === "agent" && (
+        <ManagedPage title="音乐问答" onBack={() => setActiveView("player")}>
+          <AgentPanel />
         </ManagedPage>
       )}
 
