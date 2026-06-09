@@ -56,6 +56,7 @@ export function TurntablePage({
   const recordChangeTimelineRef = useRef<gsap.core.Timeline | null>(null);
   const flyingRecordRef = useRef<HTMLElement | null>(null);
   const hiddenSourceRecordRef = useRef<HTMLElement | null>(null);
+  const pendingRecordSelectionRef = useRef<(() => void) | null>(null);
   const recordChangeIdRef = useRef(0);
   const recordChangeLockedRef = useRef(false);
   const currentTrackKeyRef = useRef(currentTrackKey);
@@ -91,6 +92,8 @@ export function TurntablePage({
 
   useGSAP(() => {
     return () => {
+      pendingRecordSelectionRef.current?.();
+      pendingRecordSelectionRef.current = null;
       recordChangeTimelineRef.current?.kill();
       flyingRecordRef.current?.remove();
       restoreHiddenSourceRecord(hiddenSourceRecordRef);
@@ -108,6 +111,19 @@ export function TurntablePage({
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume, currentTrack?.key]);
+
+  useEffect(() => {
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flushPendingRecordSelection();
+    };
+
+    document.addEventListener("visibilitychange", flushWhenHidden);
+    window.addEventListener("pagehide", flushWhenHidden);
+    return () => {
+      document.removeEventListener("visibilitychange", flushWhenHidden);
+      window.removeEventListener("pagehide", flushWhenHidden);
+    };
+  }, []);
 
   useEffect(() => {
     if (!active || !drawerOpen) return;
@@ -177,6 +193,7 @@ export function TurntablePage({
     const record = recordRef.current;
     if (!active || !record || isDocumentHidden()) {
       recordChangeIdRef.current += 1;
+      pendingRecordSelectionRef.current = null;
       recordChangeTimelineRef.current?.kill();
       recordChangeTimelineRef.current = null;
       flyingRecordRef.current?.remove();
@@ -194,6 +211,7 @@ export function TurntablePage({
 
     const changeId = recordChangeIdRef.current + 1;
     recordChangeIdRef.current = changeId;
+    pendingRecordSelectionRef.current = selectTrack;
     recordChangeTimelineRef.current?.kill();
     flyingRecordRef.current?.remove();
     flyingRecordRef.current = null;
@@ -221,7 +239,7 @@ export function TurntablePage({
     recordChangeTimelineRef.current = timeline;
 
     if (reducedMotion) {
-      timeline.call(selectTrack);
+      timeline.call(commitPendingRecordSelection);
       if (closeDrawer) timeline.call(() => void commitDrawerOpen(false));
       return;
     }
@@ -264,7 +282,7 @@ export function TurntablePage({
         })
         .call(() => {
           if (recordChangeIdRef.current !== changeId) return;
-          selectTrack();
+          commitPendingRecordSelection();
         })
         .to(flyingRecord, { autoAlpha: 0, scale: flight.targetScale * 0.985, duration: 0.08, ease: "power1.out" })
         .call(() => {
@@ -276,7 +294,7 @@ export function TurntablePage({
           if (closeDrawer) void commitDrawerOpen(false);
         }, undefined, "-=0.04");
     } else {
-      timeline.call(selectTrack);
+      timeline.call(commitPendingRecordSelection);
     }
 
     timeline.fromTo(
@@ -284,6 +302,26 @@ export function TurntablePage({
       { autoAlpha: 0, scale: 0.9 },
       { autoAlpha: 1, scale: 1, duration: 0.24, ease: "power2.out" }
     );
+  }
+
+  function commitPendingRecordSelection() {
+    const pendingSelection = pendingRecordSelectionRef.current;
+    pendingRecordSelectionRef.current = null;
+    pendingSelection?.();
+  }
+
+  function flushPendingRecordSelection() {
+    commitPendingRecordSelection();
+    recordChangeIdRef.current += 1;
+    recordChangeTimelineRef.current?.kill();
+    recordChangeTimelineRef.current = null;
+    flyingRecordRef.current?.remove();
+    flyingRecordRef.current = null;
+    restoreHiddenSourceRecord(hiddenSourceRecordRef);
+    recordChangeLockedRef.current = false;
+    drawerGestureRef.current.active = false;
+    setDrawerDragProgress(null);
+    setRecordChangeLocked(false);
   }
 
   function seek(value: string) {
