@@ -124,14 +124,17 @@ export function TurntablePage({
     if (!active) return;
 
     const handlePlayerShortcut = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.repeat || isShortcutBlockedTarget(event.target)) return;
+      if (event.defaultPrevented || event.repeat) return;
 
       if (event.code === "Space") {
-        if (!currentTrack) return;
+        if (isTextEntryTarget(event.target)) return;
         event.preventDefault();
-        void togglePlayback();
+        event.stopPropagation();
+        if (currentTrack) void togglePlayback();
         return;
       }
+
+      if (isShortcutBlockedTarget(event.target)) return;
 
       if (event.key === "ArrowLeft" && canPrevious) {
         event.preventDefault();
@@ -498,13 +501,18 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function isShortcutBlockedTarget(target: EventTarget | null) {
+  return isTextEntryTarget(target) || target instanceof HTMLElement && (
+    target.tagName === "BUTTON"
+    || target.tagName === "A"
+  );
+}
+
+function isTextEntryTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && (
     target.isContentEditable
     || target.tagName === "INPUT"
     || target.tagName === "TEXTAREA"
     || target.tagName === "SELECT"
-    || target.tagName === "BUTTON"
-    || target.tagName === "A"
   );
 }
 
