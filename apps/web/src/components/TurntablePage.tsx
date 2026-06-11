@@ -444,6 +444,7 @@ export function TurntablePage({
 
             <section className="machine" aria-label="唱片机">
               <div className="plinth">
+                <span className="turntable-base-asset" aria-hidden="true" />
                 <div className="platter" aria-hidden="true" />
                 <VinylRecord ref={recordRef} className="record" coverUrl={currentTrack?.coverUrl} spinning={playing} />
                 <button
@@ -453,10 +454,9 @@ export function TurntablePage({
                   disabled={!currentTrack}
                   onClick={() => void togglePlayback()}
                 >
-                  <span className="tonearm-wand" />
-                  <span className="tonearm-cartridge" />
+                  <span className="tonearm-asset" />
                 </button>
-                <div className="tonearm-base" aria-hidden="true"><span /></div>
+                <span className="tonearm-base-cover" aria-hidden="true" />
                 <div className="turntable-screws" aria-hidden="true">
                   <span />
                   <span />
@@ -484,8 +484,8 @@ export function TurntablePage({
               </div>
               <section className="volume-console" aria-label="闊抽噺鎺у埗">
                 <div className="volume-console-face" aria-hidden="true">
-                  <span className="volume-slot" />
-                  <span className="volume-tab" />
+                  <span className="volume-track-asset" />
+                  <span className="volume-thumb-asset" />
                 </div>
                 <input
                   aria-label="闊抽噺"

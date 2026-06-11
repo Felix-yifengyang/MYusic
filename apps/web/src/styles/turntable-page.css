@@ -803,7 +803,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, .08);
   background:
     linear-gradient(90deg, rgba(255, 255, 255, .03), transparent 18%, rgba(0, 0, 0, .12) 52%, transparent 80%),
-    url("../assets/images/bg-table.jpg") center / cover no-repeat,
+    url("../assets/images/room/bg-table.png") center / cover no-repeat,
     #3c261a;
   box-shadow: 0 26px 70px rgba(0, 0, 0, .42);
 }
@@ -825,7 +825,7 @@
   left: clamp(72px, 18vw, 320px);
   z-index: 3;
   display: grid;
-  grid-template-columns: auto minmax(180px, 1fr) auto;
+  grid-template-columns: 6ch minmax(180px, 1fr) 6ch;
   gap: 14px;
   align-items: center;
   pointer-events: auto;
@@ -856,23 +856,27 @@
 .table-progress time {
   color: rgba(239, 204, 155, .76);
   font-family: "Senty Sandalwood", Georgia, serif;
+  font-variant-numeric: tabular-nums;
   font-size: 19px;
   line-height: 1;
+  text-align: left;
   text-shadow:
     0 1px 0 rgba(0, 0, 0, .38),
     0 0 10px rgba(55, 22, 8, .38);
 }
 
+.table-progress time:first-child {
+  text-align: right;
+}
+
 .carved-progress {
   position: relative;
   height: 70px;
-  background:
-    radial-gradient(ellipse at 50% 48%, rgba(236, 230, 218, .1), transparent 64%);
+  isolation: isolate;
   overflow: visible;
 }
 
 .carved-progress::before,
-.carved-progress::after,
 .carved-progress span {
   content: "";
   position: absolute;
@@ -882,39 +886,26 @@
 }
 
 .carved-progress::before {
-  top: 15px;
-  height: 34px;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, .9), rgba(17, 10, 8, .98) 34%, rgba(0, 0, 0, .96) 64%, rgba(19, 10, 7, .98)),
-    linear-gradient(180deg, rgba(235, 226, 210, .28) 0 12%, rgba(0, 0, 0, .98) 36% 76%, rgba(232, 219, 198, .22) 100%),
-    radial-gradient(ellipse at 50% 56%, rgba(0, 0, 0, .96), transparent 66%);
-  clip-path: polygon(0 54%, 4% 54%, 7% 36%, 10% 66%, 14% 50%, 18% 50%, 21% 25%, 24% 72%, 28% 54%, 34% 54%, 37% 38%, 40% 65%, 44% 50%, 50% 50%, 53% 22%, 57% 76%, 61% 55%, 67% 55%, 70% 40%, 74% 64%, 78% 52%, 84% 52%, 87% 30%, 91% 70%, 94% 55%, 100% 55%, 100% 68%, 94% 68%, 90% 80%, 86% 45%, 83% 64%, 77% 64%, 73% 76%, 69% 48%, 66% 66%, 60% 66%, 56% 84%, 52% 36%, 49% 62%, 43% 62%, 39% 75%, 36% 49%, 33% 66%, 27% 66%, 23% 82%, 20% 37%, 17% 64%, 13% 64%, 9% 76%, 6% 47%, 3% 67%, 0 67%);
-  filter:
-    drop-shadow(0 -3px 0 rgba(235, 226, 210, .36))
-    drop-shadow(0 2px 0 rgba(0, 0, 0, .95))
-    drop-shadow(0 6px 4px rgba(0, 0, 0, .82));
-  opacity: .98;
-}
-
-.carved-progress::after {
-  top: 15px;
-  width: 100%;
-  height: 34px;
-  background:
-    linear-gradient(90deg, rgba(190, 116, 58, .96), rgba(82, 35, 12, .98) 28%, rgba(246, 168, 82, .94) 58%, rgba(96, 39, 12, .98)),
-    linear-gradient(180deg, rgba(255, 224, 157, .76) 0 15%, rgba(55, 18, 4, .98) 40% 70%, rgba(236, 137, 52, .68) 100%),
-    radial-gradient(ellipse at 50% 58%, rgba(68, 22, 5, .92), transparent 66%);
-  clip-path: polygon(0 54%, 4% 54%, 7% 36%, 10% 66%, 14% 50%, 18% 50%, 21% 25%, 24% 72%, 28% 54%, 34% 54%, 37% 38%, 40% 65%, 44% 50%, 50% 50%, 53% 22%, 57% 76%, 61% 55%, 67% 55%, 70% 40%, 74% 64%, 78% 52%, 84% 52%, 87% 30%, 91% 70%, 94% 55%, 100% 55%, 100% 68%, 94% 68%, 90% 80%, 86% 45%, 83% 64%, 77% 64%, 73% 76%, 69% 48%, 66% 66%, 60% 66%, 56% 84%, 52% 36%, 49% 62%, 43% 62%, 39% 75%, 36% 49%, 33% 66%, 27% 66%, 23% 82%, 20% 37%, 17% 64%, 13% 64%, 9% 76%, 6% 47%, 3% 67%, 0 67%);
-  filter:
-    drop-shadow(0 -3px 0 rgba(255, 229, 168, .56))
-    drop-shadow(0 2px 0 rgba(55, 15, 3, .96))
-    drop-shadow(0 6px 4px rgba(0, 0, 0, .8));
-  mask-image: linear-gradient(90deg, #000 0 var(--play-progress-percent), transparent var(--play-progress-percent) 100%);
-  -webkit-mask-image: linear-gradient(90deg, #000 0 var(--play-progress-percent), transparent var(--play-progress-percent) 100%);
+  inset: 0;
+  background: url("../assets/images/room/progress-bed.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  opacity: .96;
 }
 
 .carved-progress span {
-  display: none;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  clip-path: inset(0 calc(100% - var(--play-progress-percent)) 0 0);
+  will-change: clip-path;
+}
+
+.carved-progress span::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/images/room/progress-fill.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
 }
 
 .carved-progress input {
@@ -936,9 +927,11 @@
   right: auto;
   left: calc(100% + 20px);
   z-index: 4;
-  --volume-travel: 130px;
-  width: 56px;
-  height: 174px;
+  --volume-unit: clamp(.82px, calc(var(--plinth-width) / 560), 1.08px);
+  --volume-travel: calc(156 * var(--volume-unit));
+  --volume-thumb-offset: calc(16 * var(--volume-unit));
+  width: calc(58 * var(--volume-unit));
+  height: calc(188 * var(--volume-unit));
   pointer-events: auto;
   transform: translateY(-50%);
 }
@@ -946,75 +939,30 @@
 .volume-console-face {
   position: absolute;
   inset: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
 }
 
-.volume-console-face::before {
-  content: "";
+.volume-track-asset {
   position: absolute;
-  top: 18px;
-  bottom: 18px;
-  left: 8px;
-  width: 40px;
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, transparent 0 4%, rgba(229, 197, 154, .22) 4% 5%, transparent 5% 24%, rgba(229, 197, 154, .18) 24% 25%, transparent 25% 49%, rgba(229, 197, 154, .18) 49% 50%, transparent 50% 74%, rgba(229, 197, 154, .18) 74% 75%, transparent 75% 95%, rgba(229, 197, 154, .22) 95% 96%, transparent 96%),
-    radial-gradient(ellipse at 50% 50%, rgba(237, 226, 210, .1), transparent 62%);
-  filter:
-    drop-shadow(-1px 0 0 rgba(235, 226, 210, .18))
-    drop-shadow(2px 0 2px rgba(0, 0, 0, .46));
-  opacity: .9;
+  top: 50%;
+  left: 50%;
+  width: calc(178 * var(--volume-unit));
+  height: calc(32 * var(--volume-unit));
+  background: url("../assets/images/room/volume-track.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center;
 }
 
-.volume-slot {
+.volume-thumb-asset {
   position: absolute;
-  top: 22px;
-  bottom: 22px;
-  left: 23px;
-  width: 10px;
-  border-radius: 999px;
-  background:
-    linear-gradient(90deg, rgba(235, 226, 210, .2) 0 12%, rgba(0, 0, 0, .92) 36% 78%, rgba(225, 194, 141, .16) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, .86), rgba(24, 8, 2, .96) 48%, rgba(0, 0, 0, .9)),
-    #120502;
-  box-shadow:
-    inset 2px 0 4px rgba(0, 0, 0, .86),
-    -1px 0 0 rgba(235, 226, 210, .2),
-    2px 0 2px rgba(0, 0, 0, .34);
-}
-
-.volume-tab {
-  position: absolute;
-  top: calc(22px + var(--volume-travel) * var(--volume-inverse));
-  left: 12px;
-  width: 32px;
-  height: 24px;
-  border: 1px solid rgba(255, 210, 132, .22);
-  border-radius: 5px;
-  background:
-    linear-gradient(90deg, rgba(255, 225, 150, .18), transparent 28%, rgba(42, 13, 4, .3) 72%, rgba(255, 218, 132, .08)),
-    repeating-linear-gradient(90deg, rgba(96, 43, 15, .2) 0 2px, transparent 2px 6px),
-    linear-gradient(145deg, #9d5a24, #612a12 58%, #2b0f05);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 226, 154, .32),
-    inset 0 -6px 10px rgba(31, 8, 2, .4),
-    0 7px 12px rgba(0, 0, 0, .36);
-  transform: translateY(-50%);
-}
-
-.volume-tab::after {
-  content: "";
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  bottom: 5px;
-  left: 7px;
-  border-radius: 999px;
-  background:
-    linear-gradient(90deg, rgba(43, 13, 4, .34), rgba(255, 206, 120, .18), rgba(37, 11, 3, .3));
-  opacity: .72;
+  top: calc(var(--volume-thumb-offset) + var(--volume-travel) * var(--volume-inverse));
+  left: 50%;
+  width: calc(22 * var(--volume-unit));
+  height: calc(42 * var(--volume-unit));
+  background: url("../assets/images/room/volume-thumb.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%) rotate(90deg);
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .34));
 }
 
 .volume-console input {
@@ -1022,8 +970,8 @@
   top: 50%;
   left: 50%;
   z-index: 1;
-  width: 154px;
-  height: 56px;
+  width: max(148px, calc(168 * var(--volume-unit)));
+  height: max(52px, calc(58 * var(--volume-unit)));
   opacity: 0;
   cursor: pointer;
   transform: translate(-50%, -50%) rotate(-90deg);
@@ -1047,29 +995,35 @@
 }
 
 .plinth {
+  position: relative;
   width: var(--plinth-width);
   min-height: 0;
-  aspect-ratio: 840 / 590;
-  border: 1px solid rgba(246, 238, 222, .55);
-  border-radius: 26px;
-  background:
-    radial-gradient(circle at 22% 16%, rgba(255, 255, 255, .42), transparent 13%),
-    radial-gradient(circle at 76% 18%, rgba(255, 222, 164, .24), transparent 18%),
-    linear-gradient(115deg, rgba(255, 246, 222, .82), rgba(206, 194, 170, .72) 36%, rgba(123, 116, 104, .54) 100%),
-    #bdb19d;
-  box-shadow:
-    0 38px 88px rgba(0, 0, 0, .36),
-    inset 0 1px 0 rgba(255, 255, 255, .72),
-    inset 0 0 0 10px rgba(255, 255, 255, .1),
-    inset 0 -18px 32px rgba(51, 39, 28, .18);
+  aspect-ratio: 594 / 542;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: 0 34px 70px rgba(0, 0, 0, .28);
   padding: 0;
 }
 
+.turntable-base-asset {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background: url("../assets/images/room/turntable-base.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .platter {
+  display: none;
   position: absolute;
   top: 8.8%;
   left: 6.2%;
-  display: grid;
   place-items: center;
   width: 61.9%;
   aspect-ratio: 1;
@@ -1089,9 +1043,10 @@
 
 .record {
   position: absolute;
-  top: 13.2%;
-  left: 9.3%;
-  width: 55.7%;
+  top: 15%;
+  left: 18%;
+  z-index: 2;
+  width: 58%;
   box-shadow:
     inset 0 0 0 18px #101114,
     0 18px 34px rgba(0, 0, 0, .34);
@@ -1100,17 +1055,17 @@
 .tonearm {
   position: absolute;
   display: block;
-  top: 22.7%;
-  right: 14%;
-  z-index: 5;
-  width: 45.2%;
-  height: 9.2%;
+  top: 19.2%;
+  right: 12.8%;
+  z-index: 4;
+  width: 18.4%;
+  aspect-ratio: 176 / 464;
   border: 0;
   background: transparent;
   cursor: pointer;
   padding: 0;
-  transform: rotate(-42deg);
-  transform-origin: calc(100% - 26px) 50%;
+  transform: rotate(18deg);
+  transform-origin: 62% 7.8%;
   transition: transform .55s cubic-bezier(.22, 1, .36, 1), filter .45s ease;
 }
 
@@ -1120,94 +1075,35 @@
 }
 
 .tonearm.is-playing {
-  transform: rotate(-36deg);
+  transform: rotate(35deg);
   filter: drop-shadow(0 9px 14px rgba(0, 0, 0, .24));
 }
 
-.tonearm-wand {
+.tonearm-asset {
   position: absolute;
-  top: 41%;
-  right: 12%;
-  left: 19.5%;
-  height: 17%;
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .88), rgba(210, 198, 174, .92) 45%, rgba(82, 71, 58, .74));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .7),
-    0 5px 10px rgba(0, 0, 0, .24);
+  inset: 0;
+  display: block;
+  background: url("../assets/images/room/tonearm-needle.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
 }
 
-.tonearm-wand::before {
-  content: "";
+.tonearm-base-cover {
   position: absolute;
-  right: -9%;
-  top: -115%;
-  width: 16%;
-  height: 320%;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, .8), transparent 18%),
-    linear-gradient(145deg, #e7d0a8, #6d5d49);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .54),
-    0 5px 12px rgba(0, 0, 0, .24);
-}
-
-.tonearm-cartridge {
-  position: absolute;
-  top: 11%;
-  left: 5.3%;
-  width: 17.4%;
-  height: 78%;
-  border-radius: 5px 10px 10px 5px;
-  background:
-    linear-gradient(90deg, #2b2521 0 18%, #e7d0aa 19% 68%, #9a8464);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .5),
-    0 7px 14px rgba(0, 0, 0, .28);
-}
-
-.tonearm-cartridge::after {
-  content: "";
-  position: absolute;
-  left: 9%;
-  bottom: -21%;
-  width: 20%;
-  height: 36%;
-  clip-path: polygon(40% 0, 100% 0, 68% 100%, 0 100%);
-  background: #2a1612;
-}
-
-.tonearm-base {
-  position: absolute;
-  top: 16.3%;
-  right: 10.5%;
-  z-index: 4;
-  width: 15.7%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, .62), transparent 19%),
-    radial-gradient(circle at 50% 50%, rgba(246, 234, 210, .9), rgba(130, 117, 95, .82) 38%, rgba(32, 30, 29, .92) 39% 56%, transparent 57%),
-    linear-gradient(145deg, rgba(243, 225, 192, .92), rgba(78, 72, 64, .92));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .55),
-    inset 0 -20px 28px rgba(0, 0, 0, .24),
-    0 18px 34px rgba(0, 0, 0, .28);
-}
-
-.tonearm-base span {
-  position: absolute;
-  inset: 29.5%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, .84), transparent 20%),
-    linear-gradient(145deg, #d8c4a0, #6d6252);
-  box-shadow: inset 0 -8px 12px rgba(0, 0, 0, .22);
+  top: 8.8%;
+  right: 3.8%;
+  z-index: 6;
+  width: 20.2%;
+  aspect-ratio: 541 / 641;
+  background: url("../assets/images/room/tonearm-base.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .turntable-screws span {
+  display: none;
   position: absolute;
   z-index: 6;
   width: clamp(14px, 2.86%, 24px);
@@ -1733,9 +1629,9 @@
   }
 
   .record {
-    top: 14.8%;
-    left: 10.4%;
-    width: 55.4%;
+    top: 15%;
+    left: 18%;
+    width: 58%;
   }
 
   .side-record {
@@ -1778,29 +1674,6 @@
   .volume-console {
     top: 50%;
     left: calc(100% + 20px);
-  }
-
-  .volume-console-face::before {
-    top: 18px;
-    bottom: 18px;
-    left: 8px;
-    width: 40px;
-  }
-
-  .volume-slot {
-    top: 22px;
-    bottom: 22px;
-    left: 23px;
-  }
-
-  .volume-tab {
-    top: calc(22px + var(--volume-travel) * var(--volume-inverse));
-    left: 12px;
-  }
-
-  .volume-console input {
-    width: 154px;
-    height: 56px;
   }
 }
 
@@ -1847,30 +1720,11 @@
   }
 
   .tonearm {
-    top: 18.9%;
-    right: 8.3%;
-    width: 58.3%;
-    height: 10.9%;
-  }
-
-  .tonearm-wand {
-    top: 16px;
-    right: 28px;
-    left: 45px;
-    height: 6px;
-  }
-
-  .tonearm-cartridge {
-    top: 5px;
-    left: 8px;
-    width: 44px;
-    height: 28px;
-  }
-
-  .tonearm-base {
-    top: 17.1%;
-    right: 10%;
-    width: 21.7%;
+    top: 19.2%;
+    right: 12.8%;
+    width: 18.4%;
+    height: auto;
+    aspect-ratio: 176 / 464;
   }
 
   .side-record {
@@ -1929,42 +1783,13 @@
     font-size: 16px;
   }
 
+  .carved-progress {
+    height: 58px;
+  }
+
   .volume-console {
     top: 50%;
     left: calc(100% + 20px);
-  }
-
-  .volume-console-face::before {
-    top: 18px;
-    bottom: 18px;
-    left: 8px;
-    width: 40px;
-  }
-
-  .volume-slot {
-    top: 22px;
-    bottom: 22px;
-    left: 23px;
-    width: 10px;
-  }
-
-  .volume-tab {
-    top: calc(22px + var(--volume-travel) * var(--volume-inverse));
-    left: 12px;
-    width: 32px;
-    height: 24px;
-  }
-
-  .volume-tab::after {
-    top: 7px;
-    right: 7px;
-    bottom: 5px;
-    left: 7px;
-  }
-
-  .volume-console input {
-    width: 154px;
-    height: 56px;
   }
 }
 
@@ -1988,9 +1813,9 @@
   }
 
   .record {
-    top: 13%;
-    left: 13%;
-    width: 53%;
+    top: 15%;
+    left: 18%;
+    width: 58%;
   }
 
   .drawer-open .table-progress,
