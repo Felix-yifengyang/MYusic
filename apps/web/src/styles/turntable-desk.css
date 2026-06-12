@@ -83,8 +83,8 @@
 
 .record {
   position: absolute;
-  top: 15%;
-  left: 18%;
+  top: 12.5%;
+  left: 16%;
   z-index: 2;
   width: 58%;
   box-shadow:
@@ -149,7 +149,7 @@
   aspect-ratio: 176 / 464;
   background: url("../assets/images/room/tonearm-needle.png") center / contain no-repeat;
   image-rendering: pixelated;
-  pointer-events: none;
+  pointer-events: auto;
   transform: translate(calc(-1 * var(--tonearm-asset-anchor-x)), calc(-1 * var(--tonearm-asset-anchor-y)));
   transform-origin: var(--tonearm-asset-anchor-x) var(--tonearm-asset-anchor-y);
 }
@@ -172,7 +172,7 @@
 
 .side-record:disabled {
   cursor: not-allowed;
-  opacity: .42;
+  opacity: 0;
 }
 
 .side-record-previous {
