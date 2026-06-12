@@ -15,7 +15,7 @@ const PROMPTS = [
   "今天有什么值得听的新歌？"
 ];
 
-export function AgentPanel() {
+export function AgentPanel({ preview = false }: { preview?: boolean }) {
   const [turns, setTurns] = useState<AgentTurn[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
@@ -36,6 +36,20 @@ export function AgentPanel() {
     setTurns(nextTurns);
     setDraft("");
     setError("");
+
+    if (preview) {
+      setTurns([
+        ...nextTurns,
+        {
+          id: createTurnId(),
+          role: "assistant",
+          content: "前端预览模式还没有连接音乐助手。这里保留对话界面，启动完整服务后会发送真实请求。"
+        }
+      ]);
+      inputRef.current?.focus();
+      return;
+    }
+
     setSending(true);
 
     await chatWithAgent(

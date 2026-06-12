@@ -1,0 +1,352 @@
+.desktop-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  pointer-events: none;
+  transform: translateY(calc((var(--drawer-progress) * var(--drawer-open-travel) * -1) - var(--drawer-peek)));
+  transition: transform var(--drawer-duration) cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+.drawer-dragging .desktop-layer {
+  transition: none;
+}
+
+.desktop-surface {
+  position: relative;
+  display: grid;
+  grid-template-columns: clamp(72px, 20vw, 280px) minmax(0, 1fr) clamp(72px, 20vw, 280px);
+  align-items: center;
+  min-height: 100%;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .03), transparent 18%, rgba(0, 0, 0, .12) 52%, transparent 80%),
+    url("../assets/images/room/bg-table.png") center / cover no-repeat,
+    #3c261a;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, .42);
+}
+
+.desktop-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(0, 0, 0, .18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 240, 210, .08), transparent 24%, rgba(0, 0, 0, .18));
+  pointer-events: none;
+}
+
+.machine {
+  position: relative;
+  z-index: 2;
+  grid-column: 2;
+  justify-self: center;
+  width: var(--plinth-width);
+  opacity: 1;
+  pointer-events: auto;
+  padding: clamp(46px, 7vh, 66px) 0 clamp(86px, 13vh, 116px);
+  transform: none;
+}
+
+.plinth {
+  position: relative;
+  width: var(--plinth-width);
+  min-height: 0;
+  aspect-ratio: 594 / 542;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: 0 34px 70px rgba(0, 0, 0, .28);
+  padding: 0;
+}
+
+.turntable-base-asset {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background: url("../assets/images/room/turntable-base.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.platter,
+.turntable-screws {
+  display: none;
+}
+
+.record {
+  position: absolute;
+  top: 15%;
+  left: 18%;
+  z-index: 2;
+  width: 58%;
+  box-shadow:
+    inset 0 0 0 18px #101114,
+    0 18px 34px rgba(0, 0, 0, .34);
+}
+
+.tonearm {
+  /* Hidden pivot circle: move this to the turntable socket. */
+  --tonearm-pivot-top: 13%;
+  --tonearm-pivot-right: 12%;
+  --tonearm-pivot-size: 8.6%;
+
+  /* Needle image: this anchor point is pinned to the pivot circle center. */
+  --tonearm-asset-width: 255%;
+  --tonearm-asset-anchor-x: 59.4%;
+  --tonearm-asset-anchor-y: 15.5%;
+
+  /* Larger angle raises the arm outward; smaller angle drops it inward. */
+  --tonearm-angle: 30deg;
+  position: absolute;
+  top: var(--tonearm-pivot-top);
+  right: var(--tonearm-pivot-right);
+  z-index: 4;
+  display: block;
+  width: var(--tonearm-pivot-size);
+  aspect-ratio: 1;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transform: rotate(var(--tonearm-angle));
+  transform-origin: 50% 50%;
+  transition: transform .55s cubic-bezier(.22, 1, .36, 1), filter .45s ease;
+}
+
+.tonearm::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.tonearm:disabled {
+  cursor: default;
+}
+
+.tonearm.is-playing {
+  --tonearm-angle: 18deg;
+  filter: drop-shadow(0 9px 14px rgba(0, 0, 0, .24));
+}
+
+.tonearm-asset {
+  position: absolute;
+  top: 120%;
+  left: 50%;
+  z-index: 1;
+  display: block;
+  width: var(--tonearm-asset-width);
+  aspect-ratio: 176 / 464;
+  background: url("../assets/images/room/tonearm-needle.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  transform: translate(calc(-1 * var(--tonearm-asset-anchor-x)), calc(-1 * var(--tonearm-asset-anchor-y)));
+  transform-origin: var(--tonearm-asset-anchor-x) var(--tonearm-asset-anchor-y);
+}
+
+.side-record {
+  position: absolute;
+  top: 47%;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+  width: clamp(180px, 22vw, 330px);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  pointer-events: auto;
+  padding: 0;
+  transform: translateY(-50%);
+}
+
+.side-record:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+}
+
+.side-record-previous {
+  left: calc(clamp(94px, 11vw, 166px) * -1);
+  justify-items: end;
+  text-align: right;
+}
+
+.side-record-next {
+  right: calc(clamp(94px, 11vw, 166px) * -1);
+  justify-items: start;
+  text-align: left;
+}
+
+.side-record-disc {
+  width: clamp(176px, 21vw, 320px);
+}
+
+.track-inscription {
+  position: absolute;
+  right: clamp(72px, 18vw, 320px);
+  bottom: clamp(112px, 16vh, 150px);
+  left: clamp(72px, 18vw, 320px);
+  z-index: 3;
+  margin: 0;
+  overflow: hidden;
+  color: rgba(226, 207, 178, .76);
+  font-family: "Senty Sandalwood", Georgia, serif;
+  font-size: 21px;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, .72),
+    0 -1px 0 rgba(255, 243, 222, .16),
+    0 0 12px rgba(18, 8, 4, .44);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.table-progress {
+  position: absolute;
+  right: clamp(72px, 18vw, 320px);
+  bottom: clamp(48px, 8vh, 70px);
+  left: clamp(72px, 18vw, 320px);
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 6ch minmax(180px, 1fr) 6ch;
+  gap: 14px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.table-progress time {
+  color: rgba(239, 204, 155, .76);
+  font-family: "Senty Sandalwood", Georgia, serif;
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: left;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, .38),
+    0 0 10px rgba(55, 22, 8, .38);
+}
+
+.table-progress time:first-child {
+  text-align: right;
+}
+
+.carved-progress {
+  position: relative;
+  height: 70px;
+  isolation: isolate;
+  overflow: visible;
+}
+
+.carved-progress::before,
+.carved-progress span {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.carved-progress::before {
+  inset: 0;
+  background: url("../assets/images/room/progress-bed.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  opacity: .96;
+}
+
+.carved-progress span {
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  clip-path: inset(0 calc(100% - var(--play-progress-percent)) 0 0);
+  will-change: clip-path;
+}
+
+.carved-progress span::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/images/room/progress-fill.png") center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+
+.carved-progress input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.carved-progress input:disabled {
+  cursor: default;
+}
+
+.volume-console {
+  position: absolute;
+  top: 50%;
+  right: auto;
+  left: calc(100% + 20px);
+  z-index: 4;
+  --volume-unit: clamp(.82px, calc(var(--plinth-width) / 560), 1.08px);
+  --volume-travel: calc(156 * var(--volume-unit));
+  --volume-thumb-offset: calc(16 * var(--volume-unit));
+  width: calc(58 * var(--volume-unit));
+  height: calc(188 * var(--volume-unit));
+  pointer-events: auto;
+  transform: translateY(-50%);
+}
+
+.volume-console-face {
+  position: absolute;
+  inset: 0;
+}
+
+.volume-track-asset {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(178 * var(--volume-unit));
+  height: calc(32 * var(--volume-unit));
+  background: url("../assets/images/room/volume-track.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center;
+}
+
+.volume-thumb-asset {
+  position: absolute;
+  top: calc(var(--volume-thumb-offset) + var(--volume-travel) * var(--volume-inverse));
+  left: 50%;
+  width: calc(22 * var(--volume-unit));
+  height: calc(42 * var(--volume-unit));
+  background: url("../assets/images/room/volume-thumb.png") center / contain no-repeat;
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .34));
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.volume-console input {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: max(148px, calc(168 * var(--volume-unit)));
+  height: max(52px, calc(58 * var(--volume-unit)));
+  opacity: 0;
+  cursor: pointer;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
+}

@@ -69,6 +69,7 @@ export function TurntablePage({
     source: null
   });
   const [playing, setPlaying] = useState(false);
+  const [tonearmPreviewPlaying, setTonearmPreviewPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(getInitialVolume);
@@ -105,6 +106,7 @@ export function TurntablePage({
     setCurrentTime(0);
     setDuration(0);
     setPlaying(false);
+    setTonearmPreviewPlaying(false);
     audioRetryRef.current = { trackKey: currentTrack?.key || "", attempts: 0 };
   }, [currentTrack?.key]);
 
@@ -180,8 +182,12 @@ export function TurntablePage({
 
   async function togglePlayback() {
     const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
+    if (!audio || !currentTrack) {
+      setTonearmPreviewPlaying((previewing) => !previewing);
+      return;
+    }
 
+    setTonearmPreviewPlaying(false);
     if (audio.paused) {
       await audio.play();
     } else {
@@ -448,15 +454,13 @@ export function TurntablePage({
                 <div className="platter" aria-hidden="true" />
                 <VinylRecord ref={recordRef} className="record" coverUrl={currentTrack?.coverUrl} spinning={playing} />
                 <button
-                  className={`tonearm ${playing ? "is-playing" : ""}`}
+                  className={`tonearm ${playing || tonearmPreviewPlaying ? "is-playing" : ""}`}
                   type="button"
                   aria-label={playing ? "抬起唱臂" : "落下唱臂"}
-                  disabled={!currentTrack}
                   onClick={() => void togglePlayback()}
                 >
                   <span className="tonearm-asset" />
                 </button>
-                <span className="tonearm-base-cover" aria-hidden="true" />
                 <div className="turntable-screws" aria-hidden="true">
                   <span />
                   <span />

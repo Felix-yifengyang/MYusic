@@ -11,6 +11,7 @@ import type {
   RuntimeStatus
 } from "@myusic/shared";
 import {
+  ApiError,
   ApiConnectionError,
   cancelDownloadJob,
   changePassword as changePasswordApi,
@@ -53,6 +54,7 @@ export function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [frontendPreview, setFrontendPreview] = useState(false);
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [ingestions, setIngestions] = useState<IngestionRecord[]>([]);
@@ -79,6 +81,7 @@ export function App() {
   const [submitting, setSubmitting] = useState(false);
   const activeViewRef = useRef<AppView>("player");
   const authStatusRef = useRef<AuthStatus | null>(null);
+  const frontendPreviewRef = useRef(false);
   const nowPlaying = queueIndex >= 0 ? queue[queueIndex] : null;
   const previousTrack = queueIndex > 0 ? queue[queueIndex - 1] : null;
   const nextTrack = queueIndex >= 0 && queueIndex < queue.length - 1 ? queue[queueIndex + 1] : null;
@@ -90,6 +93,10 @@ export function App() {
   useEffect(() => {
     authStatusRef.current = authStatus;
   }, [authStatus]);
+
+  useEffect(() => {
+    frontendPreviewRef.current = frontendPreview;
+  }, [frontendPreview]);
 
   useEffect(() => {
     void boot();
@@ -128,6 +135,7 @@ export function App() {
   useEffect(() => {
     if (activeView !== "collect") return;
     if (!authStatus || (authStatus.enabled && !authStatus.authenticated)) return;
+    if (frontendPreview) return;
 
     const events = new EventSource("/api/jobs/events");
     events.addEventListener("jobs", (event) => {
@@ -138,7 +146,7 @@ export function App() {
     };
 
     return () => events.close();
-  }, [activeView, authStatus]);
+  }, [activeView, authStatus, frontendPreview]);
 
   async function boot() {
     setAuthLoading(true);
@@ -151,12 +159,21 @@ export function App() {
         }
       })
       .catch((caught) => {
+        if (canUseFrontendPreview(caught)) {
+          enterFrontendPreview();
+          return;
+        }
         setError(errorMessage(caught));
       })
       .finally(() => setAuthLoading(false));
   }
 
   async function loadInitialData() {
+    if (frontendPreviewRef.current) {
+      hydrateFrontendPreviewData();
+      return;
+    }
+
     await Promise.all([
       loadStatus(),
       loadJobs(),
@@ -189,6 +206,11 @@ export function App() {
   }
 
   async function resetAfterLogout() {
+    if (frontendPreviewRef.current) {
+      enterFrontendPreview();
+      return;
+    }
+
     setStatus(null);
     setJobs([]);
     setIngestions([]);
@@ -212,30 +234,66 @@ export function App() {
   }
 
   async function loadStatus() {
+    if (frontendPreviewRef.current) {
+      setStatus(createPreviewStatus());
+      return;
+    }
+
     setStatus(await getHealth());
   }
 
   async function loadJobs() {
+    if (frontendPreviewRef.current) {
+      setJobs([]);
+      return;
+    }
+
     setJobs(await getJobs());
   }
 
   async function loadIngestions() {
+    if (frontendPreviewRef.current) {
+      setIngestions([]);
+      return;
+    }
+
     setIngestions(await getIngestions());
   }
 
   async function loadSettings() {
+    if (frontendPreviewRef.current) {
+      setSettings(createPreviewSettings());
+      return;
+    }
+
     setSettings(await getSettings());
   }
 
   async function loadDiagnostics() {
+    if (frontendPreviewRef.current) {
+      setDiagnostics(createPreviewDiagnostics());
+      return;
+    }
+
     setDiagnostics(await getDiagnostics());
   }
 
   async function loadBilibiliCookieStatus() {
+    if (frontendPreviewRef.current) {
+      setCookieStatus(createPreviewCookieStatus());
+      return;
+    }
+
     setCookieStatus(await getBilibiliCookieStatus());
   }
 
   async function loadNavidromeSongs() {
+    if (frontendPreviewRef.current) {
+      setNavidromeSongs([]);
+      setNavidromeError("前端预览模式：未连接后端，音乐库数据暂不可用。");
+      return;
+    }
+
     setNavidromeError("");
     await getNavidromeSongs("")
       .then((body) => setNavidromeSongs(body.songs))
@@ -249,6 +307,11 @@ export function App() {
     event.preventDefault();
     const mediaUrl = url.trim();
     if (!mediaUrl) return;
+
+    if (frontendPreviewRef.current) {
+      setError("前端预览模式不会创建真实下载任务。启动完整服务后可测试下载链路。");
+      return;
+    }
 
     setSubmitting(true);
     setError("");
@@ -272,24 +335,40 @@ export function App() {
   }
 
   async function cancelJob(id: string) {
+    if (frontendPreviewRef.current) return;
+
     await cancelDownloadJob(id);
     await loadJobs();
   }
 
   async function retryJob(id: string) {
+    if (frontendPreviewRef.current) return;
+
     await retryDownloadJob(id);
     await loadJobs();
   }
 
   async function clearJobs() {
+    if (frontendPreviewRef.current) {
+      setJobs([]);
+      return;
+    }
+
     setJobs(await clearDownloadJobs());
   }
 
   async function deleteJob(id: string) {
+    if (frontendPreviewRef.current) return;
+
     setJobs(await deleteDownloadJob(id));
   }
 
   async function rematchIngestion(id: string) {
+    if (frontendPreviewRef.current) {
+      setIngestionMessage("前端预览模式不会重新匹配音乐库。");
+      return;
+    }
+
     setIngestionMessage("");
     setRematchingIngestionId(id);
     await rematchIngestionApi(id)
@@ -307,6 +386,11 @@ export function App() {
     if (!settings) return;
 
     setSettingsMessage("");
+    if (frontendPreviewRef.current) {
+      setSettingsMessage("前端预览模式不会保存设置。");
+      return;
+    }
+
     const body = await saveSettingsApi(settings);
     setSettings(body.settings);
     await loadStatus();
@@ -331,6 +415,12 @@ export function App() {
 
     setBilibiliCookieSaving(true);
     setBilibiliCookieMessage("");
+    if (frontendPreviewRef.current) {
+      setBilibiliCookieMessage("前端预览模式不会保存 Cookie。");
+      setBilibiliCookieSaving(false);
+      return;
+    }
+
     await saveBilibiliCookieApi(content)
       .then(async (body) => {
         setSettings(body.settings);
@@ -347,6 +437,12 @@ export function App() {
   async function clearBilibiliCookie() {
     setBilibiliCookieSaving(true);
     setBilibiliCookieMessage("");
+    if (frontendPreviewRef.current) {
+      setBilibiliCookieMessage("前端预览模式不会清空 Cookie。");
+      setBilibiliCookieSaving(false);
+      return;
+    }
+
     await clearBilibiliCookieApi()
       .then(async (nextStatus) => {
         setCookieStatus(nextStatus);
@@ -362,6 +458,11 @@ export function App() {
   async function changePassword(event: FormEvent) {
     event.preventDefault();
     setPasswordMessage("");
+    if (frontendPreviewRef.current) {
+      setPasswordMessage("前端预览模式未连接账号服务。");
+      return;
+    }
+
     setPasswordSaving(true);
     await changePasswordApi(currentPassword, newPassword)
       .then(() => {
@@ -390,6 +491,28 @@ export function App() {
 
   function playNext() {
     setQueueIndex((current) => current >= 0 && current < queue.length - 1 ? current + 1 : current);
+  }
+
+  function enterFrontendPreview() {
+    setFrontendPreview(true);
+    setAuthStatus({
+      enabled: false,
+      setupRequired: false,
+      authenticated: true
+    });
+    hydrateFrontendPreviewData();
+  }
+
+  function hydrateFrontendPreviewData() {
+    setStatus(createPreviewStatus());
+    setJobs([]);
+    setIngestions([]);
+    setSettings(createPreviewSettings());
+    setDiagnostics(createPreviewDiagnostics());
+    setCookieStatus(createPreviewCookieStatus());
+    setNavidromeSongs([]);
+    setNavidromeError("前端预览模式：未连接后端，音乐库数据暂不可用。");
+    setError("");
   }
 
   if (authLoading || !authStatus) {
@@ -464,7 +587,7 @@ export function App() {
 
       {activeView === "agent" && (
         <ManagedPage title="音乐问答" onBack={() => setActiveView("player")}>
-          <AgentPanel />
+          <AgentPanel preview={frontendPreview} />
         </ManagedPage>
       )}
 
@@ -515,6 +638,79 @@ export function App() {
 
 function errorMessage(caught: unknown) {
   return caught instanceof Error ? caught.message : "\u64cd\u4f5c\u5931\u8d25";
+}
+
+function canUseFrontendPreview(caught: unknown) {
+  return isFrontendDevServer() && (
+    caught instanceof ApiConnectionError ||
+    (caught instanceof ApiError && caught.status === 504)
+  );
+}
+
+function isFrontendDevServer() {
+  const host = window.location.hostname;
+  return window.location.port === "3000" && (host === "127.0.0.1" || host === "localhost");
+}
+
+function createPreviewStatus(): RuntimeStatus {
+  return {
+    ok: true,
+    collectorUrl: "",
+    navidromeUrl: "",
+    musicDir: "前端预览模式",
+    audioFormat: "mp3",
+    cookies: {
+      bilibili: {
+        path: "",
+        exists: false
+      }
+    },
+    tools: {
+      ytdlpPath: "",
+      ffmpegPath: "",
+      ytdlpExists: false,
+      ffmpegExists: false
+    },
+    lan: [],
+    requestHost: window.location.host
+  };
+}
+
+function createPreviewSettings(): AppSettings {
+  return {
+    musicDir: "",
+    ytdlpPath: "",
+    ffmpegPath: "",
+    audioFormat: "mp3",
+    audioQuality: "0",
+    bilibiliCookiesPath: "",
+    navidromeBaseUrl: "",
+    navidromeUsername: "",
+    navidromePassword: "",
+    maxJobs: 50
+  };
+}
+
+function createPreviewDiagnostics(): DiagnosticsReport {
+  return {
+    ok: true,
+    checks: [
+      {
+        id: "frontend-preview",
+        label: "前端预览",
+        level: "warning",
+        message: "当前只运行了 web 开发服务器，后端接口已跳过。"
+      }
+    ]
+  };
+}
+
+function createPreviewCookieStatus(): CookieFileStatus {
+  return {
+    path: "",
+    exists: false,
+    size: 0
+  };
 }
 
 function navidromePlayerTrack(song: NavidromeSong): PlayerTrack {

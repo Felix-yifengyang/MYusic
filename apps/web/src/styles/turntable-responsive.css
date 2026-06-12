@@ -1,0 +1,234 @@
+@media (max-width: 900px) {
+  .turntable-page {
+    --plinth-width: clamp(340px, min(82vw, 68dvh), 560px);
+  }
+
+  .desktop-surface {
+    grid-template-columns: 64px minmax(0, 1fr) 64px;
+  }
+
+  .machine {
+    padding: clamp(34px, 6vh, 62px) 0 clamp(62px, 10vh, 96px);
+  }
+
+  .plinth {
+    width: var(--plinth-width);
+    min-height: 0;
+  }
+
+  .record {
+    top: 15%;
+    left: 18%;
+    width: 58%;
+  }
+
+  .side-record {
+    width: clamp(158px, 25vw, 220px);
+  }
+
+  .side-record-disc {
+    width: clamp(154px, 24vw, 220px);
+  }
+
+  .side-record-previous {
+    left: calc(clamp(96px, 15vw, 138px) * -1);
+  }
+
+  .side-record-next {
+    right: calc(clamp(96px, 15vw, 138px) * -1);
+  }
+
+  .record-shelf {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 155px));
+    justify-content: center;
+  }
+
+  .table-progress {
+    right: 76px;
+    bottom: clamp(48px, 7vh, 64px);
+    left: 76px;
+  }
+
+  .track-inscription {
+    right: 76px;
+    bottom: clamp(108px, 15vh, 138px);
+    left: 76px;
+  }
+
+  .volume-console {
+    top: 50%;
+    left: calc(100% + 20px);
+  }
+}
+
+@media (max-width: 600px) {
+  .turntable-page {
+    --drawer-peek: 80px;
+    --drawer-outside-edge: 80px;
+    --drawer-height: calc(var(--drawer-peek) + var(--drawer-open-travel) + var(--drawer-outside-edge) + 32px);
+    --drawer-content-top: calc(var(--drawer-peek) + 32px);
+    --plinth-width: clamp(280px, min(86vw, 54dvh), 360px);
+  }
+
+  .turntable-topbar {
+    top: 12px;
+    right: 18px;
+    left: 18px;
+  }
+
+  .desktop-surface {
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
+  }
+
+  .machine {
+    padding: clamp(26px, 5vh, 44px) 0 clamp(46px, 8vh, 66px);
+  }
+
+  .plinth {
+    width: var(--plinth-width);
+    min-height: 0;
+    border-radius: 26px;
+    padding: 0;
+  }
+
+  .record {
+    top: 14.9%;
+    left: 12.8%;
+    width: 57%;
+  }
+
+  .tonearm {
+    top: var(--tonearm-pivot-top);
+    right: var(--tonearm-pivot-right);
+    width: var(--tonearm-pivot-size);
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .side-record {
+    top: 44%;
+    width: clamp(126px, 27vw, 164px);
+  }
+
+  .side-record-disc {
+    width: clamp(124px, 26vw, 164px);
+  }
+
+  .side-record-previous {
+    left: calc(clamp(90px, 21vw, 124px) * -1);
+  }
+
+  .side-record-next {
+    right: calc(clamp(90px, 21vw, 124px) * -1);
+  }
+
+  .drawer-pull {
+    bottom: 34px;
+    width: min(260px, 62vw);
+    height: 52px;
+  }
+
+  .turntable-page .record-drawer {
+    padding-right: 16px;
+    padding-bottom: calc(var(--drawer-outside-edge) + 18px);
+    padding-left: 16px;
+  }
+
+  .record-shelf {
+    grid-template-columns: repeat(2, minmax(0, 145px));
+    justify-content: center;
+  }
+
+  .table-progress {
+    right: 22px;
+    bottom: 54px;
+    left: 22px;
+    gap: 8px;
+  }
+
+  .track-inscription {
+    right: 22px;
+    bottom: 118px;
+    left: 22px;
+    font-size: 17px;
+  }
+
+  .table-progress time {
+    font-size: 16px;
+  }
+
+  .carved-progress {
+    height: 58px;
+  }
+
+  .volume-console {
+    top: 50%;
+    left: calc(100% + 20px);
+  }
+}
+
+@media (max-height: 650px) {
+  .turntable-page {
+    --plinth-width: clamp(220px, min(66vw, 42dvh), 480px);
+  }
+
+  .machine {
+    padding: 22px 0 42px;
+  }
+
+  .plinth {
+    width: var(--plinth-width);
+  }
+
+  .record {
+    top: 15%;
+    left: 18%;
+    width: 58%;
+  }
+
+  .drawer-open .table-progress,
+  .drawer-open .volume-console,
+  .drawer-open .track-inscription {
+    display: none;
+  }
+
+  .turntable-page .record-drawer {
+    gap: 10px;
+    padding-right: clamp(14px, 4vw, 38px);
+    padding-left: clamp(14px, 4vw, 38px);
+  }
+
+  .drawer-tools {
+    gap: 6px;
+  }
+
+  .turntable-page .drawer-icon-button {
+    width: 32px;
+    min-width: 32px;
+    height: 30px;
+    min-height: 30px;
+  }
+
+  .record-shelf {
+    grid-template-columns: repeat(auto-fill, minmax(82px, 108px));
+    gap: 8px;
+    overflow: auto;
+  }
+
+  .record-note {
+    right: 5%;
+    bottom: 5%;
+    left: 6%;
+    min-height: 34px;
+    padding: 4px 5px 3px;
+  }
+
+  .record-note strong {
+    font-size: 11px;
+  }
+
+  .record-note span,
+  .record-note small {
+    font-size: 9px;
+  }
+}

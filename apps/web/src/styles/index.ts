@@ -8,3 +8,7 @@ import "./download-panel.css";
 import "./ingestion-panel.css";
 import "./settings-panel.css";
 import "./turntable-page.css";
+import "./turntable-record.css";
+import "./turntable-desk.css";
+import "./turntable-drawer.css";
+import "./turntable-responsive.css";
