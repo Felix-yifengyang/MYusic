@@ -2,11 +2,9 @@
 .turntable-page {
   --drawer-duration: 550ms;
   --drawer-progress: 0;
-  --drawer-peek: 92px;
-  --drawer-outside-edge: 92px;
+  --drawer-peek: 116px;
   --drawer-open-travel: 300px;
-  --drawer-height: calc(var(--drawer-peek) + var(--drawer-open-travel) + var(--drawer-outside-edge) + 44px);
-  --drawer-content-top: calc(var(--drawer-peek) + 44px);
+  --drawer-height: calc(var(--drawer-peek) + var(--drawer-open-travel) + 44px);
   --plinth-width: clamp(360px, min(72vw, 74dvh), 840px);
   width: 100%;
   min-height: 100vh;

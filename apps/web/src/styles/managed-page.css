@@ -15,8 +15,7 @@
   background:
     linear-gradient(180deg, rgba(16, 17, 20, .76), rgba(16, 17, 20, .95) 48%, #101114),
     radial-gradient(circle at 18% 12%, rgba(117, 214, 159, .12), transparent 28%),
-    radial-gradient(circle at 88% 8%, rgba(227, 177, 94, .1), transparent 26%),
-    url("../assets/images/bg-table.jpg") center / cover fixed;
+    radial-gradient(circle at 88% 8%, rgba(227, 177, 94, .1), transparent 26%);
 }
 
 .managed-page::after {

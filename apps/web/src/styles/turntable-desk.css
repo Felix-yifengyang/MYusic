@@ -21,12 +21,12 @@
   align-items: center;
   min-height: 100%;
   overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 0;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, .03), transparent 18%, rgba(0, 0, 0, .12) 52%, transparent 80%),
     url("../assets/images/room/bg-table.png") center / cover no-repeat,
     #3c261a;
-  box-shadow: 0 26px 70px rgba(0, 0, 0, .42);
+  box-shadow: 0 30px 82px rgba(0, 0, 0, .46);
 }
 
 .desktop-surface::before {

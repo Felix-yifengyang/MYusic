@@ -718,30 +718,19 @@ function RecordDrawer({
   onPullPointerUp: () => void;
   onPullPointerCancel: () => void;
 }) {
-  const [assetsLoaded, setAssetsLoaded] = useState(open);
-
-  useEffect(() => {
-    if (open) setAssetsLoaded(true);
-  }, [open]);
-
   return (
-    <aside className={`record-drawer ${assetsLoaded ? "drawer-assets-loaded" : ""}`} aria-label="音乐库抽屉" aria-expanded={open}>
+    <aside className="record-drawer" aria-label="音乐库抽屉" aria-expanded={open}>
       <button
         className="drawer-pull"
         type="button"
         aria-label={open ? "收起音乐抽屉" : "拉开音乐抽屉"}
         aria-expanded={open}
         disabled={drawerLocked}
-        onPointerDown={(event) => {
-          setAssetsLoaded(true);
-          onPullPointerDown(event);
-        }}
+        onPointerDown={onPullPointerDown}
         onPointerMove={onPullPointerMove}
         onPointerUp={onPullPointerUp}
         onPointerCancel={onPullPointerCancel}
-      >
-        <span aria-hidden="true" />
-      </button>
+      />
 
       <div className="drawer-tools">
         <button className="drawer-refresh drawer-icon-button" type="button" aria-label="刷新" onClick={onRefresh}>
@@ -754,11 +743,8 @@ function RecordDrawer({
           <button className="drawer-icon-button drawer-action-settings" type="button" aria-label="设置" onClick={() => onNavigate("settings")}><span aria-hidden="true" /></button>
         </nav>
       </div>
-
-      {error ? <div className="drawer-error-light" role="status" aria-label={error} /> : null}
-
       <section className="record-shelf" aria-label="歌曲列表">
-        {assetsLoaded && (!songs.length && !error ? <div className="drawer-empty" aria-label="没有歌曲"><span /><span /><span /></div> : songs.map((song) => (
+        {songs.map((song) => (
           <article className={`sleeve ${currentTrackKey === `navidrome:${song.id}` ? "current" : ""}`} key={song.id}>
             <button
               type="button"
@@ -778,7 +764,7 @@ function RecordDrawer({
               </span>
             </button>
           </article>
-        )))}
+        ))}
       </section>
     </aside>
   );

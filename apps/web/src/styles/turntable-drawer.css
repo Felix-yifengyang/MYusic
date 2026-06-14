@@ -20,7 +20,8 @@
   box-shadow:
     inset 0 10px 22px rgba(0, 0, 0, .12),
     0 -14px 26px rgba(0, 0, 0, .18);
-  padding: var(--drawer-content-top) clamp(18px, 5vw, 72px) calc(var(--drawer-outside-edge) + 24px);
+  overflow: hidden;
+  padding: 52px clamp(18px, 5vw, 72px) 24px;
   pointer-events: none;
   transform: none;
   transition: none;
@@ -29,24 +30,15 @@
 .turntable-page .record-drawer::before {
   content: "";
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: var(--drawer-outside-edge);
-  left: 0;
+  inset: 0;
   z-index: 1;
   border-top: 1px solid rgba(255, 255, 255, .13);
   background:
     linear-gradient(180deg, rgba(255, 244, 218, .05), transparent 20%, rgba(0, 0, 0, .05)),
+    url("../assets/images/room/bg-drawer.png") center / 100% 100% no-repeat,
     #4a2819;
   box-shadow: inset 0 10px 22px rgba(0, 0, 0, .12);
   pointer-events: none;
-}
-
-.turntable-page .record-drawer.drawer-assets-loaded::before {
-  background:
-    linear-gradient(180deg, rgba(255, 244, 218, .05), transparent 20%, rgba(0, 0, 0, .05)),
-    url("../assets/images/bg-drawer.jpg") center / 100% 100% no-repeat,
-    #4a2819;
 }
 
 .turntable-page .record-drawer > :not(.drawer-pull) {
@@ -60,13 +52,12 @@
 
 .drawer-pull {
   position: absolute;
-  bottom: 38px;
+  right: 0;
+  bottom: 0;
   left: 50%;
   z-index: 2;
-  display: grid;
-  place-items: center;
-  width: min(330px, 48vw);
-  height: 62px;
+  width: 100%;
+  height: var(--drawer-peek);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -88,18 +79,15 @@
   opacity: .72;
 }
 
-.drawer-pull span {
-  width: 100%;
-  height: 100%;
-  background: url("../assets/images/handle.png") center / contain no-repeat;
-  filter: drop-shadow(0 7px 10px rgba(0, 0, 0, .36));
-}
-
 .drawer-tools {
   display: flex;
+  z-index: 3;
   justify-content: flex-end;
+  justify-self: end;
   gap: 10px;
   align-items: center;
+  min-height: 36px;
+  transform: translateX(-52px);
 }
 
 .drawer-actions {
@@ -250,17 +238,6 @@
   border-radius: 50%;
 }
 
-.turntable-page .record-drawer > .drawer-error-light {
-  position: absolute;
-  top: calc(var(--drawer-peek) + 30px);
-  left: clamp(18px, 5vw, 72px);
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #a83b2b;
-  box-shadow: 0 0 12px rgba(190, 56, 39, .72);
-}
-
 .record-shelf {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(128px, 180px));
@@ -378,22 +355,3 @@
   font-size: 10px;
 }
 
-.drawer-empty {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 52px 0;
-}
-
-.drawer-empty span {
-  width: 42px;
-  height: 74px;
-  border-radius: 3px 3px 8px 8px;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, .54), rgba(23, 12, 8, .8)),
-    #25140e;
-  box-shadow:
-    inset 0 8px 12px rgba(0, 0, 0, .44),
-    inset 0 -1px 0 rgba(255, 218, 168, .08);
-}

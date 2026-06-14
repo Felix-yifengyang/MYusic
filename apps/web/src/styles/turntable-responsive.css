@@ -63,10 +63,8 @@
 
 @media (max-width: 600px) {
   .turntable-page {
-    --drawer-peek: 80px;
-    --drawer-outside-edge: 80px;
-    --drawer-height: calc(var(--drawer-peek) + var(--drawer-open-travel) + var(--drawer-outside-edge) + 32px);
-    --drawer-content-top: calc(var(--drawer-peek) + 32px);
+    --drawer-peek: 104px;
+    --drawer-height: calc(var(--drawer-peek) + var(--drawer-open-travel) + 32px);
     --plinth-width: clamp(280px, min(86vw, 54dvh), 360px);
   }
 
@@ -123,14 +121,13 @@
   }
 
   .drawer-pull {
-    bottom: 34px;
-    width: min(260px, 62vw);
-    height: 52px;
+    height: var(--drawer-peek);
   }
 
   .turntable-page .record-drawer {
+    padding-top: 38px;
     padding-right: 16px;
-    padding-bottom: calc(var(--drawer-outside-edge) + 18px);
+    padding-bottom: 18px;
     padding-left: 16px;
   }
 
@@ -200,6 +197,7 @@
 
   .drawer-tools {
     gap: 6px;
+    transform: translateX(-26px);
   }
 
   .turntable-page .drawer-icon-button {
