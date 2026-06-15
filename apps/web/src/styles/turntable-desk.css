@@ -5,7 +5,7 @@
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   pointer-events: none;
-  transform: translateY(calc((var(--drawer-progress) * var(--drawer-open-travel) * -1) - var(--drawer-peek)));
+  transform: translateY(calc((var(--drawer-progress) * var(--drawer-open-travel) * -1) - var(--drawer-peek) + (var(--drawer-progress) * clamp(10px, 8vw, 30px))));
   transition: transform var(--drawer-duration) cubic-bezier(.22, 1, .36, 1);
   will-change: transform;
 }
@@ -22,20 +22,15 @@
   min-height: 100%;
   overflow: hidden;
   border-bottom: 0;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, .03), transparent 18%, rgba(0, 0, 0, .12) 52%, transparent 80%),
-    url("../assets/images/room/bg-table.png") center / cover no-repeat,
-    #3c261a;
-  box-shadow: 0 30px 82px rgba(0, 0, 0, .46);
+  background: transparent;
 }
 
 .desktop-surface::before {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(0, 0, 0, .18), transparent 34%),
-    linear-gradient(180deg, rgba(255, 240, 210, .08), transparent 24%, rgba(0, 0, 0, .18));
+  z-index: 0;
+  background: url("../assets/images/room/bg-table.png") center / cover no-repeat;
   pointer-events: none;
 }
 
