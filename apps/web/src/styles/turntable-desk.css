@@ -30,7 +30,7 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url("../assets/images/room/bg-table.png") center / cover no-repeat;
+  background: url("../assets/images/room/bg-table.png") center / 100% 100% no-repeat;
   pointer-events: none;
 }
 
