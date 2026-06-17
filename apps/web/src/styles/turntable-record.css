@@ -22,7 +22,7 @@
 .vinyl-record-disc {
   inset: 0;
   z-index: 0;
-  background: url("../assets/images/room/vinyl-record-disc.png") center / contain no-repeat;
+  background: url("../assets/images/desk/vinyl-record-disc.png") center / contain no-repeat;
   image-rendering: pixelated;
   user-select: none;
   -webkit-user-drag: none;

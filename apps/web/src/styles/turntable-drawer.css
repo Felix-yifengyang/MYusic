@@ -35,7 +35,7 @@
   border-top: 1px solid rgba(255, 255, 255, .13);
   background:
     linear-gradient(180deg, rgba(255, 244, 218, .05), transparent 20%, rgba(0, 0, 0, .05)),
-    url("../assets/images/room/bg-drawer.png") center / 100% 100% no-repeat,
+    url("../assets/images/desk/bg-drawer.png") center / 100% 100% no-repeat,
     #4a2819;
   box-shadow: inset 0 10px 22px rgba(0, 0, 0, .12);
   pointer-events: none;
