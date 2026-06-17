@@ -1,5 +1,5 @@
-import { forwardRef, useEffect, useRef, useState } from "react";
-import type { CSSProperties, PointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent, Ref } from "react";
 import type { NavidromeSong } from "@myusic/shared";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -68,14 +68,16 @@ export function TurntablePage({
     playId: 0,
     source: null
   });
-  const [playing, setPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [audioState, setAudioState] = useState<AudioPlaybackState>(() => createAudioPlaybackState(currentTrack?.key));
   const [volume, setVolume] = useState(getInitialVolume);
   const [recordChangeLocked, setRecordChangeLocked] = useState(false);
   const [drawerDragProgress, setDrawerDragProgress] = useState<number | null>(null);
   const [drawerMotionMs, setDrawerMotionMs] = useState(DEFAULT_DRAWER_MOTION_MS);
   const drawerGestureRef = useRef({ active: false, startY: 0, startProgress: 0, moved: false, progress: 0 });
+  const activeAudioState = audioState.trackKey === (currentTrack?.key || "")
+    ? audioState
+    : createAudioPlaybackState(currentTrack?.key);
+  const { playing, currentTime, duration } = activeAudioState;
   const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const drawerProgress = drawerDragProgress ?? (drawerOpen ? 1 : 0);
   const pageStyle = {
@@ -86,9 +88,23 @@ export function TurntablePage({
     "--volume-inverse": 1 - volume
   } as CSSProperties;
 
+  const commitDrawerOpen = useCallback(async (nextOpen: boolean) => {
+    if (nextOpen !== drawerOpen) {
+      const soundDurationMs = await playDrawerSound(drawerSoundRef, nextOpen ? "open" : "close")
+        .catch(() => DEFAULT_DRAWER_MOTION_MS);
+      setDrawerMotionMs(soundDurationMs);
+    }
+    onDrawerOpenChange(nextOpen);
+  }, [drawerOpen, onDrawerOpenChange]);
+  const commitDrawerOpenRef = useRef(commitDrawerOpen);
+
   useEffect(() => {
     currentTrackKeyRef.current = currentTrackKey;
   }, [currentTrackKey]);
+
+  useEffect(() => {
+    commitDrawerOpenRef.current = commitDrawerOpen;
+  }, [commitDrawerOpen]);
 
   useGSAP(() => {
     return () => {
@@ -100,13 +116,6 @@ export function TurntablePage({
       recordChangeLockedRef.current = false;
     };
   }, { scope: pageRef });
-
-  useEffect(() => {
-    setCurrentTime(0);
-    setDuration(0);
-    setPlaying(false);
-    audioRetryRef.current = { trackKey: currentTrack?.key || "", attempts: 0 };
-  }, [currentTrack?.key]);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
@@ -129,7 +138,7 @@ export function TurntablePage({
     if (!active || !drawerOpen) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") void commitDrawerOpen(false);
+      if (event.key === "Escape") void commitDrawerOpenRef.current(false);
     };
 
     window.addEventListener("keydown", closeOnEscape);
@@ -169,13 +178,9 @@ export function TurntablePage({
     return () => window.removeEventListener("keydown", handlePlayerShortcut);
   });
 
-  async function commitDrawerOpen(nextOpen: boolean) {
-    if (nextOpen !== drawerOpen) {
-      const soundDurationMs = await playDrawerSound(drawerSoundRef, nextOpen ? "open" : "close")
-        .catch(() => DEFAULT_DRAWER_MOTION_MS);
-      setDrawerMotionMs(soundDurationMs);
-    }
-    onDrawerOpenChange(nextOpen);
+  function updateAudioState(update: (state: AudioPlaybackState) => AudioPlaybackState) {
+    const trackKey = currentTrack?.key || "";
+    setAudioState((state) => update(state.trackKey === trackKey ? state : createAudioPlaybackState(trackKey)));
   }
 
   async function togglePlayback() {
@@ -330,7 +335,7 @@ export function TurntablePage({
     if (!audio || !duration) return;
     const nextTime = (Number(value) / 100) * duration;
     audio.currentTime = nextTime;
-    setCurrentTime(nextTime);
+    updateAudioState((state) => ({ ...state, currentTime: nextTime }));
   }
 
   function changeVolume(value: string) {
@@ -341,7 +346,7 @@ export function TurntablePage({
   }
 
   function advanceToNextTrack() {
-    setPlaying(false);
+    updateAudioState((state) => ({ ...state, playing: false }));
     if (!canNext) return;
 
     const sourceRecord = active
@@ -361,7 +366,7 @@ export function TurntablePage({
 
     if (retryState.attempts < 1) {
       retryState.attempts += 1;
-      setPlaying(false);
+      updateAudioState((state) => ({ ...state, playing: false }));
       window.setTimeout(() => {
         const audio = audioRef.current;
         if (!audio || currentTrackKeyRef.current !== currentTrack.key) return;
@@ -468,16 +473,26 @@ export function TurntablePage({
                     autoPlay
                     preload="auto"
                     src={currentTrack.streamUrl}
-                    onDurationChange={(event) => setDuration(event.currentTarget.duration || 0)}
+                    aria-label="当前播放音频"
+                    onDurationChange={(event) => updateAudioState((state) => ({
+                      ...state,
+                      duration: event.currentTarget.duration || 0
+                    }))}
                     onEnded={advanceToNextTrack}
                     onError={handleAudioError}
                     onLoadedMetadata={(event) => {
                       event.currentTarget.volume = volume;
-                      setDuration(event.currentTarget.duration || 0);
+                      updateAudioState((state) => ({
+                        ...state,
+                        duration: event.currentTarget.duration || 0
+                      }));
                     }}
-                    onPause={() => setPlaying(false)}
-                    onPlay={() => setPlaying(true)}
-                    onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+                    onPause={() => updateAudioState((state) => ({ ...state, playing: false }))}
+                    onPlay={() => updateAudioState((state) => ({ ...state, playing: true }))}
+                    onTimeUpdate={(event) => updateAudioState((state) => ({
+                      ...state,
+                      currentTime: event.currentTarget.currentTime
+                    }))}
                   />
                 )}
               </div>
@@ -562,9 +577,25 @@ function formatTime(value: number) {
 }
 
 type DrawerSoundDirection = "open" | "close";
+interface AudioPlaybackState {
+  trackKey: string;
+  playing: boolean;
+  currentTime: number;
+  duration: number;
+}
+
 const DEFAULT_VOLUME = 0.8;
 const PLAYER_VOLUME_STORAGE_KEY = "myusic.player.volume";
 const DEFAULT_DRAWER_MOTION_MS = 550;
+
+function createAudioPlaybackState(trackKey = ""): AudioPlaybackState {
+  return {
+    trackKey,
+    playing: false,
+    currentTime: 0,
+    duration: 0
+  };
+}
 
 function getInitialVolume() {
   if (typeof window === "undefined") return DEFAULT_VOLUME;
@@ -643,17 +674,19 @@ async function playDrawerSound(soundRef: { current: DrawerSoundState }, directio
   return soundDurationMs;
 }
 
-const VinylRecord = forwardRef<HTMLSpanElement, {
+function VinylRecord({
+  coverUrl,
+  className = "",
+  loading,
+  spinning = false,
+  ref
+}: {
   coverUrl?: string;
   className?: string;
   loading?: "eager" | "lazy";
   spinning?: boolean;
-}>(function VinylRecord({
-  coverUrl,
-  className = "",
-  loading,
-  spinning = false
-}, ref) {
+  ref?: Ref<HTMLSpanElement>;
+}) {
   return (
     <span ref={ref} className={`vinyl-record ${className} ${spinning ? "spinning" : ""}`}>
       <span className="vinyl-record-disc" aria-hidden="true" />
@@ -663,7 +696,7 @@ const VinylRecord = forwardRef<HTMLSpanElement, {
       <span className="vinyl-record-hole" aria-hidden="true" />
     </span>
   );
-});
+}
 
 function SideRecord({
   side,
@@ -719,7 +752,7 @@ function RecordDrawer({
   onPullPointerCancel: () => void;
 }) {
   return (
-    <aside className="record-drawer" aria-label="音乐库抽屉" aria-expanded={open}>
+    <aside className="record-drawer" aria-label="音乐库抽屉">
       <button
         className="drawer-pull"
         type="button"

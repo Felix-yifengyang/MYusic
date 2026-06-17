@@ -10,6 +10,7 @@ export function Button({
   variant = "primary",
   size = "default",
   className,
+  type = "button",
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary";
@@ -18,6 +19,7 @@ export function Button({
   return (
     <button
       className={cx("button", variant === "secondary" && "secondary", size === "compact" && "compact", className)}
+      type={type}
       {...props}
     />
   );
@@ -53,7 +55,7 @@ export function Panel({
   );
 }
 
-export function PanelHeader({ title, description }: { title: string; description?: string }) {
+function PanelHeader({ title, description }: { title: string; description?: string }) {
   return (
     <div className="settings-card-header">
       <h2>{title}</h2>

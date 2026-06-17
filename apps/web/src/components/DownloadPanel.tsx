@@ -2,6 +2,13 @@ import type { FormEvent } from "react";
 import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 import { Button, EmptyState, StatPill } from "./ui";
 
+const SYNC_STATUS_LABELS = {
+  pending: "等待扫描",
+  scanning: "同步中",
+  synced: "已同步",
+  failed: "同步失败"
+};
+
 export interface DownloadPanelProps {
   jobs: DownloadJob[];
   url: string;
@@ -47,6 +54,7 @@ export function DownloadPanel({
 
       <form className="collect-form" onSubmit={onSubmit}>
         <input
+          aria-label="下载链接"
           id="download-url"
           name="url"
           type="url"
@@ -195,16 +203,9 @@ function SyncStatus({ job }: { job: DownloadJob }) {
     );
   }
 
-  const labels = {
-    pending: "等待扫描",
-    scanning: "同步中",
-    synced: "已同步",
-    failed: "同步失败"
-  };
-
   return (
     <div className={`sync-status ${sync.status}`}>
-      <strong>音乐库同步：{labels[sync.status]}</strong>
+      <strong>音乐库同步：{SYNC_STATUS_LABELS[sync.status]}</strong>
       {sync.message ? <span>{sync.message}</span> : null}
     </div>
   );

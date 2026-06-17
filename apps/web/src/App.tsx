@@ -49,6 +49,13 @@ import type { AppView } from "./components/TurntablePage";
 
 type ManagedView = Exclude<AppView, "player">;
 
+async function verifySession() {
+  const auth = await getAuthStatus();
+  if (!auth.authenticated) {
+    throw new ApiConnectionError("登录请求已返回，但浏览器没有保存会话 Cookie。请确认当前页面和 API 同源，并检查 MYUSIC_AUTH_SECURE_COOKIE。");
+  }
+}
+
 export function App() {
   const [activeView, setActiveView] = useState<AppView>("player");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -226,13 +233,6 @@ export function App() {
     setAuthStatus(await getAuthStatus());
   }
 
-  async function verifySession() {
-    const auth = await getAuthStatus();
-    if (!auth.authenticated) {
-      throw new ApiConnectionError("登录请求已返回，但浏览器没有保存会话 Cookie。请确认当前页面和 API 同源，并检查 MYUSIC_AUTH_SECURE_COOKIE。");
-    }
-  }
-
   async function loadStatus() {
     if (frontendPreviewRef.current) {
       setStatus(createPreviewStatus());
@@ -393,9 +393,11 @@ export function App() {
 
     const body = await saveSettingsApi(settings);
     setSettings(body.settings);
-    await loadStatus();
-    await loadDiagnostics();
-    await loadBilibiliCookieStatus();
+    await Promise.all([
+      loadStatus(),
+      loadDiagnostics(),
+      loadBilibiliCookieStatus()
+    ]);
     setSettingsMessage(body.restartRequired ? `已保存，需要重启：${body.restartReasons.join("；")}` : "已保存");
   }
 
@@ -426,9 +428,11 @@ export function App() {
         setSettings(body.settings);
         setBilibiliCookieText("");
         setBilibiliCookieMessage(`\u5df2\u4fdd\u5b58\u5230\uff1a${body.path}`);
-        await loadStatus();
-        await loadDiagnostics();
-        await loadBilibiliCookieStatus();
+        await Promise.all([
+          loadStatus(),
+          loadDiagnostics(),
+          loadBilibiliCookieStatus()
+        ]);
       })
       .catch((caught) => setBilibiliCookieMessage(errorMessage(caught)))
       .finally(() => setBilibiliCookieSaving(false));

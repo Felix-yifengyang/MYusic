@@ -77,7 +77,7 @@ export function AgentPanel({ preview = false }: { preview?: boolean }) {
       });
   }
 
-  function usePrompt(prompt: string) {
+  function applyPrompt(prompt: string) {
     setDraft(prompt);
     inputRef.current?.focus();
   }
@@ -101,7 +101,7 @@ export function AgentPanel({ preview = false }: { preview?: boolean }) {
 
       <div className="agent-prompts">
         {PROMPTS.map((prompt) => (
-          <button type="button" key={prompt} onClick={() => usePrompt(prompt)}>
+          <button type="button" key={prompt} onClick={() => applyPrompt(prompt)}>
             {prompt}
           </button>
         ))}

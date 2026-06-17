@@ -35,11 +35,17 @@ export function AuthPanel(props: AuthPanelProps) {
         {error && <div className="error">{error}</div>}
 
         <Field label="用户名">
-          <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />
+          <input
+            aria-label="用户名"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            autoComplete="username"
+          />
         </Field>
 
         <Field label="密码">
           <input
+            aria-label="密码"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             type="password"

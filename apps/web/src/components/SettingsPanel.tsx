@@ -124,28 +124,57 @@ function SettingsForm({
     <form className="settings-form" onSubmit={onSubmit}>
       <div className="settings-field-grid">
         <Field label="音乐目录">
-          <input value={settings.musicDir} onChange={(event) => onChange("musicDir", event.target.value)} />
+          <input
+            aria-label="音乐目录"
+            value={settings.musicDir}
+            onChange={(event) => onChange("musicDir", event.target.value)}
+          />
         </Field>
         <Field label="Navidrome 地址">
-          <input value={settings.navidromeBaseUrl} onChange={(event) => onChange("navidromeBaseUrl", event.target.value)} />
+          <input
+            aria-label="Navidrome 地址"
+            value={settings.navidromeBaseUrl}
+            onChange={(event) => onChange("navidromeBaseUrl", event.target.value)}
+          />
         </Field>
         <Field label="Navidrome 用户名">
-          <input value={settings.navidromeUsername} onChange={(event) => onChange("navidromeUsername", event.target.value)} />
+          <input
+            aria-label="Navidrome 用户名"
+            value={settings.navidromeUsername}
+            onChange={(event) => onChange("navidromeUsername", event.target.value)}
+          />
         </Field>
         <Field label="Navidrome 密码">
-          <input type="password" value={settings.navidromePassword} onChange={(event) => onChange("navidromePassword", event.target.value)} />
+          <input
+            aria-label="Navidrome 密码"
+            type="password"
+            value={settings.navidromePassword}
+            onChange={(event) => onChange("navidromePassword", event.target.value)}
+          />
         </Field>
       </div>
       <Disclosure title="下载与转码" description="不常改动的路径、格式和任务保留策略。">
         <div className="settings-field-grid">
         <Field label="yt-dlp">
-          <input value={settings.ytdlpPath} onChange={(event) => onChange("ytdlpPath", event.target.value)} />
+          <input
+            aria-label="yt-dlp"
+            value={settings.ytdlpPath}
+            onChange={(event) => onChange("ytdlpPath", event.target.value)}
+          />
         </Field>
         <Field label="ffmpeg">
-          <input value={settings.ffmpegPath} onChange={(event) => onChange("ffmpegPath", event.target.value)} />
+          <input
+            aria-label="ffmpeg"
+            value={settings.ffmpegPath}
+            onChange={(event) => onChange("ffmpegPath", event.target.value)}
+          />
         </Field>
         <Field label="音频格式">
-          <select value={settings.audioFormat} onChange={(event) => onChange("audioFormat", event.target.value)}>
+          <select
+            aria-label="音频格式"
+            value={settings.audioFormat}
+            onChange={(event) => onChange("audioFormat", event.target.value)}
+          >
             <option value="mp3">mp3</option>
             <option value="m4a">m4a</option>
             <option value="opus">opus</option>
@@ -154,13 +183,28 @@ function SettingsForm({
           </select>
         </Field>
         <Field label="音频质量">
-          <input value={settings.audioQuality} onChange={(event) => onChange("audioQuality", event.target.value)} />
+          <input
+            aria-label="音频质量"
+            value={settings.audioQuality}
+            onChange={(event) => onChange("audioQuality", event.target.value)}
+          />
         </Field>
         <Field label="最多保留任务">
-          <input type="number" min="1" max="500" value={settings.maxJobs} onChange={(event) => onChange("maxJobs", Number(event.target.value))} />
+          <input
+            aria-label="最多保留任务"
+            type="number"
+            min="1"
+            max="500"
+            value={settings.maxJobs}
+            onChange={(event) => onChange("maxJobs", Number(event.target.value))}
+          />
         </Field>
         <Field label="Bilibili Cookie 路径">
-          <input value={settings.bilibiliCookiesPath} onChange={(event) => onChange("bilibiliCookiesPath", event.target.value)} />
+          <input
+            aria-label="Bilibili Cookie 路径"
+            value={settings.bilibiliCookiesPath}
+            onChange={(event) => onChange("bilibiliCookiesPath", event.target.value)}
+          />
         </Field>
         </div>
       </Disclosure>
@@ -202,10 +246,22 @@ function AccountSecurity({
         <Fact label="权限" value={authStatus.user?.role || "admin"} />
       </div>
       <Field label="当前密码">
-        <input type="password" value={currentPassword} onChange={(event) => onCurrentPasswordChange(event.target.value)} autoComplete="current-password" />
+        <input
+          aria-label="当前密码"
+          type="password"
+          value={currentPassword}
+          onChange={(event) => onCurrentPasswordChange(event.target.value)}
+          autoComplete="current-password"
+        />
       </Field>
       <Field label="新密码">
-        <input type="password" value={newPassword} onChange={(event) => onNewPasswordChange(event.target.value)} autoComplete="new-password" />
+        <input
+          aria-label="新密码"
+          type="password"
+          value={newPassword}
+          onChange={(event) => onNewPasswordChange(event.target.value)}
+          autoComplete="new-password"
+        />
       </Field>
       <div className="inline-actions">
         <Button type="submit" disabled={saving}>
@@ -250,10 +306,16 @@ function BilibiliCookieManager({
       </div>
       <Disclosure title="更新 Cookie" description="上传或粘贴 cookies.txt 内容。">
         <Field label="选择 cookies.txt">
-          <input type="file" accept=".txt,text/plain" onChange={(event) => onFileLoad(event.target.files?.[0])} />
+          <input
+            aria-label="选择 cookies.txt"
+            type="file"
+            accept=".txt,text/plain"
+            onChange={(event) => onFileLoad(event.target.files?.[0])}
+          />
         </Field>
         <Field label="或粘贴内容">
           <textarea
+            aria-label="或粘贴内容"
             value={content}
             onChange={(event) => onContentChange(event.target.value)}
             placeholder="# Netscape HTTP Cookie File&#10;.bilibili.com&#9;TRUE&#9;/&#9;FALSE..."
