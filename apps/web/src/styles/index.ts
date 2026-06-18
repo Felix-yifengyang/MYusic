@@ -7,6 +7,7 @@ import "./agent-panel.css";
 import "./download-panel.css";
 import "./ingestion-panel.css";
 import "./settings-panel.css";
+import "./room-page.css";
 import "./turntable-page.css";
 import "./turntable-record.css";
 import "./turntable-desk.css";

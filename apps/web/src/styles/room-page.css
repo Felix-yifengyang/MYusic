@@ -1,0 +1,52 @@
+.room-page {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  min-height: 100dvh;
+  overflow: hidden;
+  background-image: url("../assets/images/room/bg-room.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.room-page.is-inactive {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.room-desk-entry {
+  position: absolute;
+  bottom: 13%;
+  left: 7%;
+  width: 30%;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.room-desk-entry img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.room-desk-entry:hover {
+  filter:
+    drop-shadow(1px 0 0 rgba(255, 218, 158, .72))
+    drop-shadow(-1px 0 0 rgba(255, 218, 158, .72))
+    drop-shadow(0 1px 0 rgba(255, 218, 158, .72))
+    drop-shadow(0 -1px 0 rgba(255, 218, 158, .72));
+}
+
+.room-desk-entry:focus-visible {
+  outline: 3px solid rgba(255, 226, 177, .92);
+  outline-offset: 6px;
+}

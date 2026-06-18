@@ -42,6 +42,7 @@ import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
 import { ManagedPage } from "./components/ManagedPage";
 import type { PlayerTrack } from "./components/playerTypes";
+import { RoomPage } from "./components/RoomPage";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { StatusPanel } from "./components/StatusPanel";
 import { TurntablePage } from "./components/TurntablePage";
@@ -57,6 +58,7 @@ async function verifySession() {
 }
 
 export function App() {
+  const [roomActive, setRoomActive] = useState(true);
   const [activeView, setActiveView] = useState<AppView>("player");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
@@ -540,10 +542,20 @@ export function App() {
     setActiveView(view);
   }
 
+  function exitToRoom() {
+    setDrawerOpen(false);
+    setRoomActive(true);
+  }
+
   return (
     <>
+      <RoomPage
+        active={roomActive}
+        onEnterDesk={() => setRoomActive(false)}
+      />
+
       <TurntablePage
-        active={activeView === "player"}
+        active={!roomActive && activeView === "player"}
         songs={navidromeSongs}
         error={navidromeError}
         currentTrack={nowPlaying}
@@ -555,6 +567,7 @@ export function App() {
         onRefresh={() => loadNavidromeSongs()}
         onPlay={playSong}
         onNavigate={openManagedView}
+        onExitToRoom={exitToRoom}
         canPrevious={queueIndex > 0}
         canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
         onPrevious={playPrevious}

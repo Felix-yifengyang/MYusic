@@ -57,3 +57,52 @@
   height: 100vh;
   overflow: hidden;
 }
+
+.turntable-furniture {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  transform-origin: center bottom;
+  transition: transform 220ms ease;
+  will-change: transform;
+}
+
+.turntable-exit-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 9;
+  height: 18vh;
+  min-height: 72px;
+  border: 0;
+  background: linear-gradient(180deg, rgba(255, 218, 158, 0), transparent);
+  cursor: n-resize;
+  padding: 0;
+  transition: background 220ms ease;
+}
+
+.turntable-exit-zone:hover,
+.turntable-exit-zone:focus-visible {
+  background: linear-gradient(180deg, rgba(255, 218, 158, .14), transparent);
+}
+
+.turntable-exit-zone:hover ~ .turntable-furniture,
+.turntable-exit-zone:focus-visible ~ .turntable-furniture {
+  transform: scale(.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turntable-exit-zone {
+    transition: none;
+  }
+
+  .turntable-furniture {
+    transition: none;
+  }
+
+  .turntable-exit-zone:hover ~ .turntable-furniture,
+  .turntable-exit-zone:focus-visible ~ .turntable-furniture {
+    transform: none;
+  }
+}

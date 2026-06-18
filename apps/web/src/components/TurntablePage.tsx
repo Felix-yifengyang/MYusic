@@ -24,6 +24,7 @@ export interface TurntablePageProps {
   onRefresh: () => void;
   onPlay: (song: NavidromeSong) => void;
   onNavigate: (view: Exclude<AppView, "player">) => void;
+  onExitToRoom: () => void;
   canPrevious: boolean;
   canNext: boolean;
   onPrevious: () => void;
@@ -44,6 +45,7 @@ export function TurntablePage({
   onRefresh,
   onPlay,
   onNavigate,
+  onExitToRoom,
   canPrevious,
   canNext,
   onPrevious,
@@ -150,6 +152,12 @@ export function TurntablePage({
 
     const handlePlayerShortcut = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat) return;
+
+      if (event.key === "Escape" && !drawerOpen) {
+        event.preventDefault();
+        onExitToRoom();
+        return;
+      }
 
       if (event.code === "Space") {
         if (isTextEntryTarget(event.target)) return;
@@ -420,26 +428,34 @@ export function TurntablePage({
       </header>
 
       <section className="turntable-stage">
-        <RecordDrawer
-          open={drawerOpen}
-          songs={songs}
-          error={error}
-          currentTrackKey={currentTrackKey}
-          drawerLocked={recordChangeLocked}
-          onRefresh={onRefresh}
-          onPlay={(song, sourceRecord) => changeRecord(() => onPlay(song), sourceRecord, true)}
-          onNavigate={onNavigate}
-          onPullPointerDown={drawerPointerDown}
-          onPullPointerMove={drawerPointerMove}
-          onPullPointerUp={drawerPointerUp}
-          onPullPointerCancel={() => {
-            drawerGestureRef.current.active = false;
-            setDrawerDragProgress(null);
-          }}
+        <button
+          className="turntable-exit-zone"
+          type="button"
+          aria-label="返回房间"
+          onClick={onExitToRoom}
         />
 
-        <section className="desktop-layer" aria-label="播放页">
-          <div className="desktop-surface">
+        <div className="turntable-furniture">
+          <RecordDrawer
+            open={drawerOpen}
+            songs={songs}
+            error={error}
+            currentTrackKey={currentTrackKey}
+            drawerLocked={recordChangeLocked}
+            onRefresh={onRefresh}
+            onPlay={(song, sourceRecord) => changeRecord(() => onPlay(song), sourceRecord, true)}
+            onNavigate={onNavigate}
+            onPullPointerDown={drawerPointerDown}
+            onPullPointerMove={drawerPointerMove}
+            onPullPointerUp={drawerPointerUp}
+            onPullPointerCancel={() => {
+              drawerGestureRef.current.active = false;
+              setDrawerDragProgress(null);
+            }}
+          />
+
+          <section className="desktop-layer" aria-label="播放页">
+            <div className="desktop-surface">
             <SideRecord
               side="previous"
               track={previousTrack}
@@ -542,8 +558,9 @@ export function TurntablePage({
               <time>{formatTime(duration)}</time>
             </section>
 
-          </div>
-        </section>
+            </div>
+          </section>
+        </div>
       </section>
     </main>
   );
