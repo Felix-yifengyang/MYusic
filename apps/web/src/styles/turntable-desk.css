@@ -20,7 +20,7 @@
   grid-template-columns: clamp(72px, 20vw, 280px) minmax(0, 1fr) clamp(72px, 20vw, 280px);
   align-items: center;
   min-height: 100%;
-  overflow: hidden;
+  overflow: visible;
   border-bottom: 0;
   background: transparent;
 }
@@ -31,6 +31,8 @@
   inset: 0;
   z-index: 0;
   background: url("../assets/images/table/bg-table.png") center / 100% 100% no-repeat;
+  transform: scale(1.03093);
+  transform-origin: center bottom;
   pointer-events: none;
 }
 
