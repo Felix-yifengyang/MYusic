@@ -77,7 +77,7 @@
   min-height: 72px;
   border: 0;
   background: linear-gradient(180deg, rgba(255, 218, 158, 0), transparent);
-  cursor: n-resize;
+  cursor: pointer;
   padding: 0;
   transition: background 220ms ease;
 }
