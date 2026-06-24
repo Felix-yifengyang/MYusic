@@ -2,6 +2,10 @@ const roomTurntableTable = new URL(
   "../assets/images/room/turntable-table.png",
   import.meta.url,
 ).href;
+const roomRecordCabinet = new URL(
+  "../assets/images/room/record-cabinet.png",
+  import.meta.url,
+).href;
 
 interface RoomPageProps {
   active: boolean;
@@ -24,6 +28,13 @@ export function RoomPage({ active, onEnterDesk }: RoomPageProps) {
           draggable={false}
         />
       </button>
+      <img
+        className="room-record-cabinet"
+        src={roomRecordCabinet}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+      />
     </main>
   );
 }
