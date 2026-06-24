@@ -34,22 +34,6 @@
   outline-offset: 3px;
 }
 
-.turntable-topbar {
-  position: fixed;
-  top: 18px;
-  right: 28px;
-  left: 28px;
-  z-index: 10;
-  min-height: 40px;
-  pointer-events: none;
-}
-
-.turntable-topbar strong {
-  color: var(--text);
-  font-size: 18px;
-  font-weight: 850;
-}
-
 .turntable-stage {
   position: relative;
   display: block;
@@ -73,8 +57,7 @@
   right: 0;
   left: 0;
   z-index: 9;
-  height: 18vh;
-  min-height: 72px;
+  height: 3vh;
   border: 0;
   background: linear-gradient(180deg, rgba(255, 218, 158, 0), transparent);
   cursor: pointer;

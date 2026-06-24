@@ -423,10 +423,6 @@ export function TurntablePage({
 
   return (
     <main ref={pageRef} className={`turntable-page ${!active ? "is-inactive" : ""} ${drawerOpen ? "drawer-open" : ""} ${drawerDragProgress !== null ? "drawer-dragging" : ""}`} aria-hidden={!active} style={pageStyle}>
-      <header className="turntable-topbar">
-        <strong>MYusic</strong>
-      </header>
-
       <section className="turntable-stage">
         <button
           className="turntable-exit-zone"
