@@ -1,0 +1,4 @@
+interface:
+  display_name: "Transparent Chroma Asset"
+  short_description: "Generate green-screen assets and cut alpha PNGs"
+  default_prompt: "Use $transparent-chroma-asset to generate a green-screen asset, remove the background, and save a transparent PNG."
