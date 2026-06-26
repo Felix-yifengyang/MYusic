@@ -50,7 +50,7 @@ import { TurntablePage } from "./components/TurntablePage";
 import type { AppView } from "./components/TurntablePage";
 
 type ManagedView = Exclude<AppView, "player">;
-type RoomView = "room" | "table" | "cabinet";
+type RoomView = "room" | "table" | "cabinet" | "computer";
 
 async function verifySession() {
   const auth = await getAuthStatus();
@@ -552,6 +552,16 @@ export function App() {
     setActiveView(view);
   }
 
+  function closeManagedView() {
+    setActiveView("player");
+    if (roomView === "computer") setRoomView("room");
+  }
+
+  function enterComputer() {
+    setRoomView("computer");
+    openManagedView("agent");
+  }
+
   function exitToRoom() {
     setDrawerOpen(false);
     setRoomView("room");
@@ -563,6 +573,7 @@ export function App() {
         active={roomView === "room"}
         onEnterTable={() => setRoomView("table")}
         onEnterCabinet={() => setRoomView("cabinet")}
+        onEnterComputer={enterComputer}
       />
 
       <CabinetPage
@@ -594,7 +605,7 @@ export function App() {
       />
 
       {activeView === "collect" && (
-        <ManagedPage title="收集" onBack={() => setActiveView("player")}>
+        <ManagedPage title="收集" onBack={closeManagedView}>
           <DownloadPanel
             jobs={jobs}
             url={url}
@@ -621,13 +632,13 @@ export function App() {
       )}
 
       {activeView === "agent" && (
-        <ManagedPage title="音乐问答" onBack={() => setActiveView("player")}>
+        <ManagedPage title="音乐问答" onBack={closeManagedView}>
           <AgentPanel preview={frontendPreview} />
         </ManagedPage>
       )}
 
       {activeView === "ingestions" && (
-        <ManagedPage title="入库" onBack={() => setActiveView("player")}>
+        <ManagedPage title="入库" onBack={closeManagedView}>
           <IngestionPanel
             ingestions={ingestions}
             message={ingestionMessage}
@@ -639,7 +650,7 @@ export function App() {
       )}
 
       {activeView === "settings" && (
-        <ManagedPage title="设置" onBack={() => setActiveView("player")}>
+        <ManagedPage title="设置" onBack={closeManagedView}>
         <SettingsPanel
           settings={settings}
           status={status}

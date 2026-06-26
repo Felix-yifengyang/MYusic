@@ -60,8 +60,31 @@
   user-select: none;
 }
 
+.room-computer-entry {
+  position: absolute;
+  bottom: 40%;
+  left: 5%;
+  width: 35%;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  touch-action: manipulation;
+}
+
+.room-computer-entry img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
 .room-table-entry:hover,
-.room-cabinet-entry:hover {
+.room-cabinet-entry:hover,
+.room-computer-entry:hover {
   filter:
     drop-shadow(1px 0 0 rgba(255, 218, 158, .72))
     drop-shadow(-1px 0 0 rgba(255, 218, 158, .72))
@@ -70,7 +93,8 @@
 }
 
 .room-table-entry:focus-visible,
-.room-cabinet-entry:focus-visible {
+.room-cabinet-entry:focus-visible,
+.room-computer-entry:focus-visible {
   outline: 3px solid rgba(255, 226, 177, .92);
   outline-offset: 6px;
 }

@@ -32,16 +32,16 @@ Composition/framing: centered cutout with generous padding, same slightly top-do
 
 Use the Python executable from `codex_app.load_workspace_dependencies` when available; it includes Pillow. Otherwise use any Python environment that can import `PIL`.
 
-After `image_gen` finishes, save into the requested project path:
+After `image_gen` finishes, save into the output path requested by the user or implied by the current repo/task. Do not hard-code a destination directory in this skill.
 
 ```powershell
-& '<python from load_workspace_dependencies>' .agents\skills\transparent-chroma-asset\scripts\cut_chroma_asset.py --out apps\web\src\assets\images\cabinet\asset-name.png --force
+& '<python from load_workspace_dependencies>' <transparent-chroma-asset>\scripts\cut_chroma_asset.py --out <output-transparent.png> --force
 ```
 
 If the user names a source file, pass it explicitly:
 
 ```powershell
-& '<python from load_workspace_dependencies>' .agents\skills\transparent-chroma-asset\scripts\cut_chroma_asset.py --source C:\path\to\green.png --out apps\web\src\assets\images\cabinet\asset-name.png --force
+& '<python from load_workspace_dependencies>' <transparent-chroma-asset>\scripts\cut_chroma_asset.py --source <green-source.png> --out <output-transparent.png> --force
 ```
 
 When `--source` is omitted, the script uses the newest PNG under `%USERPROFILE%\.codex\generated_images`.
