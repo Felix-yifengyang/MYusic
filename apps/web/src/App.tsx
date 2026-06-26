@@ -70,10 +70,10 @@ export function App() {
   const [jobs, setJobs] = useState<DownloadJob[]>([]);
   const [ingestions, setIngestions] = useState<IngestionRecord[]>([]);
   const [navidromeSongs, setNavidromeSongs] = useState<NavidromeSong[]>([]);
-  const [navidromeError, setNavidromeError] = useState("");
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
   const [cookieStatus, setCookieStatus] = useState<CookieFileStatus | null>(null);
+  const [playlistSongs, setPlaylistSongs] = useState<NavidromeSong[]>([]);
   const [queue, setQueue] = useState<PlayerTrack[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
   const [url, setUrl] = useState("");
@@ -229,6 +229,7 @@ export function App() {
     setSettings(null);
     setDiagnostics(null);
     setCookieStatus(null);
+    setPlaylistSongs([]);
     setQueue([]);
     setQueueIndex(-1);
     setCurrentPassword("");
@@ -294,16 +295,13 @@ export function App() {
   async function loadNavidromeSongs() {
     if (frontendPreviewRef.current) {
       setNavidromeSongs([]);
-      setNavidromeError("前端预览模式：未连接后端，音乐库数据暂不可用。");
       return;
     }
 
-    setNavidromeError("");
     await getNavidromeSongs("")
       .then((body) => setNavidromeSongs(body.songs))
       .catch((caught) => {
         setNavidromeSongs([]);
-        setNavidromeError(errorMessage(caught));
       });
   }
 
@@ -486,11 +484,19 @@ export function App() {
     setSettings((current) => current ? { ...current, [key]: value } : current);
   }
 
-  function playSong(song: NavidromeSong) {
-    const tracks = navidromeSongs.map(navidromePlayerTrack);
-    const index = Math.max(0, navidromeSongs.findIndex((item) => item.id === song.id));
-    setQueue(tracks);
-    setQueueIndex(index);
+  function playFromCabinet(song: NavidromeSong) {
+    const index = navidromeSongs.findIndex((item) => item.id === song.id);
+    const playlist = index >= 0
+      ? navidromeSongs.slice(index).concat(navidromeSongs.slice(0, index))
+      : [song];
+    setPlaylistSongs(playlist);
+    setQueue(playlist.map(navidromePlayerTrack));
+    setQueueIndex(0);
+  }
+
+  function playFromPlaylist(song: NavidromeSong) {
+    const index = playlistSongs.findIndex((item) => item.id === song.id);
+    if (index >= 0) setQueueIndex(index);
   }
 
   function playPrevious() {
@@ -519,7 +525,9 @@ export function App() {
     setDiagnostics(createPreviewDiagnostics());
     setCookieStatus(createPreviewCookieStatus());
     setNavidromeSongs([]);
-    setNavidromeError("前端预览模式：未连接后端，音乐库数据暂不可用。");
+    setPlaylistSongs([]);
+    setQueue([]);
+    setQueueIndex(-1);
     setError("");
   }
 
@@ -561,13 +569,13 @@ export function App() {
         active={roomView === "cabinet"}
         songs={navidromeSongs}
         currentTrackKey={nowPlaying?.key || ""}
-        onPlay={playSong}
+        onPlay={playFromCabinet}
+        onExitToRoom={exitToRoom}
       />
 
       <TurntablePage
         active={roomView === "table" && activeView === "player"}
-        songs={navidromeSongs}
-        error={navidromeError}
+        songs={playlistSongs}
         currentTrack={nowPlaying}
         currentTrackKey={nowPlaying?.key || ""}
         previousTrack={previousTrack}
@@ -575,7 +583,7 @@ export function App() {
         drawerOpen={drawerOpen}
         onDrawerOpenChange={setDrawerOpen}
         onRefresh={() => loadNavidromeSongs()}
-        onPlay={playSong}
+        onPlay={playFromPlaylist}
         onNavigate={openManagedView}
         onExitToRoom={exitToRoom}
         canPrevious={queueIndex > 0}

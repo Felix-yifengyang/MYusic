@@ -14,7 +14,6 @@ export type AppView = "player" | "agent" | "collect" | "ingestions" | "settings"
 export interface TurntablePageProps {
   active: boolean;
   songs: NavidromeSong[];
-  error: string;
   currentTrack: PlayerTrack | null;
   currentTrackKey: string;
   previousTrack: PlayerTrack | null;
@@ -35,7 +34,6 @@ export interface TurntablePageProps {
 export function TurntablePage({
   active,
   songs,
-  error,
   currentTrack,
   currentTrackKey,
   previousTrack,
@@ -435,7 +433,6 @@ export function TurntablePage({
           <RecordDrawer
             open={drawerOpen}
             songs={songs}
-            error={error}
             currentTrackKey={currentTrackKey}
             drawerLocked={recordChangeLocked}
             onRefresh={onRefresh}
@@ -486,25 +483,24 @@ export function TurntablePage({
                     preload="auto"
                     src={currentTrack.streamUrl}
                     aria-label="当前播放音频"
-                    onDurationChange={(event) => updateAudioState((state) => ({
-                      ...state,
-                      duration: event.currentTarget.duration || 0
-                    }))}
+                    onDurationChange={(event) => {
+                      const nextDuration = event.currentTarget.duration || 0;
+                      updateAudioState((state) => ({ ...state, duration: nextDuration }));
+                    }}
                     onEnded={advanceToNextTrack}
                     onError={handleAudioError}
                     onLoadedMetadata={(event) => {
-                      event.currentTarget.volume = volume;
-                      updateAudioState((state) => ({
-                        ...state,
-                        duration: event.currentTarget.duration || 0
-                      }));
+                      const audio = event.currentTarget;
+                      const nextDuration = audio.duration || 0;
+                      audio.volume = volume;
+                      updateAudioState((state) => ({ ...state, duration: nextDuration }));
                     }}
                     onPause={() => updateAudioState((state) => ({ ...state, playing: false }))}
                     onPlay={() => updateAudioState((state) => ({ ...state, playing: true }))}
-                    onTimeUpdate={(event) => updateAudioState((state) => ({
-                      ...state,
-                      currentTime: event.currentTarget.currentTime
-                    }))}
+                    onTimeUpdate={(event) => {
+                      const nextTime = event.currentTarget.currentTime;
+                      updateAudioState((state) => ({ ...state, currentTime: nextTime }));
+                    }}
                   />
                 )}
               </div>
@@ -740,7 +736,6 @@ function SideRecord({
 function RecordDrawer({
   open,
   songs,
-  error,
   currentTrackKey,
   drawerLocked,
   onRefresh,
@@ -753,7 +748,6 @@ function RecordDrawer({
 }: {
   open: boolean;
   songs: NavidromeSong[];
-  error: string;
   currentTrackKey: string;
   drawerLocked: boolean;
   onRefresh: () => void;
