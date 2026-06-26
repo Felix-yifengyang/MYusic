@@ -38,6 +38,7 @@ import {
 } from "./api/client";
 import { AgentPanel } from "./components/AgentPanel";
 import { AuthPanel } from "./components/AuthPanel";
+import { CabinetPage } from "./components/CabinetPage";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
 import { ManagedPage } from "./components/ManagedPage";
@@ -49,6 +50,7 @@ import { TurntablePage } from "./components/TurntablePage";
 import type { AppView } from "./components/TurntablePage";
 
 type ManagedView = Exclude<AppView, "player">;
+type RoomView = "room" | "table" | "cabinet";
 
 async function verifySession() {
   const auth = await getAuthStatus();
@@ -58,7 +60,7 @@ async function verifySession() {
 }
 
 export function App() {
-  const [roomActive, setRoomActive] = useState(true);
+  const [roomView, setRoomView] = useState<RoomView>("room");
   const [activeView, setActiveView] = useState<AppView>("player");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
@@ -544,18 +546,26 @@ export function App() {
 
   function exitToRoom() {
     setDrawerOpen(false);
-    setRoomActive(true);
+    setRoomView("room");
   }
 
   return (
     <>
       <RoomPage
-        active={roomActive}
-        onEnterDesk={() => setRoomActive(false)}
+        active={roomView === "room"}
+        onEnterTable={() => setRoomView("table")}
+        onEnterCabinet={() => setRoomView("cabinet")}
+      />
+
+      <CabinetPage
+        active={roomView === "cabinet"}
+        songs={navidromeSongs}
+        currentTrackKey={nowPlaying?.key || ""}
+        onPlay={playSong}
       />
 
       <TurntablePage
-        active={!roomActive && activeView === "player"}
+        active={roomView === "table" && activeView === "player"}
         songs={navidromeSongs}
         error={navidromeError}
         currentTrack={nowPlaying}

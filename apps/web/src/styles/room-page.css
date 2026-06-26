@@ -16,7 +16,7 @@
   visibility: hidden;
 }
 
-.room-desk-entry {
+.room-table-entry {
   position: absolute;
   bottom: 13%;
   left: 7%;
@@ -30,7 +30,7 @@
   touch-action: manipulation;
 }
 
-.room-desk-entry img {
+.room-table-entry img {
   display: block;
   width: 100%;
   height: auto;
@@ -38,17 +38,30 @@
   user-select: none;
 }
 
-.room-record-cabinet {
+.room-cabinet-entry {
   position: absolute;
   bottom: 8%;
   left: 40%;
   width: 28%;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  touch-action: manipulation;
+}
+
+.room-cabinet-entry img {
+  display: block;
+  width: 100%;
   height: auto;
   pointer-events: none;
   user-select: none;
 }
 
-.room-desk-entry:hover {
+.room-table-entry:hover,
+.room-cabinet-entry:hover {
   filter:
     drop-shadow(1px 0 0 rgba(255, 218, 158, .72))
     drop-shadow(-1px 0 0 rgba(255, 218, 158, .72))
@@ -56,7 +69,8 @@
     drop-shadow(0 -1px 0 rgba(255, 218, 158, .72));
 }
 
-.room-desk-entry:focus-visible {
+.room-table-entry:focus-visible,
+.room-cabinet-entry:focus-visible {
   outline: 3px solid rgba(255, 226, 177, .92);
   outline-offset: 6px;
 }

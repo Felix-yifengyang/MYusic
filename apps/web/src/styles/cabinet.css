@@ -1,0 +1,121 @@
+.cabinet-page {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: #120d0b;
+}
+
+.cabinet-page.is-inactive {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.cabinet-scene {
+  --cabinet-image-width: 130%;
+  --cabinet-shift-top: -20vw;
+  --cabinet-shift-bottom: -20vw;
+  --cabinet-shift-left: -15vw;
+  --cabinet-records-top: 5%;
+  --cabinet-records-right: 21.8%;
+  --cabinet-records-bottom: 12%;
+  --cabinet-records-left: 19%;
+  display: block;
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.cabinet-image {
+  display: block;
+  width: var(--cabinet-image-width);
+  height: auto;
+  margin: var(--cabinet-shift-top) 0 var(--cabinet-shift-bottom) var(--cabinet-shift-left);
+  pointer-events: none;
+  user-select: none;
+}
+
+.cabinet-cell-grid {
+  position: absolute;
+  inset: var(--cabinet-records-top) var(--cabinet-records-right) var(--cabinet-records-bottom) var(--cabinet-records-left);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(34px, 4vw, 72px);
+  align-content: start;
+}
+
+.cabinet-cell {
+  position: relative;
+  min-height: clamp(420px, 34vw, 520px);
+}
+
+.cabinet-record-button {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 9vw;
+  aspect-ratio: 1;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transform: translate(-50%, -50%);
+}
+
+.cabinet-record-button:nth-child(1) {
+  top: 8.3%;
+  left: 31.4%;
+}
+
+.cabinet-record-button:nth-child(2) {
+  top: 8.3%;
+  left: 76.6%;
+}
+
+.cabinet-record-button:nth-child(3) {
+  top: 46.5%;
+  left: 31.4%;
+}
+
+.cabinet-record-button:nth-child(4) {
+  top: 46.5%;
+  left: 76.6%;
+}
+
+.cabinet-record-button .cabinet-record {
+  --record-hole-size: 34%;
+  --record-label-hole-radius: 40%;
+  width: 100%;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .36));
+}
+
+.cabinet-record-title {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  width: min(15vw, 180px);
+  transform: translateX(-50%);
+  color: rgba(255, 239, 210, .92);
+  font-size: clamp(10px, .75vw, 14px);
+  line-height: 1.15;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, .75);
+  white-space: nowrap;
+}
+
+.cabinet-record-button.is-current .cabinet-record {
+  filter:
+    drop-shadow(0 0 5px rgba(255, 226, 177, .82))
+    drop-shadow(0 8px 10px rgba(0, 0, 0, .36));
+}
+
+.cabinet-record-button:focus-visible {
+  outline: 3px solid rgba(255, 226, 177, .92);
+  outline-offset: 6px;
+}
