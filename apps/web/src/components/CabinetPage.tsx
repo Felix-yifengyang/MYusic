@@ -1,10 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { NavidromeSong } from "@myusic/shared";
 
 const cabinetScene = new URL(
   "../assets/images/cabinet/bg-cabinet.png",
   import.meta.url,
 ).href;
+
+const paginationPrev = new URL(
+  "../assets/images/cabinet/cabinet-pagination-prev.png",
+  import.meta.url,
+).href;
+
+const paginationNext = new URL(
+  "../assets/images/cabinet/cabinet-pagination-next.png",
+  import.meta.url,
+).href;
+
+const SONGS_PER_CELL = 4;
+const CELLS_PER_PAGE = 10;
+const SONGS_PER_PAGE = SONGS_PER_CELL * CELLS_PER_PAGE;
 
 interface CabinetPageProps {
   active: boolean;
@@ -15,18 +29,40 @@ interface CabinetPageProps {
 }
 
 export function CabinetPage({ active, songs, currentTrackKey, onPlay, onExitToRoom }: CabinetPageProps) {
-  const cabinetCells = Array.from({ length: Math.ceil(songs.length / 4) }, (_, index) => songs.slice(index * 4, index * 4 + 4));
+  const [pageIndex, setPageIndex] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(songs.length / SONGS_PER_PAGE));
+  const currentPageIndex = Math.min(pageIndex, pageCount - 1);
+  const pageSongs = songs.slice(currentPageIndex * SONGS_PER_PAGE, (currentPageIndex + 1) * SONGS_PER_PAGE);
+  const cabinetCells = Array.from(
+    { length: Math.ceil(pageSongs.length / SONGS_PER_CELL) },
+    (_, index) => pageSongs.slice(index * SONGS_PER_CELL, index * SONGS_PER_CELL + SONGS_PER_CELL),
+  );
+  const hasPreviousPage = currentPageIndex > 0;
+  const hasNextPage = currentPageIndex < pageCount - 1;
+  const showPagination = pageCount > 1;
 
   useEffect(() => {
     if (!active) return;
 
-    const exitOnEscape = (event: KeyboardEvent) => {
+    const handleKeyboard = (event: KeyboardEvent) => {
       if (event.key === "Escape") onExitToRoom();
+      if (event.key === "ArrowLeft" && hasPreviousPage) {
+        event.preventDefault();
+        setPageIndex((index) => Math.max(0, index - 1));
+      }
+      if (event.key === "ArrowRight" && hasNextPage) {
+        event.preventDefault();
+        setPageIndex((index) => Math.min(pageCount - 1, index + 1));
+      }
     };
 
-    window.addEventListener("keydown", exitOnEscape);
-    return () => window.removeEventListener("keydown", exitOnEscape);
-  }, [active, onExitToRoom]);
+    window.addEventListener("keydown", handleKeyboard);
+    return () => window.removeEventListener("keydown", handleKeyboard);
+  }, [active, hasNextPage, hasPreviousPage, onExitToRoom, pageCount]);
+
+  useEffect(() => {
+    if (pageIndex >= pageCount) setPageIndex(pageCount - 1);
+  }, [pageCount, pageIndex]);
 
   return (
     <main className={`cabinet-page ${!active ? "is-inactive" : ""}`} aria-hidden={!active}>
@@ -36,6 +72,28 @@ export function CabinetPage({ active, songs, currentTrackKey, onPlay, onExitToRo
         aria-label="返回房间"
         onClick={onExitToRoom}
       />
+      {showPagination ? (
+        <>
+          <button
+            className="cabinet-pagination-button cabinet-pagination-prev"
+            type="button"
+            aria-label="上一页唱片"
+            disabled={!hasPreviousPage}
+            onClick={() => setPageIndex((index) => Math.max(0, index - 1))}
+          >
+            <img src={paginationPrev} alt="" aria-hidden="true" draggable={false} />
+          </button>
+          <button
+            className="cabinet-pagination-button cabinet-pagination-next"
+            type="button"
+            aria-label="下一页唱片"
+            disabled={!hasNextPage}
+            onClick={() => setPageIndex((index) => Math.min(pageCount - 1, index + 1))}
+          >
+            <img src={paginationNext} alt="" aria-hidden="true" draggable={false} />
+          </button>
+        </>
+      ) : null}
       <div className="cabinet-scene">
         <div className="cabinet-board">
           <img

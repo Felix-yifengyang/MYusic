@@ -759,7 +759,7 @@ function RecordDrawer({
   onPullPointerCancel: () => void;
 }) {
   return (
-    <aside className="record-drawer" aria-label="音乐库抽屉">
+    <aside className="record-drawer" aria-expanded={open} aria-label="音乐库抽屉">
       <button
         className="drawer-pull"
         type="button"
