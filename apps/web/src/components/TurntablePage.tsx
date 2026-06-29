@@ -20,9 +20,7 @@ export interface TurntablePageProps {
   nextTrack: PlayerTrack | null;
   drawerOpen: boolean;
   onDrawerOpenChange: (open: boolean) => void;
-  onRefresh: () => void;
   onPlay: (song: NavidromeSong) => void;
-  onNavigate: (view: Exclude<AppView, "player">) => void;
   onExitToRoom: () => void;
   canPrevious: boolean;
   canNext: boolean;
@@ -40,9 +38,7 @@ export function TurntablePage({
   nextTrack,
   drawerOpen,
   onDrawerOpenChange,
-  onRefresh,
   onPlay,
-  onNavigate,
   onExitToRoom,
   canPrevious,
   canNext,
@@ -435,9 +431,7 @@ export function TurntablePage({
             songs={songs}
             currentTrackKey={currentTrackKey}
             drawerLocked={recordChangeLocked}
-            onRefresh={onRefresh}
             onPlay={(song, sourceRecord) => changeRecord(() => onPlay(song), sourceRecord, true)}
-            onNavigate={onNavigate}
             onPullPointerDown={drawerPointerDown}
             onPullPointerMove={drawerPointerMove}
             onPullPointerUp={drawerPointerUp}
@@ -738,9 +732,7 @@ function RecordDrawer({
   songs,
   currentTrackKey,
   drawerLocked,
-  onRefresh,
   onPlay,
-  onNavigate,
   onPullPointerDown,
   onPullPointerMove,
   onPullPointerUp,
@@ -750,9 +742,7 @@ function RecordDrawer({
   songs: NavidromeSong[];
   currentTrackKey: string;
   drawerLocked: boolean;
-  onRefresh: () => void;
   onPlay: (song: NavidromeSong, sourceRecord: HTMLElement | undefined) => void;
-  onNavigate: (view: Exclude<AppView, "player">) => void;
   onPullPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
   onPullPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
   onPullPointerUp: () => void;
@@ -772,17 +762,6 @@ function RecordDrawer({
         onPointerCancel={onPullPointerCancel}
       />
 
-      <div className="drawer-tools">
-        <button className="drawer-refresh drawer-icon-button" type="button" aria-label="刷新" onClick={onRefresh}>
-          <span aria-hidden="true" />
-        </button>
-        <nav className="drawer-actions" aria-label="功能入口">
-          <button className="drawer-icon-button drawer-action-collect" type="button" aria-label="收集" onClick={() => onNavigate("collect")}><span aria-hidden="true" /></button>
-          <button className="drawer-icon-button drawer-action-agent" type="button" aria-label="音乐问答" onClick={() => onNavigate("agent")}><span aria-hidden="true" /></button>
-          <button className="drawer-icon-button drawer-action-ingestions" type="button" aria-label="入库" onClick={() => onNavigate("ingestions")}><span aria-hidden="true" /></button>
-          <button className="drawer-icon-button drawer-action-settings" type="button" aria-label="设置" onClick={() => onNavigate("settings")}><span aria-hidden="true" /></button>
-        </nav>
-      </div>
       <section className="record-shelf" aria-label="歌曲列表">
         {songs.map((song) => (
           <article className={`sleeve ${currentTrackKey === `navidrome:${song.id}` ? "current" : ""}`} key={song.id}>

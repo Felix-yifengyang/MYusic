@@ -39,6 +39,8 @@ import {
 import { AgentPanel } from "./components/AgentPanel";
 import { AuthPanel } from "./components/AuthPanel";
 import { CabinetPage } from "./components/CabinetPage";
+import { ComputerPage } from "./components/ComputerPage";
+import type { ComputerView } from "./components/ComputerPage";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
 import { ManagedPage } from "./components/ManagedPage";
@@ -552,6 +554,11 @@ export function App() {
     setActiveView(view);
   }
 
+  function openComputerView(view: ComputerView) {
+    setRoomView("computer");
+    openManagedView(view);
+  }
+
   function closeManagedView() {
     setActiveView("player");
     if (roomView === "computer") setRoomView("room");
@@ -584,6 +591,78 @@ export function App() {
         onExitToRoom={exitToRoom}
       />
 
+      <ComputerPage
+        active={roomView === "computer" && activeView !== "player"}
+        activeView={activeView === "player" ? "agent" : activeView}
+        onNavigate={openComputerView}
+        onExitToRoom={closeManagedView}
+      >
+        {activeView === "collect" && (
+          <DownloadPanel
+            jobs={jobs}
+            url={url}
+            error={error}
+            submitting={submitting}
+            duplicateIngestion={duplicateIngestion}
+            onUrlChange={setUrl}
+            onSubmit={submitDownload}
+            onClearJobs={clearJobs}
+            onCancelJob={cancelJob}
+            onDeleteJob={deleteJob}
+            onRetryJob={retryJob}
+            onOpenIngestions={() => {
+              setDuplicateIngestion(null);
+              setError("");
+              setActiveView("ingestions");
+            }}
+            onDismissDuplicate={() => {
+              setDuplicateIngestion(null);
+              setError("");
+            }}
+          />
+        )}
+
+        {activeView === "agent" && <AgentPanel preview={frontendPreview} />}
+
+        {activeView === "ingestions" && (
+          <IngestionPanel
+            ingestions={ingestions}
+            message={ingestionMessage}
+            rematchingId={rematchingIngestionId}
+            onRefresh={loadIngestions}
+            onRematch={rematchIngestion}
+          />
+        )}
+
+        {activeView === "settings" && (
+          <SettingsPanel
+            settings={settings}
+            status={status}
+            authStatus={authStatus}
+            cookieStatus={cookieStatus}
+            diagnostics={diagnostics}
+            settingsMessage={settingsMessage}
+            bilibiliCookieText={bilibiliCookieText}
+            bilibiliCookieMessage={bilibiliCookieMessage}
+            bilibiliCookieSaving={bilibiliCookieSaving}
+            currentPassword={currentPassword}
+            newPassword={newPassword}
+            passwordMessage={passwordMessage}
+            passwordSaving={passwordSaving}
+            onSettingsChange={updateSetting}
+            onSettingsSubmit={saveSettings}
+            onCookieContentChange={setBilibiliCookieText}
+            onCookieFileLoad={loadBilibiliCookieFile}
+            onCookieSubmit={saveBilibiliCookie}
+            onCookieClear={() => void clearBilibiliCookie()}
+            onCurrentPasswordChange={setCurrentPassword}
+            onNewPasswordChange={setNewPassword}
+            onPasswordSubmit={changePassword}
+            onLogoutAllDevices={() => void logoutAllDevices()}
+          />
+        )}
+      </ComputerPage>
+
       <TurntablePage
         active={roomView === "table" && activeView === "player"}
         songs={playlistSongs}
@@ -593,9 +672,7 @@ export function App() {
         nextTrack={nextTrack}
         drawerOpen={drawerOpen}
         onDrawerOpenChange={setDrawerOpen}
-        onRefresh={() => loadNavidromeSongs()}
         onPlay={playFromPlaylist}
-        onNavigate={openManagedView}
         onExitToRoom={exitToRoom}
         canPrevious={queueIndex > 0}
         canNext={queueIndex >= 0 && queueIndex < queue.length - 1}
@@ -604,7 +681,7 @@ export function App() {
         onEnded={playNext}
       />
 
-      {activeView === "collect" && (
+      {activeView === "collect" && roomView !== "computer" && (
         <ManagedPage title="收集" onBack={closeManagedView}>
           <DownloadPanel
             jobs={jobs}
@@ -631,13 +708,13 @@ export function App() {
         </ManagedPage>
       )}
 
-      {activeView === "agent" && (
+      {activeView === "agent" && roomView !== "computer" && (
         <ManagedPage title="音乐问答" onBack={closeManagedView}>
           <AgentPanel preview={frontendPreview} />
         </ManagedPage>
       )}
 
-      {activeView === "ingestions" && (
+      {activeView === "ingestions" && roomView !== "computer" && (
         <ManagedPage title="入库" onBack={closeManagedView}>
           <IngestionPanel
             ingestions={ingestions}
@@ -649,7 +726,7 @@ export function App() {
         </ManagedPage>
       )}
 
-      {activeView === "settings" && (
+      {activeView === "settings" && roomView !== "computer" && (
         <ManagedPage title="设置" onBack={closeManagedView}>
         <SettingsPanel
           settings={settings}

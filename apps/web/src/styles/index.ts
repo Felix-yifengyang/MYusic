@@ -9,6 +9,7 @@ import "./ingestion-panel.css";
 import "./settings-panel.css";
 import "./room-page.css";
 import "./cabinet.css";
+import "./computer-page.css";
 import "./turntable-page.css";
 import "./turntable-record.css";
 import "./turntable-table.css";
