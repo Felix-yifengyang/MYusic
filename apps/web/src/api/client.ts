@@ -87,6 +87,10 @@ export async function createUser(username: string, password: string, role: UserA
   return postJson<UserAccount>("/api/users", { username, password, role });
 }
 
+export async function syncUserNavidrome(id: string, password: string) {
+  return postJson<UserAccount>(`/api/users/${encodeURIComponent(id)}/navidrome`, { password });
+}
+
 export async function getHealth() {
   return getJson<RuntimeStatus>("/api/health");
 }

@@ -37,7 +37,8 @@ import {
   retryDownloadJob,
   saveBilibiliCookie as saveBilibiliCookieApi,
   saveSettings as saveSettingsApi,
-  initializeAdmin as initializeAdminApi
+  initializeAdmin as initializeAdminApi,
+  syncUserNavidrome as syncUserNavidromeApi
 } from "./api/client";
 import { AgentPanel } from "./components/AgentPanel";
 import { AuthPanel } from "./components/AuthPanel";
@@ -98,6 +99,8 @@ export function App() {
   const [newUserRole, setNewUserRole] = useState<UserAccount["role"]>("member");
   const [userMessage, setUserMessage] = useState("");
   const [userSaving, setUserSaving] = useState(false);
+  const [navidromePasswords, setNavidromePasswords] = useState<Record<string, string>>({});
+  const [syncingNavidromeUserId, setSyncingNavidromeUserId] = useState("");
   const [ingestionMessage, setIngestionMessage] = useState("");
   const [rematchingIngestionId, setRematchingIngestionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -252,6 +255,8 @@ export function App() {
     setNewUserPassword("");
     setNewUserRole("member");
     setUserMessage("");
+    setNavidromePasswords({});
+    setSyncingNavidromeUserId("");
     setAuthStatus(await getAuthStatus());
   }
 
@@ -594,6 +599,33 @@ export function App() {
       .finally(() => setUserSaving(false));
   }
 
+  async function syncUserNavidrome(userId: string) {
+    setUserMessage("");
+    const password = navidromePasswords[userId] || "";
+    if (!password) {
+      setUserMessage("请填写移动端初始密码。");
+      return;
+    }
+
+    if (frontendPreviewRef.current) {
+      setUserMessage("前端预览模式未连接账号服务。");
+      return;
+    }
+
+    setSyncingNavidromeUserId(userId);
+    await syncUserNavidromeApi(userId, password)
+      .then(async (user) => {
+        setNavidromePasswords((current) => ({ ...current, [userId]: "" }));
+        setUserMessage(user.navidromeSyncError ? `移动端配置失败：${user.navidromeSyncError}` : `已配置移动端账号：${user.username}`);
+        await loadUsers();
+      })
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setUserMessage)) return;
+        setUserMessage(errorMessage(caught));
+      })
+      .finally(() => setSyncingNavidromeUserId(""));
+  }
+
   function updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
     setSettings((current) => current ? { ...current, [key]: value } : current);
   }
@@ -767,6 +799,8 @@ export function App() {
             newUserRole={newUserRole}
             userMessage={userMessage}
             userSaving={userSaving}
+            navidromePasswords={navidromePasswords}
+            syncingNavidromeUserId={syncingNavidromeUserId}
             onSettingsChange={updateSetting}
             onSettingsSubmit={saveSettings}
             onCookieContentChange={setBilibiliCookieText}
@@ -781,6 +815,8 @@ export function App() {
             onNewUserPasswordChange={setNewUserPassword}
             onNewUserRoleChange={setNewUserRole}
             onCreateUser={createUser}
+            onNavidromePasswordChange={(userId, password) => setNavidromePasswords((current) => ({ ...current, [userId]: password }))}
+            onSyncUserNavidrome={(userId) => void syncUserNavidrome(userId)}
           />
         )}
       </ComputerPage>
@@ -870,6 +906,8 @@ export function App() {
           newUserRole={newUserRole}
           userMessage={userMessage}
           userSaving={userSaving}
+          navidromePasswords={navidromePasswords}
+          syncingNavidromeUserId={syncingNavidromeUserId}
           onSettingsChange={updateSetting}
           onSettingsSubmit={saveSettings}
           onCookieContentChange={setBilibiliCookieText}
@@ -884,6 +922,8 @@ export function App() {
           onNewUserPasswordChange={setNewUserPassword}
           onNewUserRoleChange={setNewUserRole}
           onCreateUser={createUser}
+          onNavidromePasswordChange={(userId, password) => setNavidromePasswords((current) => ({ ...current, [userId]: password }))}
+          onSyncUserNavidrome={(userId) => void syncUserNavidrome(userId)}
         />
         </ManagedPage>
       )}

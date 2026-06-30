@@ -24,6 +24,18 @@ export interface CreateUserOptions {
   }>;
 }
 
+export interface ProvisionUserNavidromeOptions {
+  provisionNavidrome: (input: {
+    id: string;
+    username: string;
+    password: string;
+    role: AuthRole;
+  }) => Promise<{
+    navidromeUserId: string;
+    navidromeLibraryId: string;
+  }>;
+}
+
 export class AuthService {
   private readonly pool: Pool;
   private migration?: Promise<void>;
@@ -172,6 +184,52 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async provisionUserNavidrome(
+    token: string | undefined,
+    userId: string,
+    password: string,
+    options: ProvisionUserNavidromeOptions
+  ): Promise<UserAccount> {
+    await this.requireAdmin(token);
+    validatePassword(password);
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new AuthError(404, "User not found.");
+    }
+
+    try {
+      const navidrome = await options.provisionNavidrome({
+        id: user.id,
+        username: user.username,
+        password,
+        role: user.role
+      });
+      const syncedAt = new Date().toISOString();
+      await this.pool.query(
+        `update users
+         set navidrome_user_id = $1,
+             navidrome_library_id = $2,
+             navidrome_synced_at = $3,
+             navidrome_sync_error = null,
+             updated_at = now()
+         where id = $4`,
+        [navidrome.navidromeUserId, navidrome.navidromeLibraryId, syncedAt, user.id]
+      );
+    } catch (error) {
+      await this.pool.query(
+        `update users
+         set navidrome_sync_error = $1,
+             updated_at = now()
+         where id = $2`,
+        [error instanceof Error ? error.message : "Navidrome provisioning failed.", user.id]
+      );
+    }
+
+    const updated = await this.getUserById(user.id);
+    if (!updated) throw new AuthError(404, "User not found.");
+    return updated;
   }
 
   async authenticate(token: string): Promise<AuthSession | undefined> {
@@ -325,6 +383,20 @@ export class AuthService {
   private async isSetupRequired() {
     const result = await this.pool.query(`select count(*)::int as count from users`);
     return Number(result.rows[0]?.count || 0) === 0;
+  }
+
+  private async getUserById(id: string): Promise<UserAccount | undefined> {
+    await this.ensureMigrated();
+    const result = await this.pool.query(
+      `select id, username, role, created_at, updated_at,
+              navidrome_user_id, navidrome_library_id, navidrome_synced_at, navidrome_sync_error
+       from users
+       where id = $1
+       limit 1`,
+      [id]
+    );
+    const row = result.rows[0];
+    return row ? rowToUserAccount(row) : undefined;
   }
 
   private async createSession(user: AuthUser): Promise<AuthSession & { token: string }> {

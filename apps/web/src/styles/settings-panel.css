@@ -118,6 +118,7 @@
 
 .user-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -146,6 +147,19 @@
   font-size: 12px;
 }
 
+.user-navidrome-actions {
+  display: flex;
+  flex: 1 1 320px;
+  grid-template-columns: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.user-navidrome-actions input {
+  max-width: 220px;
+}
+
 
 @media (max-width: 760px) {
   .settings-page,
@@ -165,5 +179,15 @@
   .user-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .user-navidrome-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-navidrome-actions input {
+    max-width: none;
   }
 }

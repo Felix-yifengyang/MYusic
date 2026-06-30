@@ -30,18 +30,27 @@ export function registerUserRoutes(app: FastifyInstance, auth: AuthService | und
       String(request.body?.password || ""),
       request.body?.role === "admin" ? "admin" : "member",
       {
-        provisionNavidrome: async (user) => {
-          const result = await provisionNavidromeUserLibrary(config, {
-            userId: user.id,
-            username: user.username,
-            password: user.password,
-            isAdmin: user.role === "admin"
-          });
-          return {
-            navidromeUserId: result.userId,
-            navidromeLibraryId: result.libraryId
-          };
-        }
+        provisionNavidrome: (user) => provisionUserNavidrome(config, user)
+      }
+    );
+  });
+
+  app.post<{
+    Params: {
+      id: string;
+    };
+    Body: {
+      password?: string;
+    };
+  }>("/api/users/:id/navidrome", async (request) => {
+    if (!auth) return { error: "Auth is disabled." };
+
+    return auth.provisionUserNavidrome(
+      readSessionToken(request, auth),
+      request.params.id,
+      String(request.body?.password || ""),
+      {
+        provisionNavidrome: (user) => provisionUserNavidrome(config, user)
       }
     );
   });
@@ -49,4 +58,25 @@ export function registerUserRoutes(app: FastifyInstance, auth: AuthService | und
 
 function readSessionToken(request: FastifyRequest, auth: AuthService) {
   return readCookie(request.headers.cookie, auth.cookieName);
+}
+
+async function provisionUserNavidrome(
+  config: ApiConfig,
+  user: {
+    id: string;
+    username: string;
+    password: string;
+    role: AuthRole;
+  }
+) {
+  const result = await provisionNavidromeUserLibrary(config, {
+    userId: user.id,
+    username: user.username,
+    password: user.password,
+    isAdmin: user.role === "admin"
+  });
+  return {
+    navidromeUserId: result.userId,
+    navidromeLibraryId: result.libraryId
+  };
 }

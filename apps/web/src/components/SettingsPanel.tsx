@@ -23,6 +23,8 @@ export interface SettingsPanelProps {
   newUserRole: UserAccount["role"];
   userMessage: string;
   userSaving: boolean;
+  navidromePasswords: Record<string, string>;
+  syncingNavidromeUserId: string;
   onSettingsChange: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
   onSettingsSubmit: (event: FormEvent) => void;
   onCookieContentChange: (value: string) => void;
@@ -37,6 +39,8 @@ export interface SettingsPanelProps {
   onNewUserPasswordChange: (value: string) => void;
   onNewUserRoleChange: (value: UserAccount["role"]) => void;
   onCreateUser: (event: FormEvent) => void;
+  onNavidromePasswordChange: (userId: string, value: string) => void;
+  onSyncUserNavidrome: (userId: string) => void;
 }
 
 export function SettingsPanel({
@@ -59,6 +63,8 @@ export function SettingsPanel({
   newUserRole,
   userMessage,
   userSaving,
+  navidromePasswords,
+  syncingNavidromeUserId,
   onSettingsChange,
   onSettingsSubmit,
   onCookieContentChange,
@@ -72,7 +78,9 @@ export function SettingsPanel({
   onNewUserUsernameChange,
   onNewUserPasswordChange,
   onNewUserRoleChange,
-  onCreateUser
+  onCreateUser,
+  onNavidromePasswordChange,
+  onSyncUserNavidrome
 }: SettingsPanelProps) {
   return (
     <section className="settings-page">
@@ -127,10 +135,14 @@ export function SettingsPanel({
             role={newUserRole}
             message={userMessage}
             saving={userSaving}
+            navidromePasswords={navidromePasswords}
+            syncingNavidromeUserId={syncingNavidromeUserId}
             onUsernameChange={onNewUserUsernameChange}
             onPasswordChange={onNewUserPasswordChange}
             onRoleChange={onNewUserRoleChange}
             onSubmit={onCreateUser}
+            onNavidromePasswordChange={onNavidromePasswordChange}
+            onSyncUserNavidrome={onSyncUserNavidrome}
           />
         </Panel>
       )}
@@ -320,10 +332,14 @@ function UserManagement({
   role,
   message,
   saving,
+  navidromePasswords,
+  syncingNavidromeUserId,
   onUsernameChange,
   onPasswordChange,
   onRoleChange,
-  onSubmit
+  onSubmit,
+  onNavidromePasswordChange,
+  onSyncUserNavidrome
 }: {
   users: UserAccount[];
   username: string;
@@ -331,10 +347,14 @@ function UserManagement({
   role: UserAccount["role"];
   message: string;
   saving: boolean;
+  navidromePasswords: Record<string, string>;
+  syncingNavidromeUserId: string;
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onRoleChange: (value: UserAccount["role"]) => void;
   onSubmit: (event: FormEvent) => void;
+  onNavidromePasswordChange: (userId: string, value: string) => void;
+  onSyncUserNavidrome: (userId: string) => void;
 }) {
   return (
     <div className="user-management">
@@ -380,6 +400,25 @@ function UserManagement({
       <div className="user-list">
         {users.length ? users.map((user) => (
           <div className="user-row" key={user.id}>
+            <div className="user-navidrome-actions">
+              <input
+                aria-label={`${user.username} 移动端初始密码`}
+                type="password"
+                value={navidromePasswords[user.id] || ""}
+                onChange={(event) => onNavidromePasswordChange(user.id, event.target.value)}
+                placeholder="移动端初始密码"
+                autoComplete="new-password"
+              />
+              <Button
+                type="button"
+                size="compact"
+                variant="secondary"
+                disabled={syncingNavidromeUserId === user.id}
+                onClick={() => onSyncUserNavidrome(user.id)}
+              >
+                {syncingNavidromeUserId === user.id ? "配置中..." : user.navidromeSyncedAt ? "重新配置移动端" : "配置移动端"}
+              </Button>
+            </div>
             <div>
               <strong>{user.username}</strong>
               <span>{formatRole(user.role)} · {formatNavidromeStatus(user)}</span>
