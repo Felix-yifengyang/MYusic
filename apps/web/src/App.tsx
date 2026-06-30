@@ -8,7 +8,8 @@ import type {
   DownloadJob,
   IngestionRecord,
   NavidromeSong,
-  RuntimeStatus
+  RuntimeStatus,
+  UserAccount
 } from "@myusic/shared";
 import {
   ApiError,
@@ -18,6 +19,7 @@ import {
   clearBilibiliCookie as clearBilibiliCookieApi,
   clearDownloadJobs,
   createDownload,
+  createUser as createUserApi,
   deleteDownloadJob,
   getAuthStatus,
   getBilibiliCookieStatus,
@@ -27,6 +29,7 @@ import {
   getJobs,
   getNavidromeSongs,
   getSettings,
+  getUsers,
   login as loginApi,
   logout as logoutApi,
   logoutAllDevices as logoutAllDevicesApi,
@@ -73,6 +76,7 @@ export function App() {
   const [ingestions, setIngestions] = useState<IngestionRecord[]>([]);
   const [navidromeSongs, setNavidromeSongs] = useState<NavidromeSong[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [users, setUsers] = useState<UserAccount[]>([]);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
   const [cookieStatus, setCookieStatus] = useState<CookieFileStatus | null>(null);
   const [playlistSongs, setPlaylistSongs] = useState<NavidromeSong[]>([]);
@@ -89,6 +93,11 @@ export function App() {
   const [newPassword, setNewPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [newUserUsername, setNewUserUsername] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<UserAccount["role"]>("member");
+  const [userMessage, setUserMessage] = useState("");
+  const [userSaving, setUserSaving] = useState(false);
   const [ingestionMessage, setIngestionMessage] = useState("");
   const [rematchingIngestionId, setRematchingIngestionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -134,6 +143,7 @@ export function App() {
     if (activeView === "settings") {
       void loadStatus();
       void loadSettings();
+      void loadUsers();
       void loadDiagnostics();
       void loadBilibiliCookieStatus();
     }
@@ -229,6 +239,7 @@ export function App() {
     setIngestions([]);
     setNavidromeSongs([]);
     setSettings(null);
+    setUsers([]);
     setDiagnostics(null);
     setCookieStatus(null);
     setPlaylistSongs([]);
@@ -237,7 +248,28 @@ export function App() {
     setCurrentPassword("");
     setNewPassword("");
     setPasswordMessage("");
+    setNewUserUsername("");
+    setNewUserPassword("");
+    setNewUserRole("member");
+    setUserMessage("");
     setAuthStatus(await getAuthStatus());
+  }
+
+  async function handleAuthApiError(caught: unknown, setMessage?: (message: string) => void) {
+    if (!(caught instanceof ApiError)) return false;
+
+    if (caught.status === 401) {
+      await resetAfterLogout();
+      setMessage?.("登录已失效，请重新登录。");
+      return true;
+    }
+
+    if (caught.status === 403) {
+      setMessage?.("当前账号没有管理员权限。");
+      return true;
+    }
+
+    return false;
   }
 
   async function loadStatus() {
@@ -246,7 +278,12 @@ export function App() {
       return;
     }
 
-    setStatus(await getHealth());
+    await getHealth()
+      .then(setStatus)
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setError)) return;
+        setError(errorMessage(caught));
+      });
   }
 
   async function loadJobs() {
@@ -255,7 +292,12 @@ export function App() {
       return;
     }
 
-    setJobs(await getJobs());
+    await getJobs()
+      .then(setJobs)
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setError)) return;
+        setError(errorMessage(caught));
+      });
   }
 
   async function loadIngestions() {
@@ -264,7 +306,12 @@ export function App() {
       return;
     }
 
-    setIngestions(await getIngestions());
+    await getIngestions()
+      .then(setIngestions)
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setIngestionMessage)) return;
+        setIngestionMessage(errorMessage(caught));
+      });
   }
 
   async function loadSettings() {
@@ -273,7 +320,32 @@ export function App() {
       return;
     }
 
-    setSettings(await getSettings());
+    await getSettings()
+      .then(setSettings)
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setSettingsMessage)) return;
+        setSettingsMessage(errorMessage(caught));
+      });
+  }
+
+  async function loadUsers() {
+    if (frontendPreviewRef.current) {
+      setUsers([]);
+      return;
+    }
+
+    const auth = authStatusRef.current;
+    if (auth?.enabled && auth.user?.role !== "admin") {
+      setUsers([]);
+      return;
+    }
+
+    await getUsers()
+      .then(setUsers)
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setUserMessage)) return;
+        setUserMessage(errorMessage(caught));
+      });
   }
 
   async function loadDiagnostics() {
@@ -282,7 +354,12 @@ export function App() {
       return;
     }
 
-    setDiagnostics(await getDiagnostics());
+    await getDiagnostics()
+      .then(setDiagnostics)
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setSettingsMessage)) return;
+        setSettingsMessage(errorMessage(caught));
+      });
   }
 
   async function loadBilibiliCookieStatus() {
@@ -291,7 +368,12 @@ export function App() {
       return;
     }
 
-    setCookieStatus(await getBilibiliCookieStatus());
+    await getBilibiliCookieStatus()
+      .then(setCookieStatus)
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setBilibiliCookieMessage)) return;
+        setBilibiliCookieMessage(errorMessage(caught));
+      });
   }
 
   async function loadNavidromeSongs() {
@@ -324,7 +406,7 @@ export function App() {
     await createDownload(mediaUrl)
       .then(async (result) => {
         if (!result.ok) {
-          await loadDiagnostics();
+          await loadDiagnostics().catch(() => undefined);
           if (result.body.code === "DUPLICATE_INGESTION" && result.body.ingestion) {
             setDuplicateIngestion(result.body.ingestion);
           }
@@ -480,6 +562,36 @@ export function App() {
       })
       .catch((caught) => setPasswordMessage(errorMessage(caught)))
       .finally(() => setPasswordSaving(false));
+  }
+
+  async function createUser(event: FormEvent) {
+    event.preventDefault();
+    setUserMessage("");
+    const username = newUserUsername.trim();
+    if (!username || !newUserPassword) {
+      setUserMessage("请填写用户名和初始密码。");
+      return;
+    }
+
+    if (frontendPreviewRef.current) {
+      setUserMessage("前端预览模式未连接账号服务。");
+      return;
+    }
+
+    setUserSaving(true);
+    await createUserApi(username, newUserPassword, newUserRole)
+      .then(async (user) => {
+        setNewUserUsername("");
+        setNewUserPassword("");
+        setNewUserRole("member");
+        setUserMessage(`已创建账号：${user.username}`);
+        await loadUsers();
+      })
+      .catch(async (caught) => {
+        if (await handleAuthApiError(caught, setUserMessage)) return;
+        setUserMessage(errorMessage(caught));
+      })
+      .finally(() => setUserSaving(false));
   }
 
   function updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
@@ -639,6 +751,7 @@ export function App() {
             settings={settings}
             status={status}
             authStatus={authStatus}
+            users={users}
             cookieStatus={cookieStatus}
             diagnostics={diagnostics}
             settingsMessage={settingsMessage}
@@ -649,6 +762,11 @@ export function App() {
             newPassword={newPassword}
             passwordMessage={passwordMessage}
             passwordSaving={passwordSaving}
+            newUserUsername={newUserUsername}
+            newUserPassword={newUserPassword}
+            newUserRole={newUserRole}
+            userMessage={userMessage}
+            userSaving={userSaving}
             onSettingsChange={updateSetting}
             onSettingsSubmit={saveSettings}
             onCookieContentChange={setBilibiliCookieText}
@@ -659,6 +777,10 @@ export function App() {
             onNewPasswordChange={setNewPassword}
             onPasswordSubmit={changePassword}
             onLogoutAllDevices={() => void logoutAllDevices()}
+            onNewUserUsernameChange={setNewUserUsername}
+            onNewUserPasswordChange={setNewUserPassword}
+            onNewUserRoleChange={setNewUserRole}
+            onCreateUser={createUser}
           />
         )}
       </ComputerPage>
@@ -732,6 +854,7 @@ export function App() {
           settings={settings}
           status={status}
           authStatus={authStatus}
+          users={users}
           cookieStatus={cookieStatus}
           diagnostics={diagnostics}
           settingsMessage={settingsMessage}
@@ -742,6 +865,11 @@ export function App() {
           newPassword={newPassword}
           passwordMessage={passwordMessage}
           passwordSaving={passwordSaving}
+          newUserUsername={newUserUsername}
+          newUserPassword={newUserPassword}
+          newUserRole={newUserRole}
+          userMessage={userMessage}
+          userSaving={userSaving}
           onSettingsChange={updateSetting}
           onSettingsSubmit={saveSettings}
           onCookieContentChange={setBilibiliCookieText}
@@ -752,6 +880,10 @@ export function App() {
           onNewPasswordChange={setNewPassword}
           onPasswordSubmit={changePassword}
           onLogoutAllDevices={() => void logoutAllDevices()}
+          onNewUserUsernameChange={setNewUserUsername}
+          onNewUserPasswordChange={setNewUserPassword}
+          onNewUserRoleChange={setNewUserRole}
+          onCreateUser={createUser}
         />
         </ManagedPage>
       )}

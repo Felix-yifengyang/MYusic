@@ -1,6 +1,12 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AuthLoginResult, AuthStatus } from "@myusic/shared";
-import { type AuthService, readCookie } from "../auth";
+import { type AuthService, type AuthSession, readCookie } from "../auth";
+
+declare module "fastify" {
+  interface FastifyRequest {
+    auth?: AuthSession;
+  }
+}
 
 export function registerAuthRoutes(app: FastifyInstance, auth: AuthService | undefined) {
   app.get("/api/auth/status", async (request): Promise<AuthStatus> => {
@@ -61,8 +67,11 @@ export function registerAuthGuard(app: FastifyInstance, auth: AuthService | unde
     const token = readSessionToken(request, auth);
     const session = token ? await auth.authenticate(token) : undefined;
     if (!session) {
-      reply.code(401).send({ error: "请先登录。" });
+      reply.code(401).send({ error: "Please sign in first." });
+      return;
     }
+
+    request.auth = session;
   });
 }
 

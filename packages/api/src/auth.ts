@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import { promisify } from "node:util";
 import { Pool, type QueryResultRow } from "pg";
-import type { AuthStatus, AuthUser } from "@myusic/shared";
+import type { DatabaseError } from "pg";
+import type { AuthRole, AuthStatus, AuthUser, UserAccount } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 
 const scrypt = promisify(crypto.scrypt);
@@ -79,6 +80,51 @@ export class AuthService {
     return this.createSession(rowToUser(row));
   }
 
+  async listUsers(token: string | undefined): Promise<UserAccount[]> {
+    await this.requireAdmin(token);
+    const result = await this.pool.query(
+      `select id, username, role, created_at, updated_at
+       from users
+       order by created_at asc`
+    );
+    return result.rows.map(rowToUserAccount);
+  }
+
+  async createUser(
+    token: string | undefined,
+    username: string,
+    password: string,
+    role: AuthRole = "member"
+  ): Promise<UserAccount> {
+    await this.requireAdmin(token);
+    const normalizedUsername = normalizeUsername(username);
+    const normalizedRole = role === "admin" ? "admin" : "member";
+    validatePassword(password);
+    const now = new Date();
+    const user = {
+      id: crypto.randomUUID(),
+      username: normalizedUsername,
+      role: normalizedRole,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString()
+    } satisfies UserAccount;
+
+    try {
+      await this.pool.query(
+        `insert into users (id, username, password_hash, role, created_at, updated_at)
+         values ($1, $2, $3, $4, $5, $5)`,
+        [user.id, user.username, await hashPassword(password), user.role, now]
+      );
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new AuthError(409, "用户名已存在。");
+      }
+      throw error;
+    }
+
+    return user;
+  }
+
   async authenticate(token: string): Promise<AuthSession | undefined> {
     await this.ensureMigrated();
     const tokenHash = hashToken(token);
@@ -103,6 +149,22 @@ export class AuthService {
       user: rowToUser(row),
       expiresAt: isoValue(row.expires_at)
     };
+  }
+
+  async requireSession(token: string | undefined): Promise<AuthSession> {
+    const session = token ? await this.authenticate(token) : undefined;
+    if (!session) {
+      throw new AuthError(401, "请先登录。");
+    }
+    return session;
+  }
+
+  async requireAdmin(token: string | undefined): Promise<AuthSession> {
+    const session = await this.requireSession(token);
+    if (session.user.role !== "admin") {
+      throw new AuthError(403, "需要管理员权限。");
+    }
+    return session;
   }
 
   async changePassword(token: string | undefined, currentPassword: string, nextPassword: string): Promise<void> {
@@ -283,8 +345,24 @@ function rowToUser(row: QueryResultRow): AuthUser {
   return {
     id: String(row.id),
     username: String(row.username),
-    role: "admin"
+    role: normalizeRole(row.role)
   };
+}
+
+function rowToUserAccount(row: QueryResultRow): UserAccount {
+  return {
+    ...rowToUser(row),
+    createdAt: isoValue(row.created_at),
+    updatedAt: isoValue(row.updated_at)
+  };
+}
+
+function normalizeRole(value: unknown): AuthRole {
+  return value === "member" ? "member" : "admin";
+}
+
+function isUniqueViolation(error: unknown): error is DatabaseError {
+  return typeof error === "object" && error !== null && "code" in error && (error as DatabaseError).code === "23505";
 }
 
 function isoValue(value: unknown) {

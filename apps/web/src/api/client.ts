@@ -8,7 +8,8 @@ import type {
   DownloadJob,
   IngestionRecord,
   NavidromeSongsResult,
-  RuntimeStatus
+  RuntimeStatus,
+  UserAccount
 } from "@myusic/shared";
 
 export type AgentChatRole = "system" | "user" | "assistant";
@@ -76,6 +77,14 @@ export async function changePassword(currentPassword: string, newPassword: strin
 
 export async function logoutAllDevices() {
   return requestJson<{ ok: boolean }>("/api/auth/sessions", { method: "DELETE" });
+}
+
+export async function getUsers() {
+  return getJson<UserAccount[]>("/api/users");
+}
+
+export async function createUser(username: string, password: string, role: UserAccount["role"] = "member") {
+  return postJson<UserAccount>("/api/users", { username, password, role });
 }
 
 export async function getHealth() {

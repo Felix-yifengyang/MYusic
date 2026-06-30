@@ -11,6 +11,7 @@ export interface LibrarySyncState {
 
 export interface IngestionRecord {
   id: string;
+  userId?: string;
   jobId?: string;
   sourceUrl: string;
   sourceSite?: string;
@@ -40,6 +41,7 @@ export interface DuplicateIngestionError {
 
 export interface DownloadJob {
   id: string;
+  userId?: string;
   url: string;
   status: DownloadStatus;
   output: string;
@@ -82,10 +84,17 @@ export interface RuntimeStatus {
   requestHost: string;
 }
 
+export type AuthRole = "admin" | "member";
+
 export interface AuthUser {
   id: string;
   username: string;
-  role: "admin";
+  role: AuthRole;
+}
+
+export interface UserAccount extends AuthUser {
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthStatus {

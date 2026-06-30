@@ -15,6 +15,7 @@ import { registerIngestionRoutes } from "./routes/ingestions";
 import { registerJobRoutes } from "./routes/jobs";
 import { registerNavidromeRoutes } from "./routes/navidrome";
 import { registerSettingsRoutes } from "./routes/settings";
+import { registerUserRoutes } from "./routes/users";
 import { registerStaticRoutes } from "./static";
 import { findDuplicateIngestion, startDownload, stopRunningJob } from "./services/download-service";
 import { rematchIngestion, syncDownloadedJobToNavidrome } from "./services/ingestion-service";
@@ -27,6 +28,7 @@ export interface CreateApiServerOptions {
 export async function createApiServer(options: CreateApiServerOptions) {
   const { config } = options;
   const repository = options.repository || createRepository(config);
+  const auth = createAuthService(config);
   const jobs: DownloadJob[] = await repository.loadJobs(config.maxJobs);
   const ingestions: IngestionRecord[] = await repository.loadIngestions();
   const runningProcesses = new Map<string, ChildProcessWithoutNullStreams>();
@@ -36,13 +38,13 @@ export async function createApiServer(options: CreateApiServerOptions) {
     const statusCode = error instanceof AuthError ? error.statusCode : 500;
     reply.code(statusCode).send({ error: error instanceof Error ? error.message : "Internal Server Error" });
   });
-  const auth = createAuthService(config);
   const persist = () => persistAndBroadcastState(repository, jobs, ingestions, jobClients, config.maxJobs);
   seedIngestionsFromJobs(ingestions, jobs);
   await persist();
 
   registerAuthRoutes(app, auth);
   registerAuthGuard(app, auth);
+  registerUserRoutes(app, auth);
   registerAgentRoutes(app, config);
 
   app.get("/api/health", async (request): Promise<RuntimeStatus> => {
@@ -81,7 +83,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
     };
   });
 
-  registerSettingsRoutes(app, config);
+  registerSettingsRoutes(app, config, Boolean(auth));
   registerNavidromeRoutes(app, config);
   registerIngestionRoutes(app, {
     config,

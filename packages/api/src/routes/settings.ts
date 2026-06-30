@@ -13,7 +13,19 @@ import {
 import { getDiagnostics } from "../diagnostics";
 import { getSettings, updateSettings } from "../settings";
 
-export function registerSettingsRoutes(app: FastifyInstance, config: ApiConfig) {
+export function registerSettingsRoutes(app: FastifyInstance, config: ApiConfig, authEnabled: boolean) {
+  app.addHook("preHandler", async (request, reply) => {
+    const path = request.url.split("?")[0];
+    if (!path.startsWith("/api/settings") && !path.startsWith("/api/cookies") && path !== "/api/diagnostics") return;
+    if (!authEnabled) return;
+    if (!request.auth) {
+      reply.code(401).send({ error: "请先登录。" });
+      return;
+    }
+    if (request.auth?.user.role === "admin") return;
+    reply.code(403).send({ error: "需要管理员权限。" });
+  });
+
   app.get("/api/settings", async () => getSettings(config));
 
   app.patch<{ Body: Partial<AppSettings> }>("/api/settings", async (request) => updateSettings(config, request.body || {}));

@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { AppSettings, AuthStatus, CookieFileStatus, DiagnosticsReport, RuntimeStatus } from "@myusic/shared";
+import type { AppSettings, AuthStatus, CookieFileStatus, DiagnosticsReport, RuntimeStatus, UserAccount } from "@myusic/shared";
 import { DiagnosticsList, Fact } from "./StatusPanel";
 import { Button, Disclosure, EmptyState, Field, Panel } from "./ui";
 
@@ -7,6 +7,7 @@ export interface SettingsPanelProps {
   settings: AppSettings | null;
   status: RuntimeStatus | null;
   authStatus: AuthStatus | null;
+  users: UserAccount[];
   cookieStatus: CookieFileStatus | null;
   diagnostics: DiagnosticsReport | null;
   settingsMessage: string;
@@ -17,6 +18,11 @@ export interface SettingsPanelProps {
   newPassword: string;
   passwordMessage: string;
   passwordSaving: boolean;
+  newUserUsername: string;
+  newUserPassword: string;
+  newUserRole: UserAccount["role"];
+  userMessage: string;
+  userSaving: boolean;
   onSettingsChange: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
   onSettingsSubmit: (event: FormEvent) => void;
   onCookieContentChange: (value: string) => void;
@@ -27,12 +33,17 @@ export interface SettingsPanelProps {
   onNewPasswordChange: (value: string) => void;
   onPasswordSubmit: (event: FormEvent) => void;
   onLogoutAllDevices: () => void;
+  onNewUserUsernameChange: (value: string) => void;
+  onNewUserPasswordChange: (value: string) => void;
+  onNewUserRoleChange: (value: UserAccount["role"]) => void;
+  onCreateUser: (event: FormEvent) => void;
 }
 
 export function SettingsPanel({
   settings,
   status,
   authStatus,
+  users,
   cookieStatus,
   diagnostics,
   settingsMessage,
@@ -43,6 +54,11 @@ export function SettingsPanel({
   newPassword,
   passwordMessage,
   passwordSaving,
+  newUserUsername,
+  newUserPassword,
+  newUserRole,
+  userMessage,
+  userSaving,
   onSettingsChange,
   onSettingsSubmit,
   onCookieContentChange,
@@ -52,7 +68,11 @@ export function SettingsPanel({
   onCurrentPasswordChange,
   onNewPasswordChange,
   onPasswordSubmit,
-  onLogoutAllDevices
+  onLogoutAllDevices,
+  onNewUserUsernameChange,
+  onNewUserPasswordChange,
+  onNewUserRoleChange,
+  onCreateUser
 }: SettingsPanelProps) {
   return (
     <section className="settings-page">
@@ -97,6 +117,23 @@ export function SettingsPanel({
           onLogoutAllDevices={onLogoutAllDevices}
         />
       </Panel>
+
+      {authStatus?.enabled && authStatus.user?.role === "admin" && (
+        <Panel title="成员账号" description="为身边的朋友创建独立登录账号。">
+          <UserManagement
+            users={users}
+            username={newUserUsername}
+            password={newUserPassword}
+            role={newUserRole}
+            message={userMessage}
+            saving={userSaving}
+            onUsernameChange={onNewUserUsernameChange}
+            onPasswordChange={onNewUserPasswordChange}
+            onRoleChange={onNewUserRoleChange}
+            onSubmit={onCreateUser}
+          />
+        </Panel>
+      )}
 
       <Panel title="连接地址" description="局域网和移动端访问入口。">
         {status ? <LanSettings status={status} /> : <EmptyState>正在读取局域网地址</EmptyState>}
@@ -276,6 +313,85 @@ function AccountSecurity({
   );
 }
 
+function UserManagement({
+  users,
+  username,
+  password,
+  role,
+  message,
+  saving,
+  onUsernameChange,
+  onPasswordChange,
+  onRoleChange,
+  onSubmit
+}: {
+  users: UserAccount[];
+  username: string;
+  password: string;
+  role: UserAccount["role"];
+  message: string;
+  saving: boolean;
+  onUsernameChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onRoleChange: (value: UserAccount["role"]) => void;
+  onSubmit: (event: FormEvent) => void;
+}) {
+  return (
+    <div className="user-management">
+      <form className="user-create-form" onSubmit={onSubmit}>
+        <div className="settings-field-grid">
+          <Field label="用户名">
+            <input
+              aria-label="用户名"
+              value={username}
+              onChange={(event) => onUsernameChange(event.target.value)}
+              autoComplete="off"
+              placeholder="friend_name"
+            />
+          </Field>
+          <Field label="初始密码">
+            <input
+              aria-label="初始密码"
+              type="password"
+              value={password}
+              onChange={(event) => onPasswordChange(event.target.value)}
+              autoComplete="new-password"
+            />
+          </Field>
+          <Field label="角色">
+            <select
+              aria-label="角色"
+              value={role}
+              onChange={(event) => onRoleChange(event.target.value === "admin" ? "admin" : "member")}
+            >
+              <option value="member">普通成员</option>
+              <option value="admin">管理员</option>
+            </select>
+          </Field>
+        </div>
+        <div className="inline-actions">
+          <Button type="submit" disabled={saving}>
+            {saving ? "创建中..." : "创建账号"}
+          </Button>
+        </div>
+        {message && <div className="settings-message">{message}</div>}
+      </form>
+
+      <div className="user-list">
+        {users.length ? users.map((user) => (
+          <div className="user-row" key={user.id}>
+            <div>
+              <strong>{user.username}</strong>
+              <span>{formatRole(user.role)}</span>
+            </div>
+            <small>创建于 {formatDate(user.createdAt)}</small>
+          </div>
+        )) : <EmptyState>暂无成员账号</EmptyState>}
+      </div>
+    </div>
+  );
+}
+
 function BilibiliCookieManager({
   path,
   status,
@@ -358,4 +474,12 @@ function formatBytes(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function formatRole(role: UserAccount["role"]) {
+  return role === "admin" ? "管理员" : "普通成员";
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleString();
 }
