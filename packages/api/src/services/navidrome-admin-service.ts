@@ -1,14 +1,17 @@
+import fs from "node:fs";
 import path from "node:path";
 import type { ApiConfig } from "../config";
 
 export interface NavidromeProvisionInput {
   userId: string;
   username: string;
-  password: string;
+  navidromeUsername?: string;
+  password?: string;
   isAdmin: boolean;
 }
 
 export interface NavidromeProvisionResult {
+  username: string;
   userId: string;
   libraryId: string;
 }
@@ -34,17 +37,22 @@ export async function provisionNavidromeUserLibrary(
   input: NavidromeProvisionInput
 ): Promise<NavidromeProvisionResult> {
   const client = await createNavidromeAdminClient(config);
-  const library = await ensureLibrary(client, config, input);
-  const user = await ensureUser(client, input);
-
-  if (!input.isAdmin) {
-    await client.request(`user/${encodeURIComponent(user.id)}/library`, {
-      method: "PUT",
-      body: { libraryIds: [library.id] }
-    });
+  const targetUsername = navidromeUsername(input.navidromeUsername || input.username);
+  const library = await ensureLibrary(client, config, input, targetUsername);
+  const user = await ensureUser(client, input, targetUsername);
+  if (user.isAdmin) {
+    throw new Error(
+      `Navidrome user "${user.userName}" is an admin account and cannot be isolated to one library. Use a non-admin Navidrome account for mobile listening.`
+    );
   }
 
+  await client.request(`user/${encodeURIComponent(user.id)}/library`, {
+    method: "PUT",
+    body: { libraryIds: [library.id] }
+  });
+
   return {
+    username: user.userName,
     userId: String(user.id),
     libraryId: String(library.id)
   };
@@ -71,7 +79,8 @@ async function createNavidromeAdminClient(config: ApiConfig) {
       requestJson<T>(`${baseUrl}/api/${resource.replace(/^\/+/, "")}`, {
         method: options.method || "GET",
         token: login.token,
-        body: options.body
+        body: options.body,
+        description: `/api/${resource.replace(/^\/+/, "")}`
       })
     )
   };
@@ -80,17 +89,19 @@ async function createNavidromeAdminClient(config: ApiConfig) {
 async function ensureLibrary(
   client: Awaited<ReturnType<typeof createNavidromeAdminClient>>,
   config: ApiConfig,
-  input: NavidromeProvisionInput
+  input: NavidromeProvisionInput,
+  targetUsername: string
 ) {
   const libraries = await client.request<NavidromeLibrary[]>(`library?_sort=name&_order=ASC&_start=0&_end=500`);
   const libraryPath = navidromeUserLibraryPath(config, input.userId);
   const existing = libraries.find((library) => normalizePath(library.path) === normalizePath(libraryPath));
   if (existing) return existing;
+  fs.mkdirSync(localUserLibraryPath(config, input.userId), { recursive: true });
 
   const created = await client.request<{ id: string | number }>("library", {
     method: "POST",
     body: {
-      name: navidromeLibraryName(input.username),
+      name: navidromeLibraryName(targetUsername),
       path: libraryPath,
       remotePath: "",
       defaultNewUsers: false
@@ -99,19 +110,22 @@ async function ensureLibrary(
 
   return {
     id: created.id,
-    name: navidromeLibraryName(input.username),
+    name: navidromeLibraryName(targetUsername),
     path: libraryPath
   };
 }
 
 async function ensureUser(
   client: Awaited<ReturnType<typeof createNavidromeAdminClient>>,
-  input: NavidromeProvisionInput
+  input: NavidromeProvisionInput,
+  userName: string
 ) {
-  const userName = navidromeUsername(input.username);
   const users = await client.request<NavidromeUser[]>(`user?_sort=userName&_order=ASC&_start=0&_end=500`);
   const existing = users.find((user) => user.userName.toLowerCase() === userName.toLowerCase());
   if (existing) return existing;
+  if (!input.password) {
+    throw new Error(`Navidrome user "${userName}" does not exist. Provide a mobile password to create it.`);
+  }
 
   const created = await client.request<{ id: string }>("user", {
     method: "POST",
@@ -119,7 +133,7 @@ async function ensureUser(
       userName,
       name: input.username,
       password: input.password,
-      isAdmin: input.isAdmin,
+      isAdmin: false,
       changePassword: false
     }
   });
@@ -134,6 +148,10 @@ async function ensureUser(
 function navidromeUserLibraryPath(config: ApiConfig, userId: string) {
   const base = config.navidrome.musicFolder || config.musicDir;
   return path.posix.join(normalizePath(base), "users", sanitizePathSegment(userId));
+}
+
+function localUserLibraryPath(config: ApiConfig, userId: string) {
+  return path.join(config.musicDir, "users", sanitizePathSegment(userId));
 }
 
 function navidromeUsername(username: string) {
@@ -158,6 +176,7 @@ async function requestJson<T>(
     method?: string;
     token?: string;
     body?: unknown;
+    description?: string;
   }
 ) {
   const headers = new Headers({ accept: "application/json", "X-ND-Client-Unique-Id": "myusic" });
@@ -173,7 +192,7 @@ async function requestJson<T>(
   if (!response.ok) {
     const message = body && typeof body === "object" && "error" in body && body.error
       ? body.error
-      : `Navidrome admin API failed: ${response.status}`;
+      : `Navidrome admin API failed while ${options.method || "GET"} ${options.description || url}: ${response.status}`;
     throw new Error(message);
   }
   return body as T;

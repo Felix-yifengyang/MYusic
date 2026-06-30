@@ -19,6 +19,7 @@ export interface CreateUserOptions {
     password: string;
     role: AuthRole;
   }) => Promise<{
+    navidromeUsername: string;
     navidromeUserId: string;
     navidromeLibraryId: string;
   }>;
@@ -28,9 +29,11 @@ export interface ProvisionUserNavidromeOptions {
   provisionNavidrome: (input: {
     id: string;
     username: string;
+    navidromeUsername?: string;
     password: string;
     role: AuthRole;
   }) => Promise<{
+    navidromeUsername: string;
     navidromeUserId: string;
     navidromeLibraryId: string;
   }>;
@@ -93,7 +96,7 @@ export class AuthService {
   async login(username: string, password: string): Promise<AuthSession & { token: string }> {
     await this.ensureMigrated();
     const result = await this.pool.query(
-      `select id, username, password_hash, role, navidrome_user_id, navidrome_library_id, navidrome_synced_at, navidrome_sync_error
+      `select id, username, password_hash, role, navidrome_username, navidrome_user_id, navidrome_library_id, navidrome_synced_at, navidrome_sync_error
        from users
        where username = $1
        limit 1`,
@@ -110,7 +113,8 @@ export class AuthService {
   async listUsers(token: string | undefined): Promise<UserAccount[]> {
     await this.requireAdmin(token);
     const result = await this.pool.query(
-      `select id, username, role, created_at, updated_at
+      `select id, username, role, created_at, updated_at,
+              navidrome_username, navidrome_user_id, navidrome_library_id, navidrome_synced_at, navidrome_sync_error
        from users
        order by created_at asc`
     );
@@ -158,18 +162,20 @@ export class AuthService {
           password,
           role: user.role
         });
+        user.navidromeUsername = navidrome.navidromeUsername;
         user.navidromeUserId = navidrome.navidromeUserId;
         user.navidromeLibraryId = navidrome.navidromeLibraryId;
         user.navidromeSyncedAt = new Date().toISOString();
         await this.pool.query(
           `update users
-           set navidrome_user_id = $1,
-               navidrome_library_id = $2,
-               navidrome_synced_at = $3,
+           set navidrome_username = $1,
+               navidrome_user_id = $2,
+               navidrome_library_id = $3,
+               navidrome_synced_at = $4,
                navidrome_sync_error = null,
                updated_at = now()
-           where id = $4`,
-          [user.navidromeUserId, user.navidromeLibraryId, user.navidromeSyncedAt, user.id]
+           where id = $5`,
+          [user.navidromeUsername, user.navidromeUserId, user.navidromeLibraryId, user.navidromeSyncedAt, user.id]
         );
       } catch (error) {
         user.navidromeSyncError = error instanceof Error ? error.message : "Navidrome provisioning failed.";
@@ -189,33 +195,37 @@ export class AuthService {
   async provisionUserNavidrome(
     token: string | undefined,
     userId: string,
+    navidromeUsername: string,
     password: string,
     options: ProvisionUserNavidromeOptions
   ): Promise<UserAccount> {
     await this.requireAdmin(token);
-    validatePassword(password);
+    if (password) validatePassword(password);
     const user = await this.getUserById(userId);
     if (!user) {
       throw new AuthError(404, "User not found.");
     }
+    const targetNavidromeUsername = normalizeOptionalNavidromeUsername(navidromeUsername) || user.navidromeUsername || user.username;
 
     try {
       const navidrome = await options.provisionNavidrome({
         id: user.id,
         username: user.username,
+        navidromeUsername: targetNavidromeUsername,
         password,
         role: user.role
       });
       const syncedAt = new Date().toISOString();
       await this.pool.query(
         `update users
-         set navidrome_user_id = $1,
-             navidrome_library_id = $2,
-             navidrome_synced_at = $3,
+         set navidrome_username = $1,
+             navidrome_user_id = $2,
+             navidrome_library_id = $3,
+             navidrome_synced_at = $4,
              navidrome_sync_error = null,
              updated_at = now()
-         where id = $4`,
-        [navidrome.navidromeUserId, navidrome.navidromeLibraryId, syncedAt, user.id]
+         where id = $5`,
+        [navidrome.navidromeUsername, navidrome.navidromeUserId, navidrome.navidromeLibraryId, syncedAt, user.id]
       );
     } catch (error) {
       await this.pool.query(
@@ -241,6 +251,7 @@ export class AuthService {
         u.id,
         u.username,
         u.role,
+        u.navidrome_username,
         u.navidrome_user_id,
         u.navidrome_library_id,
         u.navidrome_synced_at,
@@ -350,6 +361,7 @@ export class AuthService {
         username text not null unique,
         password_hash text not null,
         role text not null,
+        navidrome_username text,
         navidrome_user_id text,
         navidrome_library_id text,
         navidrome_synced_at timestamptz,
@@ -373,6 +385,7 @@ export class AuthService {
     `);
 
     await this.pool.query(`
+      alter table users add column if not exists navidrome_username text;
       alter table users add column if not exists navidrome_user_id text;
       alter table users add column if not exists navidrome_library_id text;
       alter table users add column if not exists navidrome_synced_at timestamptz;
@@ -389,7 +402,7 @@ export class AuthService {
     await this.ensureMigrated();
     const result = await this.pool.query(
       `select id, username, role, created_at, updated_at,
-              navidrome_user_id, navidrome_library_id, navidrome_synced_at, navidrome_sync_error
+              navidrome_username, navidrome_user_id, navidrome_library_id, navidrome_synced_at, navidrome_sync_error
        from users
        where id = $1
        limit 1`,
@@ -477,11 +490,21 @@ function validatePassword(value: string) {
   }
 }
 
+function normalizeOptionalNavidromeUsername(value: string) {
+  const username = value.trim();
+  if (!username) return undefined;
+  if (!/^[a-zA-Z0-9_.@-]{1,64}$/.test(username)) {
+    throw new AuthError(400, "Navidrome username can only contain letters, numbers, dots, underscores, dashes, or @.");
+  }
+  return username;
+}
+
 function rowToUser(row: QueryResultRow): AuthUser {
   return {
     id: String(row.id),
     username: String(row.username),
     role: normalizeRole(row.role),
+    navidromeUsername: optionalString(row.navidrome_username),
     navidromeUserId: optionalString(row.navidrome_user_id),
     navidromeLibraryId: optionalString(row.navidrome_library_id),
     navidromeSyncedAt: optionalIsoValue(row.navidrome_synced_at),
@@ -494,6 +517,7 @@ function rowToUserAccount(row: QueryResultRow): UserAccount {
     ...rowToUser(row),
     createdAt: requiredIsoValue(row.created_at),
     updatedAt: requiredIsoValue(row.updated_at),
+    navidromeUsername: optionalString(row.navidrome_username),
     navidromeUserId: optionalString(row.navidrome_user_id),
     navidromeLibraryId: optionalString(row.navidrome_library_id),
     navidromeSyncedAt: optionalIsoValue(row.navidrome_synced_at),

@@ -40,6 +40,7 @@ export function registerUserRoutes(app: FastifyInstance, auth: AuthService | und
       id: string;
     };
     Body: {
+      navidromeUsername?: string;
       password?: string;
     };
   }>("/api/users/:id/navidrome", async (request) => {
@@ -48,6 +49,7 @@ export function registerUserRoutes(app: FastifyInstance, auth: AuthService | und
     return auth.provisionUserNavidrome(
       readSessionToken(request, auth),
       request.params.id,
+      String(request.body?.navidromeUsername || ""),
       String(request.body?.password || ""),
       {
         provisionNavidrome: (user) => provisionUserNavidrome(config, user)
@@ -65,6 +67,7 @@ async function provisionUserNavidrome(
   user: {
     id: string;
     username: string;
+    navidromeUsername?: string;
     password: string;
     role: AuthRole;
   }
@@ -72,10 +75,12 @@ async function provisionUserNavidrome(
   const result = await provisionNavidromeUserLibrary(config, {
     userId: user.id,
     username: user.username,
+    navidromeUsername: user.navidromeUsername,
     password: user.password,
     isAdmin: user.role === "admin"
   });
   return {
+    navidromeUsername: result.username,
     navidromeUserId: result.userId,
     navidromeLibraryId: result.libraryId
   };

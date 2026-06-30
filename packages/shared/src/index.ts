@@ -90,6 +90,7 @@ export interface AuthUser {
   id: string;
   username: string;
   role: AuthRole;
+  navidromeUsername?: string;
   navidromeUserId?: string;
   navidromeLibraryId?: string;
   navidromeSyncedAt?: string;

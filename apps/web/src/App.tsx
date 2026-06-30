@@ -99,6 +99,7 @@ export function App() {
   const [newUserRole, setNewUserRole] = useState<UserAccount["role"]>("member");
   const [userMessage, setUserMessage] = useState("");
   const [userSaving, setUserSaving] = useState(false);
+  const [navidromeUsernames, setNavidromeUsernames] = useState<Record<string, string>>({});
   const [navidromePasswords, setNavidromePasswords] = useState<Record<string, string>>({});
   const [syncingNavidromeUserId, setSyncingNavidromeUserId] = useState("");
   const [ingestionMessage, setIngestionMessage] = useState("");
@@ -601,9 +602,11 @@ export function App() {
 
   async function syncUserNavidrome(userId: string) {
     setUserMessage("");
+    const targetUser = users.find((user) => user.id === userId);
+    const navidromeUsername = (navidromeUsernames[userId] ?? targetUser?.navidromeUsername ?? targetUser?.username ?? "").trim();
     const password = navidromePasswords[userId] || "";
-    if (!password) {
-      setUserMessage("请填写移动端初始密码。");
+    if (!navidromeUsername) {
+      setUserMessage("请填写 Navidrome 用户名。");
       return;
     }
 
@@ -613,10 +616,11 @@ export function App() {
     }
 
     setSyncingNavidromeUserId(userId);
-    await syncUserNavidromeApi(userId, password)
+    await syncUserNavidromeApi(userId, navidromeUsername, password)
       .then(async (user) => {
         setNavidromePasswords((current) => ({ ...current, [userId]: "" }));
-        setUserMessage(user.navidromeSyncError ? `移动端配置失败：${user.navidromeSyncError}` : `已配置移动端账号：${user.username}`);
+        setNavidromeUsernames((current) => ({ ...current, [userId]: user.navidromeUsername || navidromeUsername }));
+        setUserMessage(user.navidromeSyncError ? `移动端配置失败：${user.navidromeSyncError}` : `已绑定 Navidrome 账号：${user.navidromeUsername || navidromeUsername}`);
         await loadUsers();
       })
       .catch(async (caught) => {
@@ -799,6 +803,7 @@ export function App() {
             newUserRole={newUserRole}
             userMessage={userMessage}
             userSaving={userSaving}
+            navidromeUsernames={navidromeUsernames}
             navidromePasswords={navidromePasswords}
             syncingNavidromeUserId={syncingNavidromeUserId}
             onSettingsChange={updateSetting}
@@ -815,6 +820,7 @@ export function App() {
             onNewUserPasswordChange={setNewUserPassword}
             onNewUserRoleChange={setNewUserRole}
             onCreateUser={createUser}
+            onNavidromeUsernameChange={(userId, username) => setNavidromeUsernames((current) => ({ ...current, [userId]: username }))}
             onNavidromePasswordChange={(userId, password) => setNavidromePasswords((current) => ({ ...current, [userId]: password }))}
             onSyncUserNavidrome={(userId) => void syncUserNavidrome(userId)}
           />
@@ -906,6 +912,7 @@ export function App() {
           newUserRole={newUserRole}
           userMessage={userMessage}
           userSaving={userSaving}
+          navidromeUsernames={navidromeUsernames}
           navidromePasswords={navidromePasswords}
           syncingNavidromeUserId={syncingNavidromeUserId}
           onSettingsChange={updateSetting}
@@ -922,6 +929,7 @@ export function App() {
           onNewUserPasswordChange={setNewUserPassword}
           onNewUserRoleChange={setNewUserRole}
           onCreateUser={createUser}
+          onNavidromeUsernameChange={(userId, username) => setNavidromeUsernames((current) => ({ ...current, [userId]: username }))}
           onNavidromePasswordChange={(userId, password) => setNavidromePasswords((current) => ({ ...current, [userId]: password }))}
           onSyncUserNavidrome={(userId) => void syncUserNavidrome(userId)}
         />

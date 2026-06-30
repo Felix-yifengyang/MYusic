@@ -23,6 +23,7 @@ export interface SettingsPanelProps {
   newUserRole: UserAccount["role"];
   userMessage: string;
   userSaving: boolean;
+  navidromeUsernames: Record<string, string>;
   navidromePasswords: Record<string, string>;
   syncingNavidromeUserId: string;
   onSettingsChange: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
@@ -39,6 +40,7 @@ export interface SettingsPanelProps {
   onNewUserPasswordChange: (value: string) => void;
   onNewUserRoleChange: (value: UserAccount["role"]) => void;
   onCreateUser: (event: FormEvent) => void;
+  onNavidromeUsernameChange: (userId: string, value: string) => void;
   onNavidromePasswordChange: (userId: string, value: string) => void;
   onSyncUserNavidrome: (userId: string) => void;
 }
@@ -63,6 +65,7 @@ export function SettingsPanel({
   newUserRole,
   userMessage,
   userSaving,
+  navidromeUsernames,
   navidromePasswords,
   syncingNavidromeUserId,
   onSettingsChange,
@@ -79,6 +82,7 @@ export function SettingsPanel({
   onNewUserPasswordChange,
   onNewUserRoleChange,
   onCreateUser,
+  onNavidromeUsernameChange,
   onNavidromePasswordChange,
   onSyncUserNavidrome
 }: SettingsPanelProps) {
@@ -135,12 +139,14 @@ export function SettingsPanel({
             role={newUserRole}
             message={userMessage}
             saving={userSaving}
+            navidromeUsernames={navidromeUsernames}
             navidromePasswords={navidromePasswords}
             syncingNavidromeUserId={syncingNavidromeUserId}
             onUsernameChange={onNewUserUsernameChange}
             onPasswordChange={onNewUserPasswordChange}
             onRoleChange={onNewUserRoleChange}
             onSubmit={onCreateUser}
+            onNavidromeUsernameChange={onNavidromeUsernameChange}
             onNavidromePasswordChange={onNavidromePasswordChange}
             onSyncUserNavidrome={onSyncUserNavidrome}
           />
@@ -204,57 +210,57 @@ function SettingsForm({
       </div>
       <Disclosure title="下载与转码" description="不常改动的路径、格式和任务保留策略。">
         <div className="settings-field-grid">
-        <Field label="yt-dlp">
-          <input
-            aria-label="yt-dlp"
-            value={settings.ytdlpPath}
-            onChange={(event) => onChange("ytdlpPath", event.target.value)}
-          />
-        </Field>
-        <Field label="ffmpeg">
-          <input
-            aria-label="ffmpeg"
-            value={settings.ffmpegPath}
-            onChange={(event) => onChange("ffmpegPath", event.target.value)}
-          />
-        </Field>
-        <Field label="音频格式">
-          <select
-            aria-label="音频格式"
-            value={settings.audioFormat}
-            onChange={(event) => onChange("audioFormat", event.target.value)}
-          >
-            <option value="mp3">mp3</option>
-            <option value="m4a">m4a</option>
-            <option value="opus">opus</option>
-            <option value="flac">flac</option>
-            <option value="wav">wav</option>
-          </select>
-        </Field>
-        <Field label="音频质量">
-          <input
-            aria-label="音频质量"
-            value={settings.audioQuality}
-            onChange={(event) => onChange("audioQuality", event.target.value)}
-          />
-        </Field>
-        <Field label="最多保留任务">
-          <input
-            aria-label="最多保留任务"
-            type="number"
-            min="1"
-            max="500"
-            value={settings.maxJobs}
-            onChange={(event) => onChange("maxJobs", Number(event.target.value))}
-          />
-        </Field>
-        <Field label="Bilibili Cookie 路径">
-          <input
-            aria-label="Bilibili Cookie 路径"
-            value={settings.bilibiliCookiesPath}
-            onChange={(event) => onChange("bilibiliCookiesPath", event.target.value)}
-          />
-        </Field>
+          <Field label="yt-dlp">
+            <input
+              aria-label="yt-dlp"
+              value={settings.ytdlpPath}
+              onChange={(event) => onChange("ytdlpPath", event.target.value)}
+            />
+          </Field>
+          <Field label="ffmpeg">
+            <input
+              aria-label="ffmpeg"
+              value={settings.ffmpegPath}
+              onChange={(event) => onChange("ffmpegPath", event.target.value)}
+            />
+          </Field>
+          <Field label="音频格式">
+            <select
+              aria-label="音频格式"
+              value={settings.audioFormat}
+              onChange={(event) => onChange("audioFormat", event.target.value)}
+            >
+              <option value="mp3">mp3</option>
+              <option value="m4a">m4a</option>
+              <option value="opus">opus</option>
+              <option value="flac">flac</option>
+              <option value="wav">wav</option>
+            </select>
+          </Field>
+          <Field label="音频质量">
+            <input
+              aria-label="音频质量"
+              value={settings.audioQuality}
+              onChange={(event) => onChange("audioQuality", event.target.value)}
+            />
+          </Field>
+          <Field label="最多保留任务">
+            <input
+              aria-label="最多保留任务"
+              type="number"
+              min="1"
+              max="500"
+              value={settings.maxJobs}
+              onChange={(event) => onChange("maxJobs", Number(event.target.value))}
+            />
+          </Field>
+          <Field label="Bilibili Cookie 路径">
+            <input
+              aria-label="Bilibili Cookie 路径"
+              value={settings.bilibiliCookiesPath}
+              onChange={(event) => onChange("bilibiliCookiesPath", event.target.value)}
+            />
+          </Field>
         </div>
       </Disclosure>
       <Button className="settings-primary" type="submit">保存设置</Button>
@@ -332,12 +338,14 @@ function UserManagement({
   role,
   message,
   saving,
+  navidromeUsernames,
   navidromePasswords,
   syncingNavidromeUserId,
   onUsernameChange,
   onPasswordChange,
   onRoleChange,
   onSubmit,
+  onNavidromeUsernameChange,
   onNavidromePasswordChange,
   onSyncUserNavidrome
 }: {
@@ -347,12 +355,14 @@ function UserManagement({
   role: UserAccount["role"];
   message: string;
   saving: boolean;
+  navidromeUsernames: Record<string, string>;
   navidromePasswords: Record<string, string>;
   syncingNavidromeUserId: string;
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onRoleChange: (value: UserAccount["role"]) => void;
   onSubmit: (event: FormEvent) => void;
+  onNavidromeUsernameChange: (userId: string, value: string) => void;
   onNavidromePasswordChange: (userId: string, value: string) => void;
   onSyncUserNavidrome: (userId: string) => void;
 }) {
@@ -394,38 +404,48 @@ function UserManagement({
             {saving ? "创建中..." : "创建账号"}
           </Button>
         </div>
-        {message && <div className="settings-message">{message}</div>}
+        {message && <div className="settings-message user-management-message">{message}</div>}
       </form>
 
       <div className="user-list">
-        {users.length ? users.map((user) => (
-          <div className="user-row" key={user.id}>
-            <div className="user-navidrome-actions">
-              <input
-                aria-label={`${user.username} 移动端初始密码`}
-                type="password"
-                value={navidromePasswords[user.id] || ""}
-                onChange={(event) => onNavidromePasswordChange(user.id, event.target.value)}
-                placeholder="移动端初始密码"
-                autoComplete="new-password"
-              />
-              <Button
-                type="button"
-                size="compact"
-                variant="secondary"
-                disabled={syncingNavidromeUserId === user.id}
-                onClick={() => onSyncUserNavidrome(user.id)}
-              >
-                {syncingNavidromeUserId === user.id ? "配置中..." : user.navidromeSyncedAt ? "重新配置移动端" : "配置移动端"}
-              </Button>
+        {users.length ? users.map((user) => {
+          const navidromeUsername = navidromeUsernames[user.id] ?? user.navidromeUsername ?? user.username;
+          return (
+            <div className="user-row" key={user.id}>
+              <div className="user-summary">
+                <strong>{user.username}</strong>
+                <span>{formatRole(user.role)} · {formatNavidromeStatus(user)}</span>
+                <small>创建于 {formatDate(user.createdAt)}</small>
+              </div>
+              <div className="user-navidrome-actions">
+                <input
+                  aria-label={`${user.username} Navidrome 用户名`}
+                  value={navidromeUsername}
+                  onChange={(event) => onNavidromeUsernameChange(user.id, event.target.value)}
+                  placeholder="Navidrome 用户名"
+                  autoComplete="off"
+                />
+                <input
+                  aria-label={`${user.username} 移动端初始密码`}
+                  type="password"
+                  value={navidromePasswords[user.id] || ""}
+                  onChange={(event) => onNavidromePasswordChange(user.id, event.target.value)}
+                  placeholder="新建账号时填写密码"
+                  autoComplete="new-password"
+                />
+                <Button
+                  type="button"
+                  size="compact"
+                  variant="secondary"
+                  disabled={syncingNavidromeUserId === user.id}
+                  onClick={() => onSyncUserNavidrome(user.id)}
+                >
+                  {syncingNavidromeUserId === user.id ? "配置中..." : user.navidromeSyncedAt ? "重新绑定移动端" : "绑定移动端"}
+                </Button>
+              </div>
             </div>
-            <div>
-              <strong>{user.username}</strong>
-              <span>{formatRole(user.role)} · {formatNavidromeStatus(user)}</span>
-            </div>
-            <small>创建于 {formatDate(user.createdAt)}</small>
-          </div>
-        )) : <EmptyState>暂无成员账号</EmptyState>}
+          );
+        }) : <EmptyState>暂无成员账号</EmptyState>}
       </div>
     </div>
   );
@@ -520,7 +540,7 @@ function formatRole(role: UserAccount["role"]) {
 }
 
 function formatNavidromeStatus(user: UserAccount) {
-  if (user.navidromeSyncedAt) return "移动端已配置";
+  if (user.navidromeSyncedAt) return `移动端已绑定：${user.navidromeUsername || user.username}`;
   if (user.navidromeSyncError) return `移动端未配置：${user.navidromeSyncError}`;
   return "移动端未配置";
 }

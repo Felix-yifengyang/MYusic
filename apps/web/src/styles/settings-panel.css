@@ -109,55 +109,72 @@
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.user-management-message {
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .18);
+  padding: 8px 10px;
 }
 
 .user-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .user-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(360px, 520px);
+  align-items: start;
+  gap: 16px;
   min-width: 0;
   border: 1px solid rgba(255, 255, 255, .11);
   border-radius: 8px;
   background: rgba(10, 12, 14, .28);
-  padding: 10px 12px;
+  padding: 12px;
 }
 
-.user-row > div {
+.user-summary {
   display: grid;
-  gap: 3px;
+  gap: 5px;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.user-summary strong,
+.user-summary span,
+.user-summary small {
+  overflow-wrap: anywhere;
   min-width: 0;
 }
 
-.user-row strong,
-.user-row span,
-.user-row small {
-  overflow-wrap: anywhere;
-}
-
-.user-row span,
-.user-row small {
+.user-summary span,
+.user-summary small {
   color: var(--muted);
   font-size: 12px;
+  line-height: 1.45;
 }
 
 .user-navidrome-actions {
-  display: flex;
-  flex: 1 1 320px;
-  grid-template-columns: none;
-  align-items: center;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(170px, 1fr) minmax(112px, auto);
+  align-items: stretch;
   gap: 8px;
+  min-width: 0;
 }
 
 .user-navidrome-actions input {
-  max-width: 220px;
+  width: 100%;
+  min-width: 0;
+}
+
+.user-navidrome-actions .button {
+  min-width: 112px;
+  white-space: nowrap;
 }
 
 
@@ -177,17 +194,15 @@
   }
 
   .user-row {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .user-navidrome-actions {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
-  .user-navidrome-actions input {
-    max-width: none;
+  .user-navidrome-actions .button {
+    width: 100%;
   }
 }
