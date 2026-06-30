@@ -35,10 +35,11 @@ services:
   postgres:
     image: postgres:18
     restart: unless-stopped
+    env_file:
+      - .env.docker
     environment:
       POSTGRES_DB: myusic
       POSTGRES_USER: myusic
-      POSTGRES_PASSWORD: your_password
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
