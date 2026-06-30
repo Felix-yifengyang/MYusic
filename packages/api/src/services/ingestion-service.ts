@@ -2,10 +2,12 @@ import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 import type { ApiConfig } from "../config";
 import { upsertIngestion } from "../ingestion-store";
 import {
+  type NavidromeContext,
   findNavidromeSongForIngestion,
   getNavidromeScanStatus,
   startNavidromeScan
 } from "../navidrome";
+import { getUserLibraryContext } from "./user-library-service";
 
 export async function syncDownloadedJobToNavidrome(
   job: DownloadJob,
@@ -13,19 +15,20 @@ export async function syncDownloadedJobToNavidrome(
   ingestions: IngestionRecord[],
   onChange: () => void
 ) {
+  const context = navidromeContextForUserId(config, job.userId);
   const requestedAt = new Date().toISOString();
   job.librarySync = {
     status: "pending",
-    message: "等待 Navidrome 扫描音乐库。",
+    message: "Waiting for Navidrome to scan this user's library.",
     requestedAt
   };
   job.updatedAt = requestedAt;
   onChange();
 
-  const startStatus = await startNavidromeScan(config);
+  const startStatus = await startNavidromeScan(config, context);
   job.librarySync = {
     status: startStatus.scanning ? "scanning" : "synced",
-    message: startStatus.scanning ? "Navidrome 正在扫描音乐库。" : "Navidrome 已接收音乐库扫描。",
+    message: startStatus.scanning ? "Navidrome is scanning this user's library." : "Navidrome accepted the library scan.",
     requestedAt,
     finishedAt: startStatus.scanning ? undefined : new Date().toISOString()
   };
@@ -33,25 +36,24 @@ export async function syncDownloadedJobToNavidrome(
   onChange();
 
   if (!startStatus.scanning) {
-    await linkIngestionToNavidrome(job, config, ingestions, requestedAt, "Navidrome 已完成扫描");
+    await linkIngestionToNavidrome(job, config, ingestions, requestedAt, "Navidrome scan completed.", context);
     job.updatedAt = new Date().toISOString();
     onChange();
     return;
   }
 
-  const finalStatus = await waitForNavidromeScan(config);
+  const finalStatus = await waitForNavidromeScan(config, context);
   if (finalStatus.scanning) {
     job.librarySync = {
       status: "scanning",
-      message: "Navidrome 仍在扫描，稍后刷新音乐列表。",
+      message: "Navidrome is still scanning; refresh this user's song list later.",
       requestedAt
     };
   } else {
-    await linkIngestionToNavidrome(job, config, ingestions, requestedAt, "已同步到 Navidrome 音乐库");
+    await linkIngestionToNavidrome(job, config, ingestions, requestedAt, "Synced to Navidrome.", context);
   }
   job.updatedAt = new Date().toISOString();
   onChange();
-
 }
 
 export async function rematchIngestion(
@@ -60,7 +62,8 @@ export async function rematchIngestion(
   ingestions: IngestionRecord[],
   ingestion: IngestionRecord
 ) {
-  const match = await findNavidromeSongForIngestion(config, ingestion);
+  const context = navidromeContextForUserId(config, ingestion.userId);
+  const match = await findNavidromeSongForIngestion(config, ingestion, context);
   const now = new Date().toISOString();
   const updated = upsertIngestion(ingestions, match ? {
     ...ingestion,
@@ -73,7 +76,7 @@ export async function rematchIngestion(
   } : {
     ...ingestion,
     navidromeLastMatchAttemptAt: now,
-    navidromeMatchError: "未找到匹配的 Navidrome 歌曲。",
+    navidromeMatchError: "No matching Navidrome song was found.",
     updatedAt: now
   });
 
@@ -89,23 +92,24 @@ async function linkIngestionToNavidrome(
   config: ApiConfig,
   ingestions: IngestionRecord[],
   requestedAt: string,
-  baseMessage: string
+  baseMessage: string,
+  context?: NavidromeContext
 ) {
   if (!job.ingestion) {
     job.librarySync = {
       status: "synced",
-      message: `${baseMessage}，但当前任务没有入库记录。`,
+      message: `${baseMessage} No ingestion record is attached to this job.`,
       requestedAt,
       finishedAt: new Date().toISOString()
     };
     return;
   }
 
-  const match = await findNavidromeSongForIngestion(config, job.ingestion);
+  const match = await findNavidromeSongForIngestion(config, job.ingestion, context);
   if (!match) {
     job.librarySync = {
       status: "synced",
-      message: `${baseMessage}，但未自动匹配 Navidrome song id。`,
+      message: `${baseMessage} No Navidrome song id was matched automatically.`,
       requestedAt,
       finishedAt: new Date().toISOString()
     };
@@ -123,7 +127,7 @@ async function linkIngestionToNavidrome(
   job.ingestion = updatedIngestion;
   job.librarySync = {
     status: "synced",
-    message: `${baseMessage}，已关联 Navidrome song id：${match.song.id}`,
+    message: `${baseMessage} Linked Navidrome song id: ${match.song.id}`,
     requestedAt,
     finishedAt: new Date().toISOString()
   };
@@ -139,14 +143,23 @@ function updateJobIngestionSnapshots(jobs: DownloadJob[], ingestion: IngestionRe
   }
 }
 
-async function waitForNavidromeScan(config: ApiConfig) {
+async function waitForNavidromeScan(config: ApiConfig, context?: NavidromeContext) {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     await delay(1500);
-    const status = await getNavidromeScanStatus(config);
+    const status = await getNavidromeScanStatus(config, context);
     if (!status.scanning) return status;
   }
 
-  return getNavidromeScanStatus(config);
+  return getNavidromeScanStatus(config, context);
+}
+
+function navidromeContextForUserId(config: ApiConfig, userId?: string): NavidromeContext | undefined {
+  if (!userId) return undefined;
+  return getUserLibraryContext(config, {
+    id: userId,
+    username: "",
+    role: "member"
+  }).navidrome;
 }
 
 function delay(ms: number) {

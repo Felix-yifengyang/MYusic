@@ -8,6 +8,13 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { IngestionMatchMethod, IngestionRecord, NavidromeScanStatus, NavidromeSong, NavidromeSongsResult } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 
+export interface NavidromeContext {
+  baseUrl?: string;
+  username?: string;
+  password?: string;
+  libraryPathPrefix?: string;
+}
+
 interface SubsonicResponse<T> {
   "subsonic-response": {
     status: "ok" | "failed";
@@ -30,6 +37,10 @@ interface RandomSongsPayload {
   };
 }
 
+interface SongPayload {
+  song?: NavidromeSong;
+}
+
 interface ScanStatusPayload {
   scanStatus?: {
     scanning?: boolean;
@@ -37,14 +48,14 @@ interface ScanStatusPayload {
   };
 }
 
-export async function pingNavidrome(config: ApiConfig) {
-  await requestJson(config, "ping", {});
+export async function pingNavidrome(config: ApiConfig, context?: NavidromeContext) {
+  await requestJson(config, context, "ping", {});
   return { ok: true };
 }
 
-export async function getNavidromeSongs(config: ApiConfig, query: string): Promise<NavidromeSongsResult> {
+export async function getNavidromeSongs(config: ApiConfig, query: string, context?: NavidromeContext): Promise<NavidromeSongsResult> {
   if (query.trim()) {
-    const response = await requestJson<Search3Payload>(config, "search3", {
+    const response = await requestJson<Search3Payload>(config, context, "search3", {
       query: query.trim(),
       songCount: "80",
       artistCount: "0",
@@ -52,34 +63,42 @@ export async function getNavidromeSongs(config: ApiConfig, query: string): Promi
     });
 
     return {
-      songs: normalizeArray(response.searchResult3?.song)
+      songs: filterSongsByContext(normalizeArray(response.searchResult3?.song), context)
     };
   }
 
-  const response = await requestJson<RandomSongsPayload>(config, "getRandomSongs", { size: "500" });
+  const response = await requestJson<RandomSongsPayload>(config, context, "getRandomSongs", { size: "500" });
   return {
-    songs: normalizeArray(response.randomSongs?.song).sort(compareNavidromeSongs)
+    songs: filterSongsByContext(normalizeArray(response.randomSongs?.song), context).sort(compareNavidromeSongs)
   };
 }
 
-export async function startNavidromeScan(config: ApiConfig): Promise<NavidromeScanStatus> {
-  const response = await requestJson<ScanStatusPayload>(config, "startScan", {});
+export async function getNavidromeSong(config: ApiConfig, id: string, context?: NavidromeContext): Promise<NavidromeSong | undefined> {
+  const response = await requestJson<SongPayload>(config, context, "getSong", { id });
+  const song = response.song;
+  if (!song) return undefined;
+  return filterSongsByContext([song], context)[0];
+}
+
+export async function startNavidromeScan(config: ApiConfig, context?: NavidromeContext): Promise<NavidromeScanStatus> {
+  const response = await requestJson<ScanStatusPayload>(config, context, "startScan", {});
   return normalizeScanStatus(response.scanStatus);
 }
 
-export async function getNavidromeScanStatus(config: ApiConfig): Promise<NavidromeScanStatus> {
-  const response = await requestJson<ScanStatusPayload>(config, "getScanStatus", {});
+export async function getNavidromeScanStatus(config: ApiConfig, context?: NavidromeContext): Promise<NavidromeScanStatus> {
+  const response = await requestJson<ScanStatusPayload>(config, context, "getScanStatus", {});
   return normalizeScanStatus(response.scanStatus);
 }
 
 export async function findNavidromeSongForIngestion(
   config: ApiConfig,
-  ingestion: IngestionRecord
+  ingestion: IngestionRecord,
+  context?: NavidromeContext
 ): Promise<{ song: NavidromeSong; method: IngestionMatchMethod } | null> {
-  const candidates = await searchIngestionCandidates(config, ingestion);
+  const candidates = await searchIngestionCandidates(config, ingestion, context);
   if (!candidates.length) return null;
 
-  const expectedPath = normalizeLibraryPath(ingestion.relativeOutputPath || "");
+  const expectedPath = normalizeExpectedIngestionPath(ingestion, context);
   if (expectedPath) {
     const pathMatch = candidates.find((song) => normalizeLibraryPath(song.path || "") === expectedPath);
     if (pathMatch) return { song: pathMatch, method: "path" };
@@ -106,21 +125,23 @@ export async function findNavidromeSongForIngestion(
 export async function proxyNavidromeStream(
   config: ApiConfig,
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
+  context?: NavidromeContext
 ) {
-  await proxyNavidromeBinary(config, "stream", { id: request.params.id }, request, reply);
+  await proxyNavidromeBinary(config, context, "stream", { id: request.params.id }, request, reply);
 }
 
 export async function proxyNavidromeCover(
   config: ApiConfig,
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply
+  reply: FastifyReply,
+  context?: NavidromeContext
 ) {
-  await proxyNavidromeBinary(config, "getCoverArt", { id: request.params.id, size: "300" }, request, reply);
+  await proxyNavidromeBinary(config, context, "getCoverArt", { id: request.params.id, size: "300" }, request, reply);
 }
 
-async function requestJson<T>(config: ApiConfig, endpoint: string, params: Record<string, string>) {
-  const response = await fetch(buildUrl(config, endpoint, { ...params, f: "json" }));
+async function requestJson<T>(config: ApiConfig, context: NavidromeContext | undefined, endpoint: string, params: Record<string, string>) {
+  const response = await fetch(buildUrl(config, context, endpoint, { ...params, f: "json" }));
   const body = await response.json() as SubsonicResponse<T>;
   const payload = body["subsonic-response"];
 
@@ -133,6 +154,7 @@ async function requestJson<T>(config: ApiConfig, endpoint: string, params: Recor
 
 async function proxyNavidromeBinary(
   config: ApiConfig,
+  context: NavidromeContext | undefined,
   endpoint: string,
   params: Record<string, string>,
   request: FastifyRequest,
@@ -142,7 +164,7 @@ async function proxyNavidromeBinary(
   const range = request.headers.range;
   if (range) headers.Range = range;
 
-  const upstream = await requestNavidromeBinary(buildUrl(config, endpoint, params), headers);
+  const upstream = await requestNavidromeBinary(buildUrl(config, context, endpoint, params), headers);
   reply.hijack();
   reply.raw.statusCode = upstream.statusCode || 502;
 
@@ -166,10 +188,10 @@ function requestNavidromeBinary(url: string, headers: OutgoingHttpHeaders): Prom
   });
 }
 
-function buildUrl(config: ApiConfig, endpoint: string, params: Record<string, string>) {
-  const baseUrl = (config.navidrome.baseUrl || "http://127.0.0.1:4533").replace(/\/+$/, "");
-  const username = config.navidrome.username || "";
-  const password = config.navidrome.password || "";
+function buildUrl(config: ApiConfig, context: NavidromeContext | undefined, endpoint: string, params: Record<string, string>) {
+  const baseUrl = (context?.baseUrl || config.navidrome.baseUrl || "http://127.0.0.1:4533").replace(/\/+$/, "");
+  const username = context?.username || config.navidrome.username || "";
+  const password = context?.password || config.navidrome.password || "";
 
   if (!username || !password) {
     throw new Error("Navidrome username or password is not configured.");
@@ -194,7 +216,16 @@ function normalizeArray<T>(value: T[] | T | undefined): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
-async function searchIngestionCandidates(config: ApiConfig, ingestion: IngestionRecord) {
+function filterSongsByContext(songs: NavidromeSong[], context?: NavidromeContext) {
+  const prefix = normalizeLibraryPath(context?.libraryPathPrefix || "");
+  if (!prefix) return songs;
+  return songs.filter((song) => {
+    const songPath = normalizeLibraryPath(song.path || "");
+    return songPath === prefix || songPath.startsWith(`${prefix}/`);
+  });
+}
+
+async function searchIngestionCandidates(config: ApiConfig, ingestion: IngestionRecord, context?: NavidromeContext) {
   const basename = ingestion.relativeOutputPath
     ? path.basename(ingestion.relativeOutputPath, path.extname(ingestion.relativeOutputPath))
     : "";
@@ -203,7 +234,7 @@ async function searchIngestionCandidates(config: ApiConfig, ingestion: Ingestion
   const seen = new Set<string>();
 
   for (const query of queries) {
-    const result = await getNavidromeSongs(config, query);
+    const result = await getNavidromeSongs(config, query, context);
     for (const song of result.songs) {
       if (seen.has(song.id)) continue;
       seen.add(song.id);
@@ -220,6 +251,16 @@ function unique(values: string[]) {
 
 function normalizeLibraryPath(value: string) {
   return value.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase();
+}
+
+function normalizeExpectedIngestionPath(ingestion: IngestionRecord, context?: NavidromeContext) {
+  const relativePath = normalizeLibraryPath(ingestion.relativeOutputPath || "");
+  if (!relativePath) return "";
+
+  const prefix = normalizeLibraryPath(context?.libraryPathPrefix || "");
+  if (!prefix || relativePath === prefix || relativePath.startsWith(`${prefix}/`)) return relativePath;
+
+  return `${prefix}/${relativePath}`;
 }
 
 function normalizeText(value: string) {
