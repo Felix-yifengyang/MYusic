@@ -25,6 +25,7 @@ services:
       ND_PORT: 4533
       ND_MUSICFOLDER: /music
       ND_DATAFOLDER: /data
+      ND_ENABLEMULTILIBRARY: "true"
     ports:
       - "4533:4533"
     volumes:

@@ -12,6 +12,18 @@ export interface AuthSession {
   expiresAt: string;
 }
 
+export interface CreateUserOptions {
+  provisionNavidrome?: (input: {
+    id: string;
+    username: string;
+    password: string;
+    role: AuthRole;
+  }) => Promise<{
+    navidromeUserId: string;
+    navidromeLibraryId: string;
+  }>;
+}
+
 export class AuthService {
   private readonly pool: Pool;
   private migration?: Promise<void>;
@@ -69,7 +81,10 @@ export class AuthService {
   async login(username: string, password: string): Promise<AuthSession & { token: string }> {
     await this.ensureMigrated();
     const result = await this.pool.query(
-      `select id, username, password_hash, role from users where username = $1 limit 1`,
+      `select id, username, password_hash, role, navidrome_user_id, navidrome_library_id, navidrome_synced_at, navidrome_sync_error
+       from users
+       where username = $1
+       limit 1`,
       [normalizeUsername(username)]
     );
     const row = result.rows[0];
@@ -94,20 +109,21 @@ export class AuthService {
     token: string | undefined,
     username: string,
     password: string,
-    role: AuthRole = "member"
+    role: AuthRole = "member",
+    options: CreateUserOptions = {}
   ): Promise<UserAccount> {
     await this.requireAdmin(token);
     const normalizedUsername = normalizeUsername(username);
     const normalizedRole = role === "admin" ? "admin" : "member";
     validatePassword(password);
     const now = new Date();
-    const user = {
+    const user: UserAccount = {
       id: crypto.randomUUID(),
       username: normalizedUsername,
       role: normalizedRole,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString()
-    } satisfies UserAccount;
+    };
 
     try {
       await this.pool.query(
@@ -122,6 +138,39 @@ export class AuthService {
       throw error;
     }
 
+    if (options.provisionNavidrome) {
+      try {
+        const navidrome = await options.provisionNavidrome({
+          id: user.id,
+          username: user.username,
+          password,
+          role: user.role
+        });
+        user.navidromeUserId = navidrome.navidromeUserId;
+        user.navidromeLibraryId = navidrome.navidromeLibraryId;
+        user.navidromeSyncedAt = new Date().toISOString();
+        await this.pool.query(
+          `update users
+           set navidrome_user_id = $1,
+               navidrome_library_id = $2,
+               navidrome_synced_at = $3,
+               navidrome_sync_error = null,
+               updated_at = now()
+           where id = $4`,
+          [user.navidromeUserId, user.navidromeLibraryId, user.navidromeSyncedAt, user.id]
+        );
+      } catch (error) {
+        user.navidromeSyncError = error instanceof Error ? error.message : "Navidrome provisioning failed.";
+        await this.pool.query(
+          `update users
+           set navidrome_sync_error = $1,
+               updated_at = now()
+           where id = $2`,
+          [user.navidromeSyncError, user.id]
+        );
+      }
+    }
+
     return user;
   }
 
@@ -133,7 +182,11 @@ export class AuthService {
         s.expires_at,
         u.id,
         u.username,
-        u.role
+        u.role,
+        u.navidrome_user_id,
+        u.navidrome_library_id,
+        u.navidrome_synced_at,
+        u.navidrome_sync_error
        from user_sessions s
        join users u on u.id = s.user_id
        where s.token_hash = $1
@@ -147,7 +200,7 @@ export class AuthService {
 
     return {
       user: rowToUser(row),
-      expiresAt: isoValue(row.expires_at)
+      expiresAt: requiredIsoValue(row.expires_at)
     };
   }
 
@@ -239,6 +292,10 @@ export class AuthService {
         username text not null unique,
         password_hash text not null,
         role text not null,
+        navidrome_user_id text,
+        navidrome_library_id text,
+        navidrome_synced_at timestamptz,
+        navidrome_sync_error text,
         created_at timestamptz not null,
         updated_at timestamptz not null
       );
@@ -255,6 +312,13 @@ export class AuthService {
       create index if not exists users_username_idx on users (username);
       create index if not exists user_sessions_user_id_idx on user_sessions (user_id);
       create index if not exists user_sessions_expires_at_idx on user_sessions (expires_at);
+    `);
+
+    await this.pool.query(`
+      alter table users add column if not exists navidrome_user_id text;
+      alter table users add column if not exists navidrome_library_id text;
+      alter table users add column if not exists navidrome_synced_at timestamptz;
+      alter table users add column if not exists navidrome_sync_error text;
     `);
   }
 
@@ -345,15 +409,23 @@ function rowToUser(row: QueryResultRow): AuthUser {
   return {
     id: String(row.id),
     username: String(row.username),
-    role: normalizeRole(row.role)
+    role: normalizeRole(row.role),
+    navidromeUserId: optionalString(row.navidrome_user_id),
+    navidromeLibraryId: optionalString(row.navidrome_library_id),
+    navidromeSyncedAt: optionalIsoValue(row.navidrome_synced_at),
+    navidromeSyncError: optionalString(row.navidrome_sync_error)
   };
 }
 
 function rowToUserAccount(row: QueryResultRow): UserAccount {
   return {
     ...rowToUser(row),
-    createdAt: isoValue(row.created_at),
-    updatedAt: isoValue(row.updated_at)
+    createdAt: requiredIsoValue(row.created_at),
+    updatedAt: requiredIsoValue(row.updated_at),
+    navidromeUserId: optionalString(row.navidrome_user_id),
+    navidromeLibraryId: optionalString(row.navidrome_library_id),
+    navidromeSyncedAt: optionalIsoValue(row.navidrome_synced_at),
+    navidromeSyncError: optionalString(row.navidrome_sync_error)
   };
 }
 
@@ -365,10 +437,20 @@ function isUniqueViolation(error: unknown): error is DatabaseError {
   return typeof error === "object" && error !== null && "code" in error && (error as DatabaseError).code === "23505";
 }
 
-function isoValue(value: unknown) {
+function requiredIsoValue(value: unknown) {
   if (value instanceof Date) return value.toISOString();
   if (typeof value === "string" && value) return new Date(value).toISOString();
   return new Date().toISOString();
+}
+
+function optionalIsoValue(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string" && value) return new Date(value).toISOString();
+  return undefined;
+}
+
+function optionalString(value: unknown) {
+  return typeof value === "string" && value ? value : undefined;
 }
 
 function buildCookie(name: string, value: string, options: {

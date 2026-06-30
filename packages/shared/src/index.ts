@@ -90,6 +90,10 @@ export interface AuthUser {
   id: string;
   username: string;
   role: AuthRole;
+  navidromeUserId?: string;
+  navidromeLibraryId?: string;
+  navidromeSyncedAt?: string;
+  navidromeSyncError?: string;
 }
 
 export interface UserAccount extends AuthUser {

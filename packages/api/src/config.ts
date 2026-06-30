@@ -19,6 +19,7 @@ export interface ApiConfig {
     baseUrl?: string;
     username?: string;
     password?: string;
+    musicFolder?: string;
   };
   maxJobs: number;
   jobStorePath: string;
@@ -66,7 +67,8 @@ export function loadApiConfig(configPath: string): ApiConfig {
       ...parsed.navidrome,
       baseUrl: process.env.MYUSIC_NAVIDROME_URL || parsed.navidrome?.baseUrl,
       username: process.env.MYUSIC_NAVIDROME_USER || parsed.navidrome?.username,
-      password: process.env.MYUSIC_NAVIDROME_PASSWORD || parsed.navidrome?.password
+      password: process.env.MYUSIC_NAVIDROME_PASSWORD || parsed.navidrome?.password,
+      musicFolder: process.env.MYUSIC_NAVIDROME_MUSIC_FOLDER || parsed.navidrome?.musicFolder
     },
     maxJobs: readNumberEnv("MYUSIC_MAX_JOBS", Number(parsed.maxJobs || 50)),
     jobStorePath: parsed.jobStorePath || path.join(rootDir, "data", "jobs.json"),

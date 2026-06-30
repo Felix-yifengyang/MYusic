@@ -14,6 +14,7 @@ export function writeNavidromeConfig(paths: RuntimePaths, ffmpegPath: string, mu
   const lines = [
     `MusicFolder = "${tomlString(musicDir)}"`,
     `DataFolder = "${tomlString(dataDir)}"`,
+    "EnableMultiLibrary = true",
     ffmpegPath ? `FFmpegPath = "${tomlString(ffmpegPath)}"` : "",
     `Address = "${tomlString(host)}"`,
     `Port = "${port}"`,

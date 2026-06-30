@@ -382,7 +382,7 @@ function UserManagement({
           <div className="user-row" key={user.id}>
             <div>
               <strong>{user.username}</strong>
-              <span>{formatRole(user.role)}</span>
+              <span>{formatRole(user.role)} · {formatNavidromeStatus(user)}</span>
             </div>
             <small>创建于 {formatDate(user.createdAt)}</small>
           </div>
@@ -478,6 +478,12 @@ function formatBytes(size: number) {
 
 function formatRole(role: UserAccount["role"]) {
   return role === "admin" ? "管理员" : "普通成员";
+}
+
+function formatNavidromeStatus(user: UserAccount) {
+  if (user.navidromeSyncedAt) return "移动端已配置";
+  if (user.navidromeSyncError) return `移动端未配置：${user.navidromeSyncError}`;
+  return "移动端未配置";
 }
 
 function formatDate(value: string) {

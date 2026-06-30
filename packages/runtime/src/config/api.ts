@@ -31,6 +31,7 @@ export interface ApiRuntimeConfig {
     baseUrl: string;
     username: string;
     password: string;
+    musicFolder?: string;
   };
 }
 
@@ -44,10 +45,11 @@ export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
     process.env.MYUSIC_NAVIDROME_URL ||
     existing.navidrome?.baseUrl ||
     `http://127.0.0.1:${navidromePort}`;
+  const musicDir = process.env.MYUSIC_LIBRARY_DIR || existing.musicDir || paths.libraryDir;
   const config: ApiRuntimeConfig = {
     host: process.env.MYUSIC_API_HOST || existing.host || "0.0.0.0",
     port: apiPort,
-    musicDir: process.env.MYUSIC_LIBRARY_DIR || existing.musicDir || paths.libraryDir,
+    musicDir,
     ytdlpPath: process.env.MYUSIC_YTDLP_PATH || existing.ytdlpPath || (fs.existsSync(paths.ytdlpExePath) ? paths.ytdlpExePath : "yt-dlp"),
     audioFormat: process.env.MYUSIC_AUDIO_FORMAT || existing.audioFormat || "mp3",
     audioQuality: String(process.env.MYUSIC_AUDIO_QUALITY ?? existing.audioQuality ?? "0"),
@@ -72,7 +74,8 @@ export function writeApiConfig(paths: RuntimePaths): ApiRuntimeConfig {
     navidrome: {
       baseUrl: navidromeUrl,
       username: process.env.MYUSIC_NAVIDROME_USER || existing.navidrome?.username || "",
-      password: process.env.MYUSIC_NAVIDROME_PASSWORD || existing.navidrome?.password || ""
+      password: process.env.MYUSIC_NAVIDROME_PASSWORD || existing.navidrome?.password || "",
+      musicFolder: process.env.MYUSIC_NAVIDROME_MUSIC_FOLDER || existing.navidrome?.musicFolder || musicDir
     }
   };
 

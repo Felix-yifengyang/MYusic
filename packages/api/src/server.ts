@@ -44,7 +44,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
 
   registerAuthRoutes(app, auth);
   registerAuthGuard(app, auth);
-  registerUserRoutes(app, auth);
+  registerUserRoutes(app, auth, config);
   registerAgentRoutes(app, config);
 
   app.get("/api/health", async (request): Promise<RuntimeStatus> => {

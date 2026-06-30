@@ -2,8 +2,10 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { AuthRole } from "@myusic/shared";
 import type { AuthService } from "../auth";
 import { readCookie } from "../auth";
+import type { ApiConfig } from "../config";
+import { provisionNavidromeUserLibrary } from "../services/navidrome-admin-service";
 
-export function registerUserRoutes(app: FastifyInstance, auth: AuthService | undefined) {
+export function registerUserRoutes(app: FastifyInstance, auth: AuthService | undefined, config: ApiConfig) {
   app.get("/api/users", async (request) => {
     if (!auth) return [];
     return auth.listUsers(readSessionToken(request, auth));
@@ -26,7 +28,21 @@ export function registerUserRoutes(app: FastifyInstance, auth: AuthService | und
       readSessionToken(request, auth),
       String(request.body?.username || ""),
       String(request.body?.password || ""),
-      request.body?.role === "admin" ? "admin" : "member"
+      request.body?.role === "admin" ? "admin" : "member",
+      {
+        provisionNavidrome: async (user) => {
+          const result = await provisionNavidromeUserLibrary(config, {
+            userId: user.id,
+            username: user.username,
+            password: user.password,
+            isAdmin: user.role === "admin"
+          });
+          return {
+            navidromeUserId: result.userId,
+            navidromeLibraryId: result.libraryId
+          };
+        }
+      }
     );
   });
 }
