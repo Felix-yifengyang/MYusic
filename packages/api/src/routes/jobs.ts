@@ -18,16 +18,16 @@ export interface RegisterJobRoutesOptions {
     jobs: DownloadJob[],
     ingestions: IngestionRecord[],
     runningProcesses: Map<string, ChildProcessWithoutNullStreams>,
-    options: { onChange: () => void; onDone: (job: DownloadJob) => void; retryOf?: string }
+    options: { userId?: string; onChange: () => void; onDone: (job: DownloadJob) => void; retryOf?: string }
   ) => DownloadJob;
-  findDuplicateIngestion: (config: ApiConfig, ingestions: IngestionRecord[], url: string) => Promise<IngestionRecord | undefined>;
+  findDuplicateIngestion: (config: ApiConfig, ingestions: IngestionRecord[], url: string, userId?: string) => Promise<IngestionRecord | undefined>;
   stopRunningJob: (job: DownloadJob, runningProcesses: Map<string, ChildProcessWithoutNullStreams>) => void;
 }
 
 export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRoutesOptions) {
   const { config, jobs, ingestions, runningProcesses, jobClients } = options;
 
-  app.get("/api/jobs", async () => jobs.slice().reverse());
+  app.get("/api/jobs", async (request) => userJobs(jobs, request.auth?.user.id).slice().reverse());
 
   app.get("/api/jobs/events", async (_request, reply) => {
     reply.hijack();
@@ -37,10 +37,11 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
       connection: "keep-alive",
       "x-accel-buffering": "no"
     });
-    reply.raw.write(`event: jobs\ndata: ${JSON.stringify(jobs.slice().reverse())}\n\n`);
+    const userId = _request.auth?.user.id;
+    reply.raw.write(`event: jobs\ndata: ${JSON.stringify(userJobs(jobs, userId).slice().reverse())}\n\n`);
 
     const send = (nextJobs: DownloadJob[]) => {
-      reply.raw.write(`event: jobs\ndata: ${JSON.stringify(nextJobs)}\n\n`);
+      reply.raw.write(`event: jobs\ndata: ${JSON.stringify(userJobs(nextJobs, userId))}\n\n`);
     };
     jobClients.add(send);
 
@@ -57,6 +58,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
   app.post<{ Body: { url?: string; force?: boolean } }>("/api/download", async (request, reply) => {
     const mediaUrl = String(request.body?.url || "").trim();
     const force = Boolean(request.body?.force);
+    const userId = request.auth?.user.id;
 
     if (!/^https?:\/\//i.test(mediaUrl)) {
       reply.code(400);
@@ -73,7 +75,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
     }
 
     if (!force) {
-      const duplicate = await options.findDuplicateIngestion(config, ingestions, mediaUrl);
+      const duplicate = await options.findDuplicateIngestion(config, ingestions, mediaUrl, userId);
       if (duplicate) {
         reply.code(409);
         return {
@@ -85,6 +87,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
     }
 
     const job = options.startDownload(mediaUrl, config, jobs, ingestions, runningProcesses, {
+      userId,
       onChange: () => { void options.persist(); },
       onDone: options.onDownloadDone
     });
@@ -94,7 +97,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
   });
 
   app.post<{ Params: { id: string } }>("/api/jobs/:id/cancel", async (request, reply) => {
-    const job = jobs.find((item) => item.id === request.params.id);
+    const job = jobs.find((item) => item.id === request.params.id && belongsToUser(item, request.auth?.user.id));
     if (!job) {
       reply.code(404);
       return { error: "Job not found." };
@@ -116,7 +119,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
   });
 
   app.post<{ Params: { id: string } }>("/api/jobs/:id/retry", async (request, reply) => {
-    const job = jobs.find((item) => item.id === request.params.id);
+    const job = jobs.find((item) => item.id === request.params.id && belongsToUser(item, request.auth?.user.id));
     if (!job) {
       reply.code(404);
       return { error: "Job not found." };
@@ -129,6 +132,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
       ingestions,
       runningProcesses,
       {
+        userId: job.userId || request.auth?.user.id,
         onChange: () => { void options.persist(); },
         onDone: options.onDownloadDone,
         retryOf: job.id
@@ -140,7 +144,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
   });
 
   app.delete<{ Params: { id: string } }>("/api/jobs/:id", async (request, reply) => {
-    const index = jobs.findIndex((item) => item.id === request.params.id);
+    const index = jobs.findIndex((item) => item.id === request.params.id && belongsToUser(item, request.auth?.user.id));
     if (index === -1) {
       reply.code(404);
       return { error: "Job not found." };
@@ -149,15 +153,29 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
     options.stopRunningJob(jobs[index], runningProcesses);
     jobs.splice(index, 1);
     await options.persist();
-    return jobs.slice().reverse();
+    return userJobs(jobs, request.auth?.user.id).slice().reverse();
   });
 
-  app.delete("/api/jobs", async () => {
-    for (const job of jobs) {
+  app.delete("/api/jobs", async (request) => {
+    for (const job of userJobs(jobs, request.auth?.user.id)) {
       options.stopRunningJob(job, runningProcesses);
     }
-    jobs.splice(0, jobs.length);
+    removeUserJobs(jobs, request.auth?.user.id);
     await options.persist();
-    return jobs.slice().reverse();
+    return userJobs(jobs, request.auth?.user.id).slice().reverse();
   });
+}
+
+function userJobs(jobs: DownloadJob[], userId?: string) {
+  return jobs.filter((job) => belongsToUser(job, userId));
+}
+
+function belongsToUser(record: { userId?: string }, userId?: string) {
+  return userId ? record.userId === userId : true;
+}
+
+function removeUserJobs(jobs: DownloadJob[], userId?: string) {
+  for (let index = jobs.length - 1; index >= 0; index -= 1) {
+    if (belongsToUser(jobs[index], userId)) jobs.splice(index, 1);
+  }
 }

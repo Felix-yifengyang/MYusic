@@ -34,11 +34,12 @@ export function upsertIngestion(ingestions: IngestionRecord[], record: Ingestion
   return ingestions[index];
 }
 
-export function seedIngestionsFromJobs(ingestions: IngestionRecord[], jobs: Array<{ id: string; ingestion?: IngestionRecord }>) {
+export function seedIngestionsFromJobs(ingestions: IngestionRecord[], jobs: Array<{ id: string; userId?: string; ingestion?: IngestionRecord }>) {
   for (const job of jobs) {
     if (!job.ingestion) continue;
     upsertIngestion(ingestions, {
       ...job.ingestion,
+      userId: job.ingestion.userId || job.userId,
       id: job.ingestion.id || buildLegacyIngestionId(job.ingestion),
       jobId: job.ingestion.jobId || job.id,
       createdAt: job.ingestion.createdAt || job.ingestion.capturedAt || job.ingestion.navidromeMatchedAt,

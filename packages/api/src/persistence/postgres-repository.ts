@@ -47,12 +47,13 @@ class PostgresRepository implements AppStateRepository {
       for (const job of trimmed) {
         await client.query(
           `insert into download_jobs (
-            id, url, status, output, error, exit_code, retry_of, ingestion_id, ingestion,
+            id, user_id, url, status, output, error, exit_code, retry_of, ingestion_id, ingestion,
             library_sync, created_at, updated_at, finished_at
           ) values (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12, $13, $14
           )
           on conflict (id) do update set
+            user_id = excluded.user_id,
             url = excluded.url,
             status = excluded.status,
             output = excluded.output,
@@ -67,6 +68,7 @@ class PostgresRepository implements AppStateRepository {
             finished_at = excluded.finished_at`,
           [
             job.id,
+            job.userId || null,
             job.url,
             job.status,
             job.output,
@@ -99,19 +101,20 @@ class PostgresRepository implements AppStateRepository {
       for (const ingestion of ingestions) {
         await client.query(
           `insert into ingestions (
-            id, job_id, source_url, source_site, source_id, title, uploader, duration,
+            id, user_id, job_id, source_url, source_site, source_id, title, uploader, duration,
             webpage_url, output_path, relative_output_path, info_json_path,
             navidrome_song_id, navidrome_match_method, navidrome_matched_at,
             navidrome_last_match_attempt_at, navidrome_match_error,
             captured_at, created_at, updated_at
           ) values (
-            $1, $2, $3, $4, $5, $6, $7, $8,
-            $9, $10, $11, $12,
-            $13, $14, $15,
-            $16, $17,
-            $18, $19, $20
+            $1, $2, $3, $4, $5, $6, $7, $8, $9,
+            $10, $11, $12, $13,
+            $14, $15, $16,
+            $17, $18,
+            $19, $20, $21
           )
           on conflict (id) do update set
+            user_id = excluded.user_id,
             job_id = excluded.job_id,
             source_url = excluded.source_url,
             source_site = excluded.source_site,
@@ -133,6 +136,7 @@ class PostgresRepository implements AppStateRepository {
             updated_at = excluded.updated_at`,
           [
             ingestion.id,
+            ingestion.userId || null,
             ingestion.jobId || null,
             ingestion.sourceUrl,
             ingestion.sourceSite || null,
@@ -169,6 +173,7 @@ class PostgresRepository implements AppStateRepository {
     await this.pool.query(`
       create table if not exists download_jobs (
         id text primary key,
+        user_id text,
         url text not null,
         status text not null,
         output text not null default '',
@@ -185,6 +190,7 @@ class PostgresRepository implements AppStateRepository {
 
       create table if not exists ingestions (
         id text primary key,
+        user_id text,
         job_id text,
         source_url text not null,
         source_site text,
@@ -206,8 +212,13 @@ class PostgresRepository implements AppStateRepository {
         updated_at timestamptz
       );
 
+      alter table download_jobs add column if not exists user_id text;
+      alter table ingestions add column if not exists user_id text;
+
       create index if not exists download_jobs_created_at_idx on download_jobs (created_at);
+      create index if not exists download_jobs_user_id_idx on download_jobs (user_id);
       create index if not exists ingestions_source_identity_idx on ingestions (source_site, source_id);
+      create index if not exists ingestions_user_id_idx on ingestions (user_id);
       create index if not exists ingestions_webpage_url_idx on ingestions (webpage_url);
       create index if not exists ingestions_navidrome_song_id_idx on ingestions (navidrome_song_id);
     `);
@@ -238,6 +249,7 @@ async function deleteRowsMissingFromState(client: PoolClient, tableName: "downlo
 function rowToJob(row: QueryResultRow): DownloadJob {
   return {
     id: stringValue(row.id),
+    userId: optionalString(row.user_id),
     url: stringValue(row.url),
     status: stringValue(row.status) as DownloadStatus,
     output: stringValue(row.output),
@@ -256,6 +268,7 @@ function rowToJob(row: QueryResultRow): DownloadJob {
 function rowToIngestion(row: QueryResultRow): IngestionRecord {
   return {
     id: stringValue(row.id),
+    userId: optionalString(row.user_id),
     jobId: optionalString(row.job_id),
     sourceUrl: stringValue(row.source_url),
     sourceSite: optionalString(row.source_site),

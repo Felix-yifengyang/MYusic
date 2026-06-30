@@ -10,6 +10,7 @@ import { upsertIngestion } from "../ingestion-store";
 import { trimJobs } from "../job-store";
 
 export interface StartDownloadOptions {
+  userId?: string;
   onChange: () => void;
   onDone: (job: DownloadJob) => void;
   retryOf?: string;
@@ -23,10 +24,12 @@ export function startDownload(
   runningProcesses: Map<string, ChildProcessWithoutNullStreams>,
   options: StartDownloadOptions
 ): DownloadJob {
-  fs.mkdirSync(config.musicDir, { recursive: true });
+  const musicDir = getUserMusicDir(config, options.userId);
+  fs.mkdirSync(musicDir, { recursive: true });
 
   const job: DownloadJob = {
     id: crypto.randomUUID(),
+    userId: options.userId,
     url,
     status: "running",
     output: "",
@@ -39,7 +42,7 @@ export function startDownload(
   jobs.splice(0, jobs.length, ...trimJobs(jobs, config.maxJobs));
 
   const { args, notes } = createAudioDownloadArgs(url, {
-    musicDir: config.musicDir,
+    musicDir,
     audioFormat: config.audioFormat,
     audioQuality: config.audioQuality,
     ffmpegPath: config.ffmpegPath,
@@ -85,7 +88,7 @@ export function startDownload(
     job.exitCode = code;
     job.finishedAt = new Date().toISOString();
     if (job.status === "done") {
-      const ingestion = upsertIngestion(ingestions, buildIngestionRecord(job, config));
+      const ingestion = upsertIngestion(ingestions, buildIngestionRecord(job, config, musicDir));
       job.ingestionId = ingestion.id;
       job.ingestion = ingestion;
     }
@@ -100,13 +103,14 @@ export function startDownload(
   return job;
 }
 
-export async function findDuplicateIngestion(config: ApiConfig, ingestions: IngestionRecord[], url: string) {
+export async function findDuplicateIngestion(config: ApiConfig, ingestions: IngestionRecord[], url: string, userId?: string) {
   const metadata = await fetchSourceMetadata(config, url);
   const sourceSite = stringField(metadata.extractor_key) || stringField(metadata.extractor);
   const sourceId = stringField(metadata.id);
 
   if (sourceId) {
     const sourceMatch = ingestions.find((ingestion) => (
+      belongsToUser(ingestion, userId) &&
       ingestion.sourceId === sourceId &&
       (!sourceSite || !ingestion.sourceSite || ingestion.sourceSite === sourceSite)
     ));
@@ -115,8 +119,11 @@ export async function findDuplicateIngestion(config: ApiConfig, ingestions: Inge
 
   const webpageUrl = stringField(metadata.webpage_url) || stringField(metadata.original_url);
   return ingestions.find((ingestion) => (
-    ingestion.sourceUrl === url ||
-    (Boolean(webpageUrl) && (ingestion.webpageUrl === webpageUrl || ingestion.sourceUrl === webpageUrl))
+    belongsToUser(ingestion, userId) &&
+    (
+      ingestion.sourceUrl === url ||
+      (Boolean(webpageUrl) && (ingestion.webpageUrl === webpageUrl || ingestion.sourceUrl === webpageUrl))
+    )
   ));
 }
 
@@ -132,7 +139,12 @@ export function stopRunningJob(job: DownloadJob, runningProcesses: Map<string, C
   child?.kill();
 }
 
-function buildIngestionRecord(job: DownloadJob, config: ApiConfig): IngestionRecord {
+export function getUserMusicDir(config: ApiConfig, userId?: string) {
+  if (!userId) return config.musicDir;
+  return path.join(config.musicDir, "users", sanitizePathSegment(userId));
+}
+
+function buildIngestionRecord(job: DownloadJob, config: ApiConfig, musicDir: string): IngestionRecord {
   const outputPath = normalizeMarkerPath(readMarker(job.output, "__MYUSIC_FILE__"));
   const infoJsonPath = normalizeMarkerPath(readMarker(job.output, "__MYUSIC_INFO__"));
   const metadata = readInfoJson(infoJsonPath);
@@ -148,9 +160,10 @@ function buildIngestionRecord(job: DownloadJob, config: ApiConfig): IngestionRec
     id: buildIngestionId(job, {
       sourceSite,
       sourceId,
-      relativeOutputPath: resolvedOutputPath ? relativeToMusicDir(config.musicDir, resolvedOutputPath) : undefined,
+      relativeOutputPath: resolvedOutputPath ? relativeToMusicDir(musicDir, resolvedOutputPath) : undefined,
       outputPath: resolvedOutputPath
     }),
+    userId: job.userId,
     jobId: job.id,
     sourceUrl: job.url,
     sourceSite,
@@ -160,12 +173,20 @@ function buildIngestionRecord(job: DownloadJob, config: ApiConfig): IngestionRec
     duration: numberField(metadata.duration),
     webpageUrl: stringField(metadata.webpage_url) || stringField(metadata.original_url),
     outputPath: resolvedOutputPath,
-    relativeOutputPath: resolvedOutputPath ? relativeToMusicDir(config.musicDir, resolvedOutputPath) : undefined,
+    relativeOutputPath: resolvedOutputPath ? relativeToMusicDir(musicDir, resolvedOutputPath) : undefined,
     infoJsonPath: resolvedInfoJsonPath,
     capturedAt,
     createdAt: capturedAt,
     updatedAt: capturedAt
   };
+}
+
+function belongsToUser(record: { userId?: string }, userId?: string) {
+  return userId ? record.userId === userId : true;
+}
+
+function sanitizePathSegment(value: string) {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
 async function fetchSourceMetadata(config: ApiConfig, url: string): Promise<Record<string, unknown>> {
@@ -208,15 +229,16 @@ function buildIngestionId(
   job: DownloadJob,
   input: { sourceSite?: string; sourceId?: string; relativeOutputPath?: string; outputPath?: string }
 ) {
+  const scope = job.userId ? `user:${job.userId}:` : "";
   if (input.sourceId) {
-    return `${input.sourceSite || "source"}:${input.sourceId}`;
+    return `${scope}${input.sourceSite || "source"}:${input.sourceId}`;
   }
 
   if (input.relativeOutputPath || input.outputPath) {
-    return `file:${input.relativeOutputPath || input.outputPath}`;
+    return `${scope}file:${input.relativeOutputPath || input.outputPath}`;
   }
 
-  return `job:${job.id}`;
+  return `${scope}job:${job.id}`;
 }
 
 function readMarker(output: string, marker: string) {
