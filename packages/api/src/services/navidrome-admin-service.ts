@@ -46,15 +46,20 @@ export async function provisionNavidromeUserLibrary(
     );
   }
 
+  const libraryId = Number(library.id);
+  if (!Number.isInteger(libraryId)) {
+    throw new Error(`Navidrome library id "${library.id}" is not a valid numeric id.`);
+  }
+
   await client.request(`user/${encodeURIComponent(user.id)}/library`, {
     method: "PUT",
-    body: { libraryIds: [library.id] }
+    body: { libraryIds: [libraryId] }
   });
 
   return {
     username: user.userName,
     userId: String(user.id),
-    libraryId: String(library.id)
+    libraryId: String(libraryId)
   };
 }
 
