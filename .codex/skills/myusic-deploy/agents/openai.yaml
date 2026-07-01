@@ -1,4 +1,4 @@
 interface:
   display_name: "MYusic Deploy"
-  short_description: "MYusic server deployment and ops workflow"
-  default_prompt: "Use the MYusic deploy skill to check, deploy, or troubleshoot the production server."
+  short_description: "Enter the MYusic server and deploy the app"
+  default_prompt: "Use the MYusic deploy skill to deploy the latest master branch to the production server."
