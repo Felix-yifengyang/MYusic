@@ -1,10 +1,14 @@
 .room-page {
+  --room-weather-image: none;
+
   position: fixed;
   inset: 0;
   z-index: 20;
   min-height: 100dvh;
   overflow: hidden;
-  background-image: url("../assets/images/room/bg-room.png");
+  background-image:
+    url("../assets/images/room/bg-room.png"),
+    var(--room-weather-image);
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;
