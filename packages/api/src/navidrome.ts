@@ -12,6 +12,7 @@ export interface NavidromeContext {
   baseUrl?: string;
   username?: string;
   password?: string;
+  userLibraryPathPrefix?: string;
   libraryPathPrefix?: string;
 }
 
@@ -217,6 +218,14 @@ function normalizeArray<T>(value: T[] | T | undefined): T[] {
 }
 
 function filterSongsByContext(songs: NavidromeSong[], context?: NavidromeContext) {
+  const excludedPrefix = normalizeLibraryPath(context?.userLibraryPathPrefix || "");
+  if (excludedPrefix && !context?.libraryPathPrefix) {
+    return songs.filter((song) => {
+      const songPath = normalizeLibraryPath(song.path || "");
+      return songPath !== excludedPrefix && !songPath.startsWith(`${excludedPrefix}/`);
+    });
+  }
+
   const prefix = normalizeLibraryPath(context?.libraryPathPrefix || "");
   if (!prefix) return songs;
   return songs.filter((song) => {
