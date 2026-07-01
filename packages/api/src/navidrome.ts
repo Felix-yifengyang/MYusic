@@ -12,8 +12,8 @@ export interface NavidromeContext {
   baseUrl?: string;
   username?: string;
   password?: string;
-  userLibraryPathPrefix?: string;
-  libraryPathPrefix?: string;
+  libraryId?: string;
+  pathPrefix?: string;
 }
 
 interface SubsonicResponse<T> {
@@ -55,8 +55,11 @@ export async function pingNavidrome(config: ApiConfig, context?: NavidromeContex
 }
 
 export async function getNavidromeSongs(config: ApiConfig, query: string, context?: NavidromeContext): Promise<NavidromeSongsResult> {
+  const libraryParams: Record<string, string> = context?.libraryId ? { musicFolderId: context.libraryId } : {};
+
   if (query.trim()) {
     const response = await requestJson<Search3Payload>(config, context, "search3", {
+      ...libraryParams,
       query: query.trim(),
       songCount: "80",
       artistCount: "0",
@@ -68,7 +71,7 @@ export async function getNavidromeSongs(config: ApiConfig, query: string, contex
     };
   }
 
-  const response = await requestJson<RandomSongsPayload>(config, context, "getRandomSongs", { size: "500" });
+  const response = await requestJson<RandomSongsPayload>(config, context, "getRandomSongs", { ...libraryParams, size: "500" });
   return {
     songs: filterSongsByContext(normalizeArray(response.randomSongs?.song), context).sort(compareNavidromeSongs)
   };
@@ -218,15 +221,7 @@ function normalizeArray<T>(value: T[] | T | undefined): T[] {
 }
 
 function filterSongsByContext(songs: NavidromeSong[], context?: NavidromeContext) {
-  const excludedPrefix = normalizeLibraryPath(context?.userLibraryPathPrefix || "");
-  if (excludedPrefix && !context?.libraryPathPrefix) {
-    return songs.filter((song) => {
-      const songPath = normalizeLibraryPath(song.path || "");
-      return songPath !== excludedPrefix && !songPath.startsWith(`${excludedPrefix}/`);
-    });
-  }
-
-  const prefix = normalizeLibraryPath(context?.libraryPathPrefix || "");
+  const prefix = normalizeLibraryPath(context?.pathPrefix || "");
   if (!prefix) return songs;
   return songs.filter((song) => {
     const songPath = normalizeLibraryPath(song.path || "");
@@ -266,7 +261,7 @@ function normalizeExpectedIngestionPath(ingestion: IngestionRecord, context?: Na
   const relativePath = normalizeLibraryPath(ingestion.relativeOutputPath || "");
   if (!relativePath) return "";
 
-  const prefix = normalizeLibraryPath(context?.libraryPathPrefix || "");
+  const prefix = normalizeLibraryPath(context?.pathPrefix || "");
   if (!prefix || relativePath === prefix || relativePath.startsWith(`${prefix}/`)) return relativePath;
 
   return `${prefix}/${relativePath}`;

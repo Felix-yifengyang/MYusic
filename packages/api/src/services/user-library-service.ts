@@ -10,9 +10,6 @@ export interface UserLibraryContext {
 }
 
 export function getUserLibraryContext(config: ApiConfig, user: AuthUser): UserLibraryContext {
-  const userLibraryPathPrefix = `users/${sanitizePathSegment(user.id)}`;
-  const libraryPathPrefix = user.navidromeLibraryId ? undefined : userLibraryPathPrefix;
-
   return {
     user,
     musicDir: getUserMusicDir(config, user.id),
@@ -20,8 +17,8 @@ export function getUserLibraryContext(config: ApiConfig, user: AuthUser): UserLi
       baseUrl: config.navidrome.baseUrl,
       username: config.navidrome.username,
       password: config.navidrome.password,
-      userLibraryPathPrefix,
-      libraryPathPrefix
+      libraryId: user.navidromeLibraryId,
+      pathPrefix: user.navidromeLibraryId ? undefined : `users/${sanitizePathSegment(user.id)}`
     }
   };
 }

@@ -40,6 +40,6 @@ export function registerNavidromeRoutes(app: FastifyInstance, config: ApiConfig)
 }
 
 async function canAccessSong(config: ApiConfig, songId: string, context: ReturnType<typeof getUserLibraryContext>["navidrome"] | undefined) {
-  if (!context?.libraryPathPrefix) return true;
+  if (!context?.libraryId && !context?.pathPrefix) return true;
   return Boolean(await getNavidromeSong(config, songId, context));
 }
