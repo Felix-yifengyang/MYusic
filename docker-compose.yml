@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env.docker
+    environment:
+      MYUSIC_NAVIDROME_MUSIC_FOLDER: /music
     ports:
       - "8787:8787"
     volumes:

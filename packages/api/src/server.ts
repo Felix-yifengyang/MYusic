@@ -99,10 +99,10 @@ export async function createApiServer(options: CreateApiServerOptions) {
     runningProcesses,
     jobClients,
     persist,
-    onDownloadDone: (job) => {
+    onDownloadDone: (job, context) => {
       void syncDownloadedJobToNavidrome(job, config, ingestions, () => {
         void persist();
-      });
+      }, context);
     },
     startDownload,
     findDuplicateIngestion,

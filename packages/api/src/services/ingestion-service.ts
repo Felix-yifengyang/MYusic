@@ -7,15 +7,14 @@ import {
   getNavidromeScanStatus,
   startNavidromeScan
 } from "../navidrome";
-import { getUserLibraryContext } from "./user-library-service";
 
 export async function syncDownloadedJobToNavidrome(
   job: DownloadJob,
   config: ApiConfig,
   ingestions: IngestionRecord[],
-  onChange: () => void
+  onChange: () => void,
+  context?: NavidromeContext
 ) {
-  const context = navidromeContextForUserId(config, job.userId);
   const requestedAt = new Date().toISOString();
   job.librarySync = {
     status: "pending",
@@ -60,9 +59,9 @@ export async function rematchIngestion(
   config: ApiConfig,
   jobs: DownloadJob[],
   ingestions: IngestionRecord[],
-  ingestion: IngestionRecord
+  ingestion: IngestionRecord,
+  context?: NavidromeContext
 ) {
-  const context = navidromeContextForUserId(config, ingestion.userId);
   const match = await findNavidromeSongForIngestion(config, ingestion, context);
   const now = new Date().toISOString();
   const updated = upsertIngestion(ingestions, match ? {
@@ -151,15 +150,6 @@ async function waitForNavidromeScan(config: ApiConfig, context?: NavidromeContex
   }
 
   return getNavidromeScanStatus(config, context);
-}
-
-function navidromeContextForUserId(config: ApiConfig, userId?: string): NavidromeContext | undefined {
-  if (!userId) return undefined;
-  return getUserLibraryContext(config, {
-    id: userId,
-    username: "",
-    role: "member"
-  }).navidrome;
 }
 
 function delay(ms: number) {

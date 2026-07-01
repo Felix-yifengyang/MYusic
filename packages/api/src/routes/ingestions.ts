@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 import type { ApiConfig } from "../config";
+import type { NavidromeContext } from "../navidrome";
+import { requireUserNavidromeContext } from "../services/user-library-service";
 
 export interface RegisterIngestionRoutesOptions {
   config: ApiConfig;
@@ -11,7 +13,8 @@ export interface RegisterIngestionRoutesOptions {
     config: ApiConfig,
     jobs: DownloadJob[],
     ingestions: IngestionRecord[],
-    ingestion: IngestionRecord
+    ingestion: IngestionRecord,
+    context?: NavidromeContext
   ) => Promise<{ matched: boolean; ingestion: IngestionRecord }>;
 }
 
@@ -34,7 +37,8 @@ export function registerIngestionRoutes(app: FastifyInstance, options: RegisterI
       return { error: "Ingestion record not found." };
     }
 
-    const result = await options.rematchIngestion(config, jobs, ingestions, ingestion);
+    const navidrome = requireUserNavidromeContext(config, request.auth?.user, "请先绑定移动端音乐库，再重新匹配入库记录。");
+    const result = await options.rematchIngestion(config, jobs, ingestions, ingestion, navidrome);
     await options.persist();
     return result;
   });

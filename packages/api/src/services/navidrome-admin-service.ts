@@ -36,6 +36,10 @@ export async function provisionNavidromeUserLibrary(
   config: ApiConfig,
   input: NavidromeProvisionInput
 ): Promise<NavidromeProvisionResult> {
+  if (input.isAdmin) {
+    throw new Error("MYusic admin accounts are for management only. Use a member account for mobile listening.");
+  }
+
   const client = await createNavidromeAdminClient(config);
   const targetUsername = navidromeUsername(input.navidromeUsername || input.username);
   const library = await ensureLibrary(client, config, input, targetUsername);
@@ -146,7 +150,7 @@ async function ensureUser(
   return {
     id: created.id,
     userName,
-    isAdmin: input.isAdmin
+    isAdmin: false
   };
 }
 

@@ -54,6 +54,8 @@ export async function pingNavidrome(config: ApiConfig, context?: NavidromeContex
 }
 
 export async function getNavidromeSongs(config: ApiConfig, query: string, context?: NavidromeContext): Promise<NavidromeSongsResult> {
+  if (context && !context.libraryId) return { songs: [] };
+
   const libraryParams: Record<string, string> = context?.libraryId ? { musicFolderId: context.libraryId } : {};
 
   if (query.trim()) {
@@ -66,21 +68,21 @@ export async function getNavidromeSongs(config: ApiConfig, query: string, contex
     });
 
     return {
-      songs: filterSongsByContext(normalizeArray(response.searchResult3?.song), context)
+      songs: normalizeArray(response.searchResult3?.song)
     };
   }
 
   const response = await requestJson<RandomSongsPayload>(config, context, "getRandomSongs", { ...libraryParams, size: "500" });
   return {
-    songs: filterSongsByContext(normalizeArray(response.randomSongs?.song), context).sort(compareNavidromeSongs)
+    songs: normalizeArray(response.randomSongs?.song).sort(compareNavidromeSongs)
   };
 }
 
 export async function getNavidromeSong(config: ApiConfig, id: string, context?: NavidromeContext): Promise<NavidromeSong | undefined> {
+  if (context && !context.libraryId) return undefined;
+
   const response = await requestJson<SongPayload>(config, context, "getSong", { id });
-  const song = response.song;
-  if (!song) return undefined;
-  return filterSongsByContext([song], context)[0];
+  return response.song;
 }
 
 export async function startNavidromeScan(config: ApiConfig, context?: NavidromeContext): Promise<NavidromeScanStatus> {
@@ -101,7 +103,7 @@ export async function findNavidromeSongForIngestion(
   const candidates = await searchIngestionCandidates(config, ingestion, context);
   if (!candidates.length) return null;
 
-  const expectedPath = normalizeExpectedIngestionPath(ingestion, context);
+  const expectedPath = normalizeExpectedIngestionPath(ingestion);
   if (expectedPath) {
     const pathMatch = candidates.find((song) => normalizeLibraryPath(song.path || "") === expectedPath);
     if (pathMatch) return { song: pathMatch, method: "path" };
@@ -219,11 +221,6 @@ function normalizeArray<T>(value: T[] | T | undefined): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
-function filterSongsByContext(songs: NavidromeSong[], context?: NavidromeContext) {
-  if (context && !context.libraryId) return [];
-  return songs;
-}
-
 async function searchIngestionCandidates(config: ApiConfig, ingestion: IngestionRecord, context?: NavidromeContext) {
   const basename = ingestion.relativeOutputPath
     ? path.basename(ingestion.relativeOutputPath, path.extname(ingestion.relativeOutputPath))
@@ -252,7 +249,7 @@ function normalizeLibraryPath(value: string) {
   return value.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase();
 }
 
-function normalizeExpectedIngestionPath(ingestion: IngestionRecord, context?: NavidromeContext) {
+function normalizeExpectedIngestionPath(ingestion: IngestionRecord) {
   const relativePath = normalizeLibraryPath(ingestion.relativeOutputPath || "");
   if (!relativePath) return "";
   return relativePath;

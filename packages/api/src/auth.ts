@@ -205,6 +205,10 @@ export class AuthService {
     if (!user) {
       throw new AuthError(404, "User not found.");
     }
+    if (user.role === "admin") {
+      throw new AuthError(409, "管理员账号仅用于管理，请使用成员账号绑定移动端音乐库。");
+    }
+
     const targetNavidromeUsername = normalizeOptionalNavidromeUsername(navidromeUsername) || user.navidromeUsername || user.username;
 
     try {

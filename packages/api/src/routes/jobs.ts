@@ -2,7 +2,9 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { FastifyInstance } from "fastify";
 import type { DownloadJob, IngestionRecord } from "@myusic/shared";
 import type { ApiConfig } from "../config";
+import type { NavidromeContext } from "../navidrome";
 import { getBlockingDownloadChecks } from "../diagnostics";
+import { requireUserNavidromeContext } from "../services/user-library-service";
 
 export interface RegisterJobRoutesOptions {
   config: ApiConfig;
@@ -11,7 +13,7 @@ export interface RegisterJobRoutesOptions {
   runningProcesses: Map<string, ChildProcessWithoutNullStreams>;
   jobClients: Set<(jobs: DownloadJob[]) => void>;
   persist: () => Promise<void>;
-  onDownloadDone: (job: DownloadJob) => void;
+  onDownloadDone: (job: DownloadJob, context?: NavidromeContext) => void;
   startDownload: (
     url: string,
     config: ApiConfig,
@@ -58,12 +60,14 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
   app.post<{ Body: { url?: string; force?: boolean } }>("/api/download", async (request, reply) => {
     const mediaUrl = String(request.body?.url || "").trim();
     const force = Boolean(request.body?.force);
-    const userId = request.auth?.user.id;
 
     if (!/^https?:\/\//i.test(mediaUrl)) {
       reply.code(400);
       return { error: "Please provide a valid http(s) URL." };
     }
+
+    const user = request.auth?.user;
+    const navidrome = requireUserNavidromeContext(config, user, "请先绑定移动端音乐库，再下载歌曲。");
 
     const blockingChecks = getBlockingDownloadChecks(config);
     if (blockingChecks.length) {
@@ -75,7 +79,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
     }
 
     if (!force) {
-      const duplicate = await options.findDuplicateIngestion(config, ingestions, mediaUrl, userId);
+      const duplicate = await options.findDuplicateIngestion(config, ingestions, mediaUrl, user?.id);
       if (duplicate) {
         reply.code(409);
         return {
@@ -87,9 +91,9 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
     }
 
     const job = options.startDownload(mediaUrl, config, jobs, ingestions, runningProcesses, {
-      userId,
+      userId: user?.id,
       onChange: () => { void options.persist(); },
-      onDone: options.onDownloadDone
+      onDone: (doneJob) => options.onDownloadDone(doneJob, navidrome)
     });
     reply.code(202);
     await options.persist();
@@ -125,6 +129,8 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
       return { error: "Job not found." };
     }
 
+    const navidrome = requireUserNavidromeContext(config, request.auth?.user, "请先绑定移动端音乐库，再重试下载。");
+
     const nextJob = options.startDownload(
       job.url,
       config,
@@ -134,7 +140,7 @@ export function registerJobRoutes(app: FastifyInstance, options: RegisterJobRout
       {
         userId: job.userId || request.auth?.user.id,
         onChange: () => { void options.persist(); },
-        onDone: options.onDownloadDone,
+        onDone: (doneJob) => options.onDownloadDone(doneJob, navidrome),
         retryOf: job.id
       }
     );

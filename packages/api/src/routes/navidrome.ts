@@ -7,21 +7,21 @@ import {
   proxyNavidromeCover,
   proxyNavidromeStream
 } from "../navidrome";
-import { getUserLibraryContext } from "../services/user-library-service";
+import { getUserNavidromeContext } from "../services/user-library-service";
 
 export function registerNavidromeRoutes(app: FastifyInstance, config: ApiConfig) {
   app.get("/api/navidrome/ping", async (request) => {
-    const context = request.auth?.user ? getUserLibraryContext(config, request.auth.user).navidrome : undefined;
+    const context = getUserNavidromeContext(config, request.auth?.user);
     return pingNavidrome(config, context);
   });
 
   app.get<{ Querystring: { q?: string } }>("/api/navidrome/songs", async (request) => {
-    const context = request.auth?.user ? getUserLibraryContext(config, request.auth.user).navidrome : undefined;
+    const context = getUserNavidromeContext(config, request.auth?.user);
     return getNavidromeSongs(config, request.query.q || "", context);
   });
 
   app.get<{ Params: { id: string } }>("/api/navidrome/stream/:id", async (request, reply) => {
-    const context = request.auth?.user ? getUserLibraryContext(config, request.auth.user).navidrome : undefined;
+    const context = getUserNavidromeContext(config, request.auth?.user);
     if (!(await canAccessSong(config, request.params.id, context))) {
       reply.code(404);
       return { error: "Song not found." };
@@ -30,7 +30,7 @@ export function registerNavidromeRoutes(app: FastifyInstance, config: ApiConfig)
   });
 
   app.get<{ Params: { id: string } }>("/api/navidrome/cover/:id", async (request, reply) => {
-    const context = request.auth?.user ? getUserLibraryContext(config, request.auth.user).navidrome : undefined;
+    const context = getUserNavidromeContext(config, request.auth?.user);
     if (!(await canAccessSong(config, request.params.id, context))) {
       reply.code(404);
       return { error: "Song not found." };
@@ -39,7 +39,7 @@ export function registerNavidromeRoutes(app: FastifyInstance, config: ApiConfig)
   });
 }
 
-async function canAccessSong(config: ApiConfig, songId: string, context: ReturnType<typeof getUserLibraryContext>["navidrome"] | undefined) {
+async function canAccessSong(config: ApiConfig, songId: string, context: ReturnType<typeof getUserNavidromeContext>) {
   if (context && !context.libraryId) return false;
   if (!context) return true;
   return Boolean(await getNavidromeSong(config, songId, context));

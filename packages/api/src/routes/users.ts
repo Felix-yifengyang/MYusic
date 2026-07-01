@@ -23,15 +23,16 @@ export function registerUserRoutes(app: FastifyInstance, auth: AuthService | und
       return { error: "Auth is disabled." };
     }
 
+    const role = request.body?.role === "admin" ? "admin" : "member";
     reply.code(201);
     return auth.createUser(
       readSessionToken(request, auth),
       String(request.body?.username || ""),
       String(request.body?.password || ""),
-      request.body?.role === "admin" ? "admin" : "member",
-      {
+      role,
+      role === "member" ? {
         provisionNavidrome: (user) => provisionUserNavidrome(config, user)
-      }
+      } : {}
     );
   });
 
