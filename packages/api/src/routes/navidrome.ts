@@ -29,9 +29,9 @@ export function registerNavidromeRoutes(app: FastifyInstance, config: ApiConfig)
     await proxyNavidromeStream(config, request, reply, context);
   });
 
-  app.get<{ Params: { id: string } }>("/api/navidrome/cover/:id", async (request, reply) => {
+  app.get<{ Params: { id: string }; Querystring: { songId?: string } }>("/api/navidrome/cover/:id", async (request, reply) => {
     const context = getUserNavidromeContext(config, request.auth?.user);
-    if (!(await canAccessSong(config, request.params.id, context))) {
+    if (!(await canAccessSong(config, request.query.songId || request.params.id, context))) {
       reply.code(404);
       return { error: "Song not found." };
     }

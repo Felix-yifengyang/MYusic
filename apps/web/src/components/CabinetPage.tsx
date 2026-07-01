@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { NavidromeSong } from "@myusic/shared";
+import { coverUrl } from "./playerTypes";
 
 const cabinetScene = new URL(
   "../assets/images/cabinet/bg-cabinet.png",
@@ -121,7 +122,7 @@ export function CabinetPage({ active, songs, currentTrackKey, onPlay, onExitToRo
                       <span className="vinyl-record cabinet-record">
                         <span className="vinyl-record-disc" aria-hidden="true" />
                         <span className="vinyl-record-label">
-                          {song.coverArt ? <img alt="" loading="lazy" src={`/api/navidrome/cover/${encodeURIComponent(song.coverArt)}`} /> : null}
+                          {song.coverArt ? <img alt="" loading="lazy" src={coverUrl(song)} /> : null}
                         </span>
                         <span className="vinyl-record-hole" aria-hidden="true" />
                       </span>

@@ -1,3 +1,5 @@
+import type { NavidromeSong } from "@myusic/shared";
+
 export type PlayerTrack = {
   key: string;
   source: "navidrome";
@@ -7,3 +9,8 @@ export type PlayerTrack = {
   streamUrl: string;
   coverUrl?: string;
 };
+
+export function coverUrl(song: NavidromeSong) {
+  if (!song.coverArt) return undefined;
+  return `/api/navidrome/cover/${encodeURIComponent(song.coverArt)}?songId=${encodeURIComponent(song.id)}`;
+}

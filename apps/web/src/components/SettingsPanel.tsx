@@ -7,6 +7,7 @@ export interface SettingsPanelProps {
   settings: AppSettings | null;
   status: RuntimeStatus | null;
   authStatus: AuthStatus | null;
+  isAdmin: boolean;
   users: UserAccount[];
   cookieStatus: CookieFileStatus | null;
   diagnostics: DiagnosticsReport | null;
@@ -49,6 +50,7 @@ export function SettingsPanel({
   settings,
   status,
   authStatus,
+  isAdmin,
   users,
   cookieStatus,
   diagnostics,
@@ -88,7 +90,7 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   return (
     <section className="settings-page">
-      {settings ? (
+      {isAdmin && (settings ? (
         <>
           <Panel title="音乐服务" description="音乐目录、Navidrome 和音频输出。" wide>
             <SettingsForm
@@ -114,7 +116,7 @@ export function SettingsPanel({
         </>
       ) : (
         <Panel><EmptyState>正在读取设置</EmptyState></Panel>
-      )}
+      ))}
 
       <Panel title="账号安全" description="修改密码或让所有设备重新登录。">
         <AccountSecurity
@@ -130,7 +132,7 @@ export function SettingsPanel({
         />
       </Panel>
 
-      {authStatus?.enabled && authStatus.user?.role === "admin" && (
+      {isAdmin && authStatus?.enabled && authStatus.user?.role === "admin" && (
         <Panel title="成员账号" description="为身边的朋友创建独立登录账号。">
           <UserManagement
             users={users}
@@ -153,13 +155,17 @@ export function SettingsPanel({
         </Panel>
       )}
 
-      <Panel title="连接地址" description="局域网和移动端访问入口。">
-        {status ? <LanSettings status={status} /> : <EmptyState>正在读取局域网地址</EmptyState>}
-      </Panel>
+      {isAdmin && (
+        <Panel title="连接地址" description="局域网和移动端访问入口。">
+          {status ? <LanSettings status={status} /> : <EmptyState>正在读取局域网地址</EmptyState>}
+        </Panel>
+      )}
 
-      <Panel title="环境诊断" description="检查下载工具、Cookie 和音乐服务连接。" wide>
-        {diagnostics && <DiagnosticsList diagnostics={diagnostics} compact />}
-      </Panel>
+      {isAdmin && (
+        <Panel title="环境诊断" description="检查下载工具、Cookie 和音乐服务连接。" wide>
+          {diagnostics && <DiagnosticsList diagnostics={diagnostics} compact />}
+        </Panel>
+      )}
     </section>
   );
 }

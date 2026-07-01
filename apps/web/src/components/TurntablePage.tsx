@@ -3,7 +3,7 @@ import type { CSSProperties, PointerEvent, Ref } from "react";
 import type { NavidromeSong } from "@myusic/shared";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import type { PlayerTrack } from "./playerTypes";
+import { coverUrl, type PlayerTrack } from "./playerTypes";
 import drawerCloseSoundUrl from "../assets/sound/close.mp3";
 import drawerOpenSoundUrl from "../assets/sound/open.mp3";
 
@@ -772,7 +772,7 @@ function RecordDrawer({
             >
               <VinylRecord
                 className="sleeve-record"
-                coverUrl={song.coverArt ? `/api/navidrome/cover/${encodeURIComponent(song.coverArt)}` : undefined}
+                coverUrl={coverUrl(song)}
                 loading="lazy"
               />
               <span className="record-note">

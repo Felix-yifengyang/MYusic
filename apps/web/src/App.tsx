@@ -48,7 +48,7 @@ import type { ComputerView } from "./components/ComputerPage";
 import { DownloadPanel } from "./components/DownloadPanel";
 import { IngestionPanel } from "./components/IngestionPanel";
 import { ManagedPage } from "./components/ManagedPage";
-import type { PlayerTrack } from "./components/playerTypes";
+import { coverUrl, type PlayerTrack } from "./components/playerTypes";
 import { RoomPage } from "./components/RoomPage";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { StatusPanel } from "./components/StatusPanel";
@@ -130,9 +130,10 @@ export function App() {
     const onFocus = () => {
       const auth = authStatusRef.current;
       if (auth?.enabled && !auth.authenticated) return;
-      if (activeViewRef.current === "settings" || activeViewRef.current === "collect") void loadStatus();
-      if (activeViewRef.current === "settings" || activeViewRef.current === "collect") void loadDiagnostics();
-      if (activeViewRef.current === "settings") void loadBilibiliCookieStatus();
+      const admin = isAdmin(auth);
+      if (admin && (activeViewRef.current === "settings" || activeViewRef.current === "collect")) void loadStatus();
+      if (admin && (activeViewRef.current === "settings" || activeViewRef.current === "collect")) void loadDiagnostics();
+      if (admin && activeViewRef.current === "settings") void loadBilibiliCookieStatus();
       if (activeViewRef.current === "player") void loadNavidromeSongs();
       if (activeViewRef.current === "ingestions") void loadIngestions();
     };
@@ -145,16 +146,20 @@ export function App() {
     if (!authStatus || (authStatus.enabled && !authStatus.authenticated)) return;
     if (activeView === "player") void loadNavidromeSongs();
     if (activeView === "settings") {
-      void loadStatus();
-      void loadSettings();
-      void loadUsers();
-      void loadDiagnostics();
-      void loadBilibiliCookieStatus();
+      if (isAdmin(authStatus)) {
+        void loadStatus();
+        void loadSettings();
+        void loadUsers();
+        void loadDiagnostics();
+        void loadBilibiliCookieStatus();
+      }
     }
     if (activeView === "collect") {
-      void loadStatus();
       void loadJobs();
-      void loadDiagnostics();
+      if (isAdmin(authStatus)) {
+        void loadStatus();
+        void loadDiagnostics();
+      }
     }
     if (activeView === "ingestions") void loadIngestions();
   }, [activeView, authStatus]);
@@ -182,7 +187,7 @@ export function App() {
       .then(async (auth) => {
         setAuthStatus(auth);
         if (!auth.enabled || auth.authenticated) {
-          await loadInitialData();
+          await loadInitialData(auth);
         }
       })
       .catch((caught) => {
@@ -195,19 +200,21 @@ export function App() {
       .finally(() => setAuthLoading(false));
   }
 
-  async function loadInitialData() {
+  async function loadInitialData(auth: AuthStatus) {
     if (frontendPreviewRef.current) {
       hydrateFrontendPreviewData();
       return;
     }
 
-    await Promise.all([
+    const tasks: Array<Promise<void>> = [
       loadStatus(),
       loadJobs(),
-      loadIngestions(),
-      loadDiagnostics(),
-      loadBilibiliCookieStatus()
-    ]);
+      loadIngestions()
+    ];
+    if (isAdmin(auth)) {
+      tasks.push(loadDiagnostics(), loadBilibiliCookieStatus());
+    }
+    await Promise.all(tasks);
   }
 
   async function initializeAdmin(username: string, password: string) {
@@ -412,7 +419,7 @@ export function App() {
     await createDownload(mediaUrl)
       .then(async (result) => {
         if (!result.ok) {
-          await loadDiagnostics().catch(() => undefined);
+          if (isAdmin(authStatusRef.current)) await loadDiagnostics().catch(() => undefined);
           if (result.body.code === "DUPLICATE_INGESTION" && result.body.ingestion) {
             setDuplicateIngestion(result.body.ingestion);
           }
@@ -787,6 +794,7 @@ export function App() {
             settings={settings}
             status={status}
             authStatus={authStatus}
+            isAdmin={isAdmin(authStatus)}
             users={users}
             cookieStatus={cookieStatus}
             diagnostics={diagnostics}
@@ -896,6 +904,7 @@ export function App() {
           settings={settings}
           status={status}
           authStatus={authStatus}
+          isAdmin={isAdmin(authStatus)}
           users={users}
           cookieStatus={cookieStatus}
           diagnostics={diagnostics}
@@ -994,6 +1003,11 @@ function createPreviewSettings(): AppSettings {
   };
 }
 
+function isAdmin(auth: AuthStatus | null | undefined) {
+  if (!auth?.enabled) return true;
+  return auth.authenticated && auth.user?.role === "admin";
+}
+
 function createPreviewDiagnostics(): DiagnosticsReport {
   return {
     ok: true,
@@ -1024,6 +1038,6 @@ function navidromePlayerTrack(song: NavidromeSong): PlayerTrack {
     artist: song.artist || "Unknown",
     album: song.album,
     streamUrl: `/api/navidrome/stream/${encodeURIComponent(song.id)}`,
-    coverUrl: song.coverArt ? `/api/navidrome/cover/${encodeURIComponent(song.coverArt)}` : undefined
+    coverUrl: coverUrl(song)
   };
 }
