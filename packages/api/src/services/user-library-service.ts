@@ -17,12 +17,7 @@ export function getUserLibraryContext(config: ApiConfig, user: AuthUser): UserLi
       baseUrl: config.navidrome.baseUrl,
       username: config.navidrome.username,
       password: config.navidrome.password,
-      libraryId: user.navidromeLibraryId,
-      pathPrefix: user.navidromeLibraryId ? undefined : `users/${sanitizePathSegment(user.id)}`
+      libraryId: user.navidromeLibraryId
     }
   };
-}
-
-function sanitizePathSegment(value: string) {
-  return value.replace(/[^a-zA-Z0-9_-]/g, "_");
 }

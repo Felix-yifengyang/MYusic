@@ -13,7 +13,6 @@ export interface NavidromeContext {
   username?: string;
   password?: string;
   libraryId?: string;
-  pathPrefix?: string;
 }
 
 interface SubsonicResponse<T> {
@@ -221,12 +220,8 @@ function normalizeArray<T>(value: T[] | T | undefined): T[] {
 }
 
 function filterSongsByContext(songs: NavidromeSong[], context?: NavidromeContext) {
-  const prefix = normalizeLibraryPath(context?.pathPrefix || "");
-  if (!prefix) return songs;
-  return songs.filter((song) => {
-    const songPath = normalizeLibraryPath(song.path || "");
-    return songPath === prefix || songPath.startsWith(`${prefix}/`);
-  });
+  if (context && !context.libraryId) return [];
+  return songs;
 }
 
 async function searchIngestionCandidates(config: ApiConfig, ingestion: IngestionRecord, context?: NavidromeContext) {
@@ -260,11 +255,7 @@ function normalizeLibraryPath(value: string) {
 function normalizeExpectedIngestionPath(ingestion: IngestionRecord, context?: NavidromeContext) {
   const relativePath = normalizeLibraryPath(ingestion.relativeOutputPath || "");
   if (!relativePath) return "";
-
-  const prefix = normalizeLibraryPath(context?.pathPrefix || "");
-  if (!prefix || relativePath === prefix || relativePath.startsWith(`${prefix}/`)) return relativePath;
-
-  return `${prefix}/${relativePath}`;
+  return relativePath;
 }
 
 function normalizeText(value: string) {
