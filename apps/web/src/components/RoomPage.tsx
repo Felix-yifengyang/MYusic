@@ -2,31 +2,31 @@ import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 
 const weatherClear = new URL(
-  "../assets/images/room/weather-clear.png",
+  "../assets/images/room/weather/weather-clear.png",
   import.meta.url,
 ).href;
 const weatherCloudy = new URL(
-  "../assets/images/room/weather-cloudy.png",
+  "../assets/images/room/weather/weather-cloudy.png",
   import.meta.url,
 ).href;
 const weatherFog = new URL(
-  "../assets/images/room/weather-fog.png",
+  "../assets/images/room/weather/weather-fog.png",
   import.meta.url,
 ).href;
 const weatherDrizzle = new URL(
-  "../assets/images/room/weather-drizzle.png",
+  "../assets/images/room/weather/weather-drizzle.png",
   import.meta.url,
 ).href;
 const weatherRain = new URL(
-  "../assets/images/room/weather-rain.png",
+  "../assets/images/room/weather/weather-rain.png",
   import.meta.url,
 ).href;
 const weatherSnow = new URL(
-  "../assets/images/room/weather-snow.png",
+  "../assets/images/room/weather/weather-snow.png",
   import.meta.url,
 ).href;
 const weatherThunder = new URL(
-  "../assets/images/room/weather-thunder.png",
+  "../assets/images/room/weather/weather-thunder.png",
   import.meta.url,
 ).href;
 const roomTable = new URL(
