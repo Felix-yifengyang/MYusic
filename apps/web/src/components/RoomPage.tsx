@@ -41,6 +41,10 @@ const roomComputer = new URL(
   "../assets/images/room/computer.png",
   import.meta.url,
 ).href;
+const roomPlaylist = new URL(
+  "../assets/images/room/playlist.png",
+  import.meta.url,
+).href;
 
 const weatherAssets = {
   clear: weatherClear,
@@ -71,9 +75,16 @@ interface RoomPageProps {
   onEnterTable: () => void;
   onEnterCabinet: () => void;
   onEnterComputer: () => void;
+  onEnterPlaylist: () => void;
 }
 
-export function RoomPage({ active, onEnterTable, onEnterCabinet, onEnterComputer }: RoomPageProps) {
+export function RoomPage({
+  active,
+  onEnterTable,
+  onEnterCabinet,
+  onEnterComputer,
+  onEnterPlaylist
+}: RoomPageProps) {
   const weatherKind = useRoomWeather();
   const roomStyle: RoomWeatherStyle = {
     "--room-weather-image": weatherKind ? `url("${weatherAssets[weatherKind]}")` : "none",
@@ -119,6 +130,19 @@ export function RoomPage({ active, onEnterTable, onEnterCabinet, onEnterComputer
       >
         <img
           src={roomComputer}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+        />
+      </button>
+      <button
+        className="room-playlist-entry"
+        type="button"
+        aria-label="打开播放列表"
+        onClick={onEnterPlaylist}
+      >
+        <img
+          src={roomPlaylist}
           alt=""
           aria-hidden="true"
           draggable={false}
