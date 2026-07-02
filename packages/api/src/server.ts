@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import Fastify from "fastify";
-import type { DownloadJob, IngestionRecord, RuntimeStatus } from "@myusic/shared";
+import type { DownloadJob, IngestionRecord, Playlist, RuntimeStatus } from "@myusic/shared";
 import type { ApiConfig } from "./config";
 import { AuthError, createAuthService } from "./auth";
 import { getCookieFileStatus } from "./cookies";
@@ -14,6 +14,7 @@ import { registerAgentRoutes } from "./routes/agent";
 import { registerIngestionRoutes } from "./routes/ingestions";
 import { registerJobRoutes } from "./routes/jobs";
 import { registerNavidromeRoutes } from "./routes/navidrome";
+import { registerPlaylistRoutes } from "./routes/playlists";
 import { registerSettingsRoutes } from "./routes/settings";
 import { registerUserRoutes } from "./routes/users";
 import { registerStaticRoutes } from "./static";
@@ -31,6 +32,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
   const auth = createAuthService(config);
   const jobs: DownloadJob[] = await repository.loadJobs(config.maxJobs);
   const ingestions: IngestionRecord[] = await repository.loadIngestions();
+  const playlists: Playlist[] = await repository.loadPlaylists();
   const runningProcesses = new Map<string, ChildProcessWithoutNullStreams>();
   const jobClients = new Set<(jobs: DownloadJob[]) => void>();
   const app = Fastify({ logger: false });
@@ -38,7 +40,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
     const statusCode = error instanceof AuthError ? error.statusCode : 500;
     reply.code(statusCode).send({ error: error instanceof Error ? error.message : "Internal Server Error" });
   });
-  const persist = () => persistAndBroadcastState(repository, jobs, ingestions, jobClients, config.maxJobs);
+  const persist = () => persistAndBroadcastState(repository, jobs, ingestions, playlists, jobClients, config.maxJobs);
   seedIngestionsFromJobs(ingestions, jobs);
   await persist();
 
@@ -85,6 +87,11 @@ export async function createApiServer(options: CreateApiServerOptions) {
 
   registerSettingsRoutes(app, config, Boolean(auth));
   registerNavidromeRoutes(app, config);
+  registerPlaylistRoutes(app, {
+    config,
+    playlists,
+    persist
+  });
   registerIngestionRoutes(app, {
     config,
     jobs,
@@ -123,12 +130,14 @@ function persistAndBroadcastState(
   repository: AppStateRepository,
   jobs: DownloadJob[],
   ingestions: IngestionRecord[],
+  playlists: Playlist[],
   clients: Set<(jobs: DownloadJob[]) => void>,
   maxJobs: number
 ) {
   return Promise.all([
     repository.saveJobs(jobs, maxJobs),
-    repository.saveIngestions(ingestions)
+    repository.saveIngestions(ingestions),
+    repository.savePlaylists(playlists)
   ]).then(() => {
     broadcastJobs(jobs, clients);
   });

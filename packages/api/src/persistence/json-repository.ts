@@ -1,7 +1,8 @@
-import type { DownloadJob, IngestionRecord } from "@myusic/shared";
+import type { DownloadJob, IngestionRecord, Playlist } from "@myusic/shared";
 import type { ApiConfig } from "../config";
 import { loadIngestions, saveIngestions } from "../ingestion-store";
 import { loadJobs, saveJobs } from "../job-store";
+import { loadPlaylists, savePlaylists } from "../playlist-store";
 import type { AppStateRepository } from "./repository";
 
 export function createJsonRepository(config: ApiConfig): AppStateRepository {
@@ -20,6 +21,14 @@ export function createJsonRepository(config: ApiConfig): AppStateRepository {
 
     async saveIngestions(ingestions: IngestionRecord[]) {
       saveIngestions(config.ingestionStorePath, ingestions);
+    },
+
+    async loadPlaylists(): Promise<Playlist[]> {
+      return loadPlaylists(config.playlistStorePath);
+    },
+
+    async savePlaylists(playlists: Playlist[]) {
+      savePlaylists(config.playlistStorePath, playlists);
     }
   };
 }

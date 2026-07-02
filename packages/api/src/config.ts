@@ -24,6 +24,7 @@ export interface ApiConfig {
   maxJobs: number;
   jobStorePath: string;
   ingestionStorePath: string;
+  playlistStorePath: string;
   database: {
     driver: StorageDriver;
     url?: string;
@@ -73,6 +74,7 @@ export function loadApiConfig(configPath: string): ApiConfig {
     maxJobs: readNumberEnv("MYUSIC_MAX_JOBS", Number(parsed.maxJobs || 50)),
     jobStorePath: parsed.jobStorePath || path.join(rootDir, "data", "jobs.json"),
     ingestionStorePath: parsed.ingestionStorePath || path.join(rootDir, "data", "ingestions.json"),
+    playlistStorePath: parsed.playlistStorePath || path.join(rootDir, "data", "playlists.json"),
     database: {
       driver: storageDriver,
       url: databaseUrl || undefined
@@ -106,6 +108,7 @@ export function saveApiConfig(config: ApiConfig) {
     maxJobs: config.maxJobs,
     jobStorePath: config.jobStorePath,
     ingestionStorePath: config.ingestionStorePath,
+    playlistStorePath: config.playlistStorePath,
     database: config.database,
     auth: config.auth,
     agent: {

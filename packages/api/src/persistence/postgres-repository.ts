@@ -1,5 +1,5 @@
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
-import type { DownloadJob, DownloadStatus, IngestionMatchMethod, IngestionRecord, LibrarySyncState } from "@myusic/shared";
+import type { DownloadJob, DownloadStatus, IngestionMatchMethod, IngestionRecord, LibrarySyncState, Playlist, PlaylistItem } from "@myusic/shared";
 import type { ApiConfig } from "../config";
 import { trimJobs } from "../job-store";
 import type { AppStateRepository } from "./repository";
@@ -164,6 +164,47 @@ class PostgresRepository implements AppStateRepository {
     });
   }
 
+  async loadPlaylists(): Promise<Playlist[]> {
+    await this.ensureMigrated();
+    const result = await this.pool.query(`select * from playlists order by created_at asc`);
+    return result.rows.map(rowToPlaylist);
+  }
+
+  async savePlaylists(playlists: Playlist[]): Promise<void> {
+    await this.ensureMigrated();
+    await this.withTransaction(async (client) => {
+      for (const playlist of playlists) {
+        await client.query(
+          `insert into playlists (
+            id, user_id, name, color, items, created_at, updated_at, last_played_at
+          ) values (
+            $1, $2, $3, $4, $5::jsonb, $6, $7, $8
+          )
+          on conflict (id) do update set
+            user_id = excluded.user_id,
+            name = excluded.name,
+            color = excluded.color,
+            items = excluded.items,
+            created_at = excluded.created_at,
+            updated_at = excluded.updated_at,
+            last_played_at = excluded.last_played_at`,
+          [
+            playlist.id,
+            playlist.userId || null,
+            playlist.name,
+            playlist.color || null,
+            JSON.stringify(playlist.items || []),
+            playlist.createdAt,
+            playlist.updatedAt,
+            playlist.lastPlayedAt || null
+          ]
+        );
+      }
+
+      await deleteRowsMissingFromState(client, "playlists", playlists.map((playlist) => playlist.id));
+    });
+  }
+
   private ensureMigrated() {
     this.migration ||= this.migrate();
     return this.migration;
@@ -212,8 +253,23 @@ class PostgresRepository implements AppStateRepository {
         updated_at timestamptz
       );
 
+      create table if not exists playlists (
+        id text primary key,
+        user_id text,
+        name text not null,
+        color text,
+        items jsonb not null default '[]'::jsonb,
+        created_at timestamptz not null,
+        updated_at timestamptz not null,
+        last_played_at timestamptz
+      );
+
       alter table download_jobs add column if not exists user_id text;
       alter table ingestions add column if not exists user_id text;
+      alter table playlists add column if not exists user_id text;
+      alter table playlists add column if not exists color text;
+      alter table playlists add column if not exists items jsonb not null default '[]'::jsonb;
+      alter table playlists add column if not exists last_played_at timestamptz;
 
       create index if not exists download_jobs_created_at_idx on download_jobs (created_at);
       create index if not exists download_jobs_user_id_idx on download_jobs (user_id);
@@ -221,6 +277,8 @@ class PostgresRepository implements AppStateRepository {
       create index if not exists ingestions_user_id_idx on ingestions (user_id);
       create index if not exists ingestions_webpage_url_idx on ingestions (webpage_url);
       create index if not exists ingestions_navidrome_song_id_idx on ingestions (navidrome_song_id);
+      create index if not exists playlists_user_id_idx on playlists (user_id);
+      create index if not exists playlists_updated_at_idx on playlists (updated_at);
     `);
   }
 
@@ -237,7 +295,7 @@ class PostgresRepository implements AppStateRepository {
   }
 }
 
-async function deleteRowsMissingFromState(client: PoolClient, tableName: "download_jobs" | "ingestions", ids: string[]) {
+async function deleteRowsMissingFromState(client: PoolClient, tableName: "download_jobs" | "ingestions" | "playlists", ids: string[]) {
   if (!ids.length) {
     await client.query(`delete from ${tableName}`);
     return;
@@ -288,6 +346,19 @@ function rowToIngestion(row: QueryResultRow): IngestionRecord {
     capturedAt: isoValue(row.captured_at),
     createdAt: isoValue(row.created_at),
     updatedAt: isoValue(row.updated_at)
+  };
+}
+
+function rowToPlaylist(row: QueryResultRow): Playlist {
+  return {
+    id: stringValue(row.id),
+    userId: optionalString(row.user_id),
+    name: stringValue(row.name),
+    color: optionalString(row.color),
+    items: objectValue<PlaylistItem[]>(row.items) || [],
+    createdAt: isoValue(row.created_at) || new Date().toISOString(),
+    updatedAt: isoValue(row.updated_at) || new Date().toISOString(),
+    lastPlayedAt: isoValue(row.last_played_at)
   };
 }
 
