@@ -40,8 +40,14 @@ export async function provisionNavidromeUserLibrary(
     throw new Error("MYusic admin accounts are for management only. Use a member account for mobile listening.");
   }
 
+  const adminUsername = (config.navidrome.username || "").trim();
   const client = await createNavidromeAdminClient(config);
   const targetUsername = navidromeUsername(input.navidromeUsername || input.username);
+  if (adminUsername && targetUsername.toLowerCase() === adminUsername.toLowerCase()) {
+    throw new Error(
+      `Navidrome 用户名 "${targetUsername}" 与管理员账号相同，无法隔离到单独音乐库。请为该成员填写一个不同的 Navidrome 用户名（例如 ${targetUsername}-mobile）。`
+    );
+  }
   const library = await ensureLibrary(client, config, input, targetUsername);
   const user = await ensureUser(client, input, targetUsername);
   if (user.isAdmin) {
@@ -197,12 +203,26 @@ async function requestJson<T>(
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body)
   });
-  const body = await response.json().catch(() => undefined) as T | { error?: string } | undefined;
+  const body = await response.json().catch(() => undefined) as T | { error?: string; errors?: Record<string, string> } | undefined;
   if (!response.ok) {
-    const message = body && typeof body === "object" && "error" in body && body.error
-      ? body.error
+    const detail = extractNavidromeError(body);
+    const message = detail
+      ? `Navidrome admin API failed while ${options.method || "GET"} ${options.description || url}: ${response.status} (${detail})`
       : `Navidrome admin API failed while ${options.method || "GET"} ${options.description || url}: ${response.status}`;
     throw new Error(message);
   }
   return body as T;
+}
+
+function extractNavidromeError(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  if ("error" in body && typeof (body as { error?: unknown }).error === "string") {
+    return (body as { error: string }).error;
+  }
+  if ("errors" in body && (body as { errors?: unknown }).errors && typeof (body as { errors: unknown }).errors === "object") {
+    return Object.entries((body as { errors: Record<string, unknown> }).errors)
+      .map(([field, reason]) => `${field}: ${String(reason)}`)
+      .join("; ");
+  }
+  return "";
 }
