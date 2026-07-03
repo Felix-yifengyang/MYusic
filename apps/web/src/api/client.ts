@@ -116,6 +116,10 @@ export async function getNavidromeSongs(query: string) {
   return getJson<NavidromeSongsResult>(`/api/navidrome/songs?q=${encodeURIComponent(query)}`);
 }
 
+export async function deleteNavidromeSong(id: string) {
+  return requestJson<{ ok: boolean }>(`/api/navidrome/songs/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
 export async function getPlaylists() {
   return getJson<Playlist[]>("/api/playlists");
 }

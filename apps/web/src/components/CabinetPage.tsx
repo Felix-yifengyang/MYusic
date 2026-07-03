@@ -31,6 +31,7 @@ interface CabinetPageProps {
   currentTrackKey: string;
   onPlay: (song: NavidromeSong) => void;
   onAddToPlaylist: (song: NavidromeSong, playlistId?: string) => void;
+  onDeleteSong: (song: NavidromeSong) => void;
   onExitToRoom: () => void;
 }
 
@@ -42,6 +43,7 @@ export function CabinetPage({
   currentTrackKey,
   onPlay,
   onAddToPlaylist,
+  onDeleteSong,
   onExitToRoom
 }: CabinetPageProps) {
   const [pageIndex, setPageIndex] = useState(0);
@@ -152,6 +154,11 @@ export function CabinetPage({
     closePlaylistModal();
   }
 
+  function confirmDeleteSong(song: NavidromeSong) {
+    setRecordMenu(null);
+    if (window.confirm(`删除“${song.title}”？`)) onDeleteSong(song);
+  }
+
   return (
     <main className={`cabinet-page ${!active ? "is-inactive" : ""}`} aria-hidden={!active}>
       <button
@@ -236,6 +243,9 @@ export function CabinetPage({
         >
           <button type="button" role="menuitem" onClick={() => openPlaylistModal(recordMenu.song)}>
             加入歌单
+          </button>
+          <button className="danger" type="button" role="menuitem" onClick={() => confirmDeleteSong(recordMenu.song)}>
+            删除歌曲
           </button>
         </div>
       ) : null}

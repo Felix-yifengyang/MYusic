@@ -24,6 +24,7 @@ import {
   createUser as createUserApi,
   addPlaylistItem as addPlaylistItemApi,
   deleteDownloadJob,
+  deleteNavidromeSong as deleteNavidromeSongApi,
   deletePlaylist as deletePlaylistApi,
   getAuthStatus,
   getBilibiliCookieStatus,
@@ -784,6 +785,20 @@ export function App() {
       .catch((caught) => setPlaylistMessage(errorMessage(caught)));
   }
 
+  async function deleteNavidromeSong(song: NavidromeSong) {
+    if (frontendPreviewRef.current) return;
+
+    setPlaylistMessage("");
+    await deleteNavidromeSongApi(song.id)
+      .then(async () => {
+        removeSongFromPlayback(song.id);
+        setNavidromeSongs((current) => current.filter((item) => item.id !== song.id));
+        setPlaylistMessage(`已删除：${song.title}`);
+        await loadPlaylists();
+      })
+      .catch((caught) => setPlaylistMessage(errorMessage(caught)));
+  }
+
   async function playSavedPlaylist(id: string) {
     const playlist = playlists.find((item) => item.id === id);
     if (!playlist) return;
@@ -811,6 +826,22 @@ export function App() {
 
   function updatePlaylistInState(playlist: Playlist) {
     setPlaylists((current) => current.map((item) => item.id === playlist.id ? playlist : item));
+  }
+
+  function removeSongFromPlayback(songId: string) {
+    const trackKey = `navidrome:${songId}`;
+    const removedIndex = queue.findIndex((track) => track.key === trackKey);
+    const nextQueue = queue.filter((track) => track.key !== trackKey);
+    setTurntableSongs((current) => current.filter((song) => song.id !== songId));
+    if (removedIndex === -1) return;
+
+    setQueue(nextQueue);
+    setQueueIndex((index) => {
+      if (!nextQueue.length) return -1;
+      if (index === removedIndex) return Math.min(index, nextQueue.length - 1);
+      if (removedIndex < index) return Math.max(0, index - 1);
+      return Math.min(index, nextQueue.length - 1);
+    });
   }
 
   function enterFrontendPreview() {
@@ -904,6 +935,7 @@ export function App() {
         currentTrackKey={nowPlaying?.key || ""}
         onPlay={playFromCabinet}
         onAddToPlaylist={(song, playlistId) => void addSongToPlaylist(song, playlistId)}
+        onDeleteSong={(song) => void deleteNavidromeSong(song)}
         onExitToRoom={exitToRoom}
       />
 

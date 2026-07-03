@@ -86,7 +86,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
   });
 
   registerSettingsRoutes(app, config, Boolean(auth));
-  registerNavidromeRoutes(app, config);
+  registerNavidromeRoutes(app, { config });
   registerPlaylistRoutes(app, {
     config,
     playlists,

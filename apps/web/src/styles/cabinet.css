@@ -264,6 +264,15 @@
   outline: none;
 }
 
+.cabinet-context-menu button.danger {
+  color: #ffc0aa;
+}
+
+.cabinet-context-menu button.danger:hover,
+.cabinet-context-menu button.danger:focus-visible {
+  background: rgba(210, 66, 44, .22);
+}
+
 .cabinet-playlist-modal {
   display: grid;
   gap: 18px;
