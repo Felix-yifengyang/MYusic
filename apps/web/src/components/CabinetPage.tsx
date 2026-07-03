@@ -27,10 +27,11 @@ interface CabinetPageProps {
   active: boolean;
   songs: NavidromeSong[];
   playlists: Playlist[];
-  selectedPlaylistId: string;
   currentTrackKey: string;
   onPlay: (song: NavidromeSong) => void;
-  onAddToPlaylist: (song: NavidromeSong, playlistId?: string, playlistName?: string) => void;
+  onAddToPlaylist: (song: NavidromeSong, playlistId: string) => void;
+  onCreatePlaylist: (name: string) => void;
+  onRemoveItem: (playlistId: string, itemId: string) => void;
   onDeleteSong: (song: NavidromeSong) => void;
   onExitToRoom: () => void;
 }
@@ -39,10 +40,11 @@ export function CabinetPage({
   active,
   songs,
   playlists,
-  selectedPlaylistId,
   currentTrackKey,
   onPlay,
   onAddToPlaylist,
+  onCreatePlaylist,
+  onRemoveItem,
   onDeleteSong,
   onExitToRoom
 }: CabinetPageProps) {
@@ -138,15 +140,7 @@ export function CabinetPage({
   function openPlaylistModal(song: NavidromeSong) {
     setRecordMenu(null);
     setModalSong(song);
-    const addedIds: string[] = [];
-    for (const playlist of playlists) {
-      if (hasSong(playlist, song.id)) addedIds.push(playlist.id);
-    }
-    const fallbackId = playlists.some((playlist) => playlist.id === selectedPlaylistId)
-      ? selectedPlaylistId
-      : playlists[0]?.id;
-
-    setPickedIds(addedIds.length ? addedIds : fallbackId ? [fallbackId] : []);
+    setPickedIds(playlists.flatMap((playlist) => hasSong(playlist, song.id) ? [playlist.id] : []));
     setCreateFlag(false);
     setNewName("");
     queueMicrotask(() => {
@@ -164,20 +158,24 @@ export function CabinetPage({
 
   function confirmAddToPlaylist() {
     if (!modalSong) return;
-    const ids = pickedIds.filter((playlistId) => {
-      const playlist = playlists.find((item) => item.id === playlistId);
-      return playlist && !hasSong(playlist, modalSong.id);
+    playlists.forEach((playlist) => {
+      if (pickedIds.includes(playlist.id) && !hasSong(playlist, modalSong.id)) {
+        onAddToPlaylist(modalSong, playlist.id);
+      }
+      if (!pickedIds.includes(playlist.id)) {
+        for (const item of playlist.items) {
+          if (item.songId === modalSong.id) onRemoveItem(playlist.id, item.id);
+        }
+      }
     });
-    if (!ids.length) return;
-    ids.forEach((playlistId) => onAddToPlaylist(modalSong, playlistId));
     closePlaylistModal();
   }
 
   function submitNew(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!modalSong) return;
-    onAddToPlaylist(modalSong, undefined, newName.trim());
-    closePlaylistModal();
+    onCreatePlaylist(newName.trim());
+    setCreateFlag(false);
+    setNewName("");
   }
 
   function togglePick(playlistId: string) {
@@ -314,7 +312,6 @@ export function CabinetPage({
                       <input
                         type="checkbox"
                         checked={pickedIds.includes(playlist.id)}
-                        disabled={hasSong(playlist, modalSong.id)}
                         onChange={() => togglePick(playlist.id)}
                       />
                       <span className="cabinet-playlist-option-check" aria-hidden="true" />
@@ -322,7 +319,6 @@ export function CabinetPage({
                         {playlist.name}
                         {hasSong(playlist, modalSong.id) ? <small>已加入</small> : null}
                       </span>
-                      <span className="cabinet-playlist-option-count">{playlist.items.length}/1000</span>
                     </label>
                   ))}
                 </div>
@@ -358,10 +354,7 @@ export function CabinetPage({
               <Button
                 className="cabinet-playlist-confirm"
                 type="button"
-                disabled={!modalSong || !pickedIds.some((playlistId) => {
-                  const playlist = playlists.find((item) => item.id === playlistId);
-                  return playlist && !hasSong(playlist, modalSong.id);
-                })}
+                disabled={!modalSong}
                 onClick={confirmAddToPlaylist}
               >
                 确定

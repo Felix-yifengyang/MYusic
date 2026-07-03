@@ -719,7 +719,7 @@ export function App() {
     setPlaylistMessage("");
     await createPlaylistApi(name || undefined)
       .then((playlist) => {
-        setPlaylists((current) => [playlist, ...current]);
+        setPlaylists((current) => [...current, playlist]);
         setSelectedPlaylistId(playlist.id);
         setPlaylistMessage("歌单已贴上。");
       })
@@ -752,23 +752,11 @@ export function App() {
       .catch((caught) => setPlaylistMessage(errorMessage(caught)));
   }
 
-  async function addSongToPlaylist(song: NavidromeSong, playlistId?: string, playlistName?: string) {
+  async function addSongToPlaylist(song: NavidromeSong, playlistId: string) {
     if (frontendPreviewRef.current) return;
 
     setPlaylistMessage("");
-    const targetId = playlistName !== undefined ? undefined : playlistId || selectedPlaylistId || playlists[0]?.id;
-    if (!targetId) {
-      await createPlaylistApi(playlistName, song.id)
-        .then((playlist) => {
-          setPlaylists((current) => [playlist, ...current]);
-          setSelectedPlaylistId(playlist.id);
-          setPlaylistMessage(`已加入：${song.title}`);
-        })
-        .catch((caught) => setPlaylistMessage(errorMessage(caught)));
-      return;
-    }
-
-    await addPlaylistItemApi(targetId, song.id)
+    await addPlaylistItemApi(playlistId, song.id)
       .then((playlist) => {
         updatePlaylistInState(playlist);
         setSelectedPlaylistId(playlist.id);
@@ -931,10 +919,11 @@ export function App() {
         active={roomView === "cabinet"}
         songs={navidromeSongs}
         playlists={playlists}
-        selectedPlaylistId={selectedPlaylistId}
         currentTrackKey={nowPlaying?.key || ""}
         onPlay={playFromCabinet}
-        onAddToPlaylist={(song, playlistId, playlistName) => void addSongToPlaylist(song, playlistId, playlistName)}
+        onAddToPlaylist={(song, playlistId) => void addSongToPlaylist(song, playlistId)}
+        onCreatePlaylist={(name) => void createPlaylist(name)}
+        onRemoveItem={(playlistId, itemId) => void removePlaylistItem(playlistId, itemId)}
         onDeleteSong={(song) => void deleteNavidromeSong(song)}
         onExitToRoom={exitToRoom}
       />

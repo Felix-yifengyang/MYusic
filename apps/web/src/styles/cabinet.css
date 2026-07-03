@@ -364,7 +364,7 @@
 
 .cabinet-playlist-option {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
   min-height: 46px;
   color: #fff0d0;
@@ -386,6 +386,7 @@
 
 .cabinet-playlist-option-check {
   position: relative;
+  display: block;
   width: 18px;
   height: 18px;
   border: 1px solid rgba(236, 199, 140, .52);
@@ -401,14 +402,14 @@
 
 .cabinet-playlist-option input:checked + .cabinet-playlist-option-check::after {
   position: absolute;
-  top: 2px;
-  left: 5px;
+  top: 50%;
+  left: 50%;
   width: 5px;
   height: 10px;
   border: solid #2b1b11;
   border-width: 0 2px 2px 0;
   content: "";
-  transform: rotate(45deg);
+  transform: translate(-50%, -58%) rotate(45deg);
 }
 
 .cabinet-playlist-option input:focus-visible + .cabinet-playlist-option-check {
@@ -417,8 +418,8 @@
 }
 
 .cabinet-playlist-option.is-added {
-  color: rgba(255, 239, 210, .5);
-  cursor: default;
+  color: #fff0d0;
+  cursor: pointer;
 }
 
 .cabinet-playlist-option.is-added .cabinet-playlist-option-check {
@@ -438,12 +439,6 @@
 .cabinet-playlist-option-name small {
   color: rgba(255, 239, 210, .42);
   font-size: 13px;
-}
-
-.cabinet-playlist-option-count {
-  color: rgba(255, 239, 210, .72);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
 }
 
 .cabinet-playlist-create-box {
