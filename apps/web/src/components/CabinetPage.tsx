@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type { FormEvent, MouseEvent as ReactMouseEvent } from "react";
 import type { NavidromeSong, Playlist } from "@myusic/shared";
 import { coverUrl } from "./playerTypes";
 import { Button } from "./ui";
@@ -30,7 +30,7 @@ interface CabinetPageProps {
   selectedPlaylistId: string;
   currentTrackKey: string;
   onPlay: (song: NavidromeSong) => void;
-  onAddToPlaylist: (song: NavidromeSong, playlistId?: string) => void;
+  onAddToPlaylist: (song: NavidromeSong, playlistId?: string, playlistName?: string) => void;
   onDeleteSong: (song: NavidromeSong) => void;
   onExitToRoom: () => void;
 }
@@ -49,7 +49,9 @@ export function CabinetPage({
   const [pageIndex, setPageIndex] = useState(0);
   const [recordMenu, setRecordMenu] = useState<{ song: NavidromeSong; x: number; y: number } | null>(null);
   const [modalSong, setModalSong] = useState<NavidromeSong | null>(null);
-  const [modalPlaylistId, setModalPlaylistId] = useState("");
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
+  const [createFlag, setCreateFlag] = useState(false);
+  const [newName, setNewName] = useState("");
   const recordMenuRef = useRef<HTMLDivElement | null>(null);
   const modalDialogRef = useRef<HTMLDialogElement | null>(null);
   const pageCount = Math.max(1, Math.ceil(songs.length / SONGS_PER_PAGE));
@@ -136,7 +138,17 @@ export function CabinetPage({
   function openPlaylistModal(song: NavidromeSong) {
     setRecordMenu(null);
     setModalSong(song);
-    setModalPlaylistId(playlists.some((playlist) => playlist.id === selectedPlaylistId) ? selectedPlaylistId : playlists[0]?.id || "");
+    const addedIds: string[] = [];
+    for (const playlist of playlists) {
+      if (hasSong(playlist, song.id)) addedIds.push(playlist.id);
+    }
+    const fallbackId = playlists.some((playlist) => playlist.id === selectedPlaylistId)
+      ? selectedPlaylistId
+      : playlists[0]?.id;
+
+    setPickedIds(addedIds.length ? addedIds : fallbackId ? [fallbackId] : []);
+    setCreateFlag(false);
+    setNewName("");
     queueMicrotask(() => {
       if (!modalDialogRef.current?.open) modalDialogRef.current?.showModal();
     });
@@ -145,13 +157,35 @@ export function CabinetPage({
   function closePlaylistModal() {
     if (modalDialogRef.current?.open) modalDialogRef.current.close();
     setModalSong(null);
-    setModalPlaylistId("");
+    setPickedIds([]);
+    setCreateFlag(false);
+    setNewName("");
   }
 
   function confirmAddToPlaylist() {
     if (!modalSong) return;
-    onAddToPlaylist(modalSong, modalPlaylistId || undefined);
+    const ids = pickedIds.filter((playlistId) => {
+      const playlist = playlists.find((item) => item.id === playlistId);
+      return playlist && !hasSong(playlist, modalSong.id);
+    });
+    if (!ids.length) return;
+    ids.forEach((playlistId) => onAddToPlaylist(modalSong, playlistId));
     closePlaylistModal();
+  }
+
+  function submitNew(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!modalSong) return;
+    onAddToPlaylist(modalSong, undefined, newName.trim());
+    closePlaylistModal();
+  }
+
+  function togglePick(playlistId: string) {
+    setPickedIds((current) => (
+      current.includes(playlistId)
+        ? current.filter((id) => id !== playlistId)
+        : [...current, playlistId]
+    ));
   }
 
   function confirmDeleteSong(song: NavidromeSong) {
@@ -255,38 +289,91 @@ export function CabinetPage({
         aria-labelledby="cabinet-playlist-modal-title"
         onClose={() => {
           setModalSong(null);
-          setModalPlaylistId("");
+          setPickedIds([]);
+          setCreateFlag(false);
+          setNewName("");
         }}
       >
         {modalSong ? (
           <>
             <div className="cabinet-playlist-modal-header">
-              <h2 id="cabinet-playlist-modal-title">加入歌单</h2>
-              <p>{modalSong.title}</p>
+              <h2 id="cabinet-playlist-modal-title">添加到歌单</h2>
+              <button className="cabinet-playlist-modal-close" type="button" aria-label="关闭" onClick={closePlaylistModal}>
+                ×
+              </button>
             </div>
 
-            {playlists.length ? (
-              <label className="cabinet-playlist-picker">
-                <span>选择歌单</span>
-                <select value={modalPlaylistId} onChange={(event) => setModalPlaylistId(event.target.value)}>
+            <div className="cabinet-playlist-modal-body">
+              {playlists.length ? (
+                <div className="cabinet-playlist-list" role="group" aria-label="选择歌单">
                   {playlists.map((playlist) => (
-                    <option key={playlist.id} value={playlist.id}>
-                      {playlist.name}
-                    </option>
+                    <label
+                      className={`cabinet-playlist-option ${hasSong(playlist, modalSong.id) ? "is-added" : ""}`}
+                      key={playlist.id}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={pickedIds.includes(playlist.id)}
+                        disabled={hasSong(playlist, modalSong.id)}
+                        onChange={() => togglePick(playlist.id)}
+                      />
+                      <span className="cabinet-playlist-option-check" aria-hidden="true" />
+                      <span className="cabinet-playlist-option-name">
+                        {playlist.name}
+                        {hasSong(playlist, modalSong.id) ? <small>已加入</small> : null}
+                      </span>
+                      <span className="cabinet-playlist-option-count">{playlist.items.length}/1000</span>
+                    </label>
                   ))}
-                </select>
-              </label>
-            ) : (
-              <p className="cabinet-playlist-modal-empty">还没有歌单，确认后会创建一个新歌单。</p>
-            )}
+                </div>
+              ) : null}
+
+              <div className={`cabinet-playlist-create-box ${createFlag ? "is-open" : ""}`}>
+                {createFlag ? (
+                  <form className="cabinet-playlist-create-form" onSubmit={submitNew}>
+                    <input
+                      aria-label="新建歌单名称"
+                      maxLength={20}
+                      value={newName}
+                      onChange={(event) => setNewName(event.target.value)}
+                      placeholder="最多可输入20个字"
+                    />
+                    <button type="submit">新建</button>
+                  </form>
+                ) : (
+                  <button
+                    className="cabinet-playlist-create-toggle"
+                    type="button"
+                    aria-expanded={createFlag}
+                    onClick={() => setCreateFlag(true)}
+                  >
+                    <span className="cabinet-playlist-create-plus" aria-hidden="true" />
+                    <span>新建歌单</span>
+                  </button>
+                )}
+              </div>
+            </div>
 
             <div className="cabinet-playlist-modal-actions">
-              <Button variant="secondary" type="button" onClick={closePlaylistModal}>取消</Button>
-              <Button type="button" onClick={confirmAddToPlaylist}>确认加入</Button>
+              <Button
+                className="cabinet-playlist-confirm"
+                type="button"
+                disabled={!modalSong || !pickedIds.some((playlistId) => {
+                  const playlist = playlists.find((item) => item.id === playlistId);
+                  return playlist && !hasSong(playlist, modalSong.id);
+                })}
+                onClick={confirmAddToPlaylist}
+              >
+                确定
+              </Button>
             </div>
           </>
         ) : null}
       </dialog>
     </main>
   );
+}
+
+function hasSong(playlist: Playlist, songId: string) {
+  return playlist.items.some((item) => item.songId === songId);
 }

@@ -752,13 +752,13 @@ export function App() {
       .catch((caught) => setPlaylistMessage(errorMessage(caught)));
   }
 
-  async function addSongToPlaylist(song: NavidromeSong, playlistId?: string) {
+  async function addSongToPlaylist(song: NavidromeSong, playlistId?: string, playlistName?: string) {
     if (frontendPreviewRef.current) return;
 
     setPlaylistMessage("");
-    const targetId = playlistId || selectedPlaylistId || playlists[0]?.id;
+    const targetId = playlistName !== undefined ? undefined : playlistId || selectedPlaylistId || playlists[0]?.id;
     if (!targetId) {
-      await createPlaylistApi(undefined, song.id)
+      await createPlaylistApi(playlistName, song.id)
         .then((playlist) => {
           setPlaylists((current) => [playlist, ...current]);
           setSelectedPlaylistId(playlist.id);
@@ -934,7 +934,7 @@ export function App() {
         selectedPlaylistId={selectedPlaylistId}
         currentTrackKey={nowPlaying?.key || ""}
         onPlay={playFromCabinet}
-        onAddToPlaylist={(song, playlistId) => void addSongToPlaylist(song, playlistId)}
+        onAddToPlaylist={(song, playlistId, playlistName) => void addSongToPlaylist(song, playlistId, playlistName)}
         onDeleteSong={(song) => void deleteNavidromeSong(song)}
         onExitToRoom={exitToRoom}
       />
