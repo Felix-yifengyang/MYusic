@@ -5,8 +5,10 @@
   "description": "MYusic web console, collector, and Navidrome runtime.",
   "packageManager": "pnpm@10.12.1",
   "scripts": {
+    "dev": "pnpm build:services && node scripts/dev.mjs",
     "start": "pnpm build && node packages/runtime/dist/launcher.js",
     "start:prod": "node packages/runtime/dist/launcher.js",
+    "build:services": "pnpm --filter @myusic/shared build && pnpm --filter @myusic/downloader build && pnpm --filter @myusic/api build && pnpm --filter @myusic/runtime build",
     "build": "pnpm --filter @myusic/shared build && pnpm --filter @myusic/downloader build && pnpm --filter @myusic/api build && pnpm --filter @myusic/runtime build && pnpm --filter @myusic/web build",
     "migrate:json-to-postgres": "pnpm --filter @myusic/api migrate:json-to-postgres",
     "typecheck": "pnpm -r typecheck",
