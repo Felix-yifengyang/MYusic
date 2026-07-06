@@ -25,7 +25,6 @@ import {
   addPlaylistItem as addPlaylistItemApi,
   deleteDownloadJob,
   deleteNavidromeSong as deleteNavidromeSongApi,
-  deletePlaylist as deletePlaylistApi,
   getAuthStatus,
   getBilibiliCookieStatus,
   getDiagnostics,
@@ -39,15 +38,13 @@ import {
   login as loginApi,
   logout as logoutApi,
   logoutAllDevices as logoutAllDevicesApi,
-  markPlaylistPlayed as markPlaylistPlayedApi,
   rematchIngestion as rematchIngestionApi,
   removePlaylistItem as removePlaylistItemApi,
   retryDownloadJob,
   saveBilibiliCookie as saveBilibiliCookieApi,
   saveSettings as saveSettingsApi,
   initializeAdmin as initializeAdminApi,
-  syncUserNavidrome as syncUserNavidromeApi,
-  updatePlaylist as updatePlaylistApi
+  syncUserNavidrome as syncUserNavidromeApi
 } from "./api/client";
 import { AgentPanel } from "./components/AgentPanel";
 import { AuthPanel } from "./components/AuthPanel";
@@ -88,7 +85,6 @@ export function App() {
   const [navidromeSongs, setNavidromeSongs] = useState<NavidromeSong[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
-  const [playlistMessage, setPlaylistMessage] = useState("");
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
@@ -277,7 +273,6 @@ export function App() {
     setNavidromeSongs([]);
     setPlaylists([]);
     setSelectedPlaylistId("");
-    setPlaylistMessage("");
     setSettings(null);
     setUsers([]);
     setDiagnostics(null);
@@ -446,8 +441,7 @@ export function App() {
         });
       })
       .catch(async (caught) => {
-        if (await handleAuthApiError(caught, setPlaylistMessage)) return;
-        setPlaylistMessage(errorMessage(caught));
+        await handleAuthApiError(caught);
       });
   }
 
@@ -716,53 +710,27 @@ export function App() {
   async function createPlaylist(name: string) {
     if (frontendPreviewRef.current) return;
 
-    setPlaylistMessage("");
     await createPlaylistApi(name || undefined)
       .then((playlist) => {
         setPlaylists((current) => [...current, playlist]);
         setSelectedPlaylistId(playlist.id);
-        setPlaylistMessage("歌单已贴上。");
       })
-      .catch((caught) => setPlaylistMessage(errorMessage(caught)));
-  }
-
-  async function renamePlaylist(id: string, name: string) {
-    if (frontendPreviewRef.current) return;
-
-    const nextName = name.trim();
-    if (!nextName) {
-      setPlaylistMessage("歌单名不能为空。");
-      return;
-    }
-
-    await updatePlaylistApi(id, { name: nextName })
-      .then(updatePlaylistInState)
-      .catch((caught) => setPlaylistMessage(errorMessage(caught)));
-  }
-
-  async function deletePlaylist(id: string) {
-    if (frontendPreviewRef.current) return;
-
-    await deletePlaylistApi(id)
-      .then((nextPlaylists) => {
-        setPlaylists(nextPlaylists);
-        setSelectedPlaylistId((current) => current === id ? nextPlaylists[0]?.id || "" : current);
-        setPlaylistMessage("歌单已取下。");
-      })
-      .catch((caught) => setPlaylistMessage(errorMessage(caught)));
+      .catch(async (caught) => {
+        await handleAuthApiError(caught);
+      });
   }
 
   async function addSongToPlaylist(song: NavidromeSong, playlistId: string) {
     if (frontendPreviewRef.current) return;
 
-    setPlaylistMessage("");
     await addPlaylistItemApi(playlistId, song.id)
       .then((playlist) => {
         updatePlaylistInState(playlist);
         setSelectedPlaylistId(playlist.id);
-        setPlaylistMessage(`已加入：${song.title}`);
       })
-      .catch((caught) => setPlaylistMessage(errorMessage(caught)));
+      .catch(async (caught) => {
+        await handleAuthApiError(caught);
+      });
   }
 
   async function removePlaylistItem(playlistId: string, itemId: string) {
@@ -770,46 +738,23 @@ export function App() {
 
     await removePlaylistItemApi(playlistId, itemId)
       .then(updatePlaylistInState)
-      .catch((caught) => setPlaylistMessage(errorMessage(caught)));
+      .catch(async (caught) => {
+        await handleAuthApiError(caught);
+      });
   }
 
   async function deleteNavidromeSong(song: NavidromeSong) {
     if (frontendPreviewRef.current) return;
 
-    setPlaylistMessage("");
     await deleteNavidromeSongApi(song.id)
       .then(async () => {
         removeSongFromPlayback(song.id);
         setNavidromeSongs((current) => current.filter((item) => item.id !== song.id));
-        setPlaylistMessage(`已删除：${song.title}`);
         await loadPlaylists();
       })
-      .catch((caught) => setPlaylistMessage(errorMessage(caught)));
-  }
-
-  async function playSavedPlaylist(id: string) {
-    const playlist = playlists.find((item) => item.id === id);
-    if (!playlist) return;
-
-    const songs = playlist.items.flatMap((item) => {
-      const song = navidromeSongs.find((candidate) => candidate.id === item.songId);
-      return song ? [song] : [];
-    });
-    if (!songs.length) {
-      setPlaylistMessage("这张歌单里还没有能播放的歌曲。");
-      return;
-    }
-
-    setTurntableSongs(songs);
-    setQueue(songs.map(navidromePlayerTrack));
-    setQueueIndex(0);
-    setRoomView("table");
-    setDrawerOpen(false);
-    if (!frontendPreviewRef.current) {
-      await markPlaylistPlayedApi(id)
-        .then(updatePlaylistInState)
-        .catch(() => undefined);
-    }
+      .catch(async (caught) => {
+        await handleAuthApiError(caught);
+      });
   }
 
   function updatePlaylistInState(playlist: Playlist) {
@@ -852,7 +797,6 @@ export function App() {
     setNavidromeSongs([]);
     setPlaylists([]);
     setSelectedPlaylistId("");
-    setPlaylistMessage("");
     setTurntableSongs([]);
     setQueue([]);
     setQueueIndex(-1);
@@ -933,13 +877,8 @@ export function App() {
         playlists={playlists}
         songs={navidromeSongs}
         selectedPlaylistId={selectedPlaylistId}
-        message={playlistMessage}
         onSelectPlaylist={setSelectedPlaylistId}
         onCreatePlaylist={(name) => void createPlaylist(name)}
-        onRenamePlaylist={(id, name) => void renamePlaylist(id, name)}
-        onDeletePlaylist={(id) => void deletePlaylist(id)}
-        onPlayPlaylist={(id) => void playSavedPlaylist(id)}
-        onRemoveItem={(playlistId, itemId) => void removePlaylistItem(playlistId, itemId)}
         onExitToRoom={exitToRoom}
       />
 
