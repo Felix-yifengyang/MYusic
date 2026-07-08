@@ -28,6 +28,14 @@
   src: url("../assets/fonts/SentySandalwood.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "LXGW Marker Gothic";
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+  src: url("../assets/fonts/LXGWMarkerGothic-Regular.ttf") format("truetype");
+}
+
 * { box-sizing: border-box; }
 
 body {

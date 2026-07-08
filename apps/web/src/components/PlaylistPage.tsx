@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { NavidromeSong, Playlist } from "@myusic/shared";
+import { coverUrl } from "./playerTypes";
 
 const backboardAsset = new URL("../assets/images/playlist/playlist-backboard.png", import.meta.url).href;
 const sheetAsset = new URL("../assets/images/playlist/playlist-sheet.png", import.meta.url).href;
@@ -13,6 +14,7 @@ interface PlaylistPageProps {
   selectedPlaylistId: string;
   onSelectPlaylist: (id: string) => void;
   onCreatePlaylist: (name: string) => void;
+  onPlayPlaylist: (playlist: Playlist) => void;
   onExitToRoom: () => void;
 }
 
@@ -26,6 +28,7 @@ export function PlaylistPage({
   selectedPlaylistId,
   onSelectPlaylist,
   onCreatePlaylist,
+  onPlayPlaylist,
   onExitToRoom
 }: PlaylistPageProps) {
   const [showPlaylistIndex, setShowPlaylistIndex] = useState(false);
@@ -36,6 +39,7 @@ export function PlaylistPage({
     : 0;
   const visiblePlaylists = playlists.slice(visiblePlaylistStart, visiblePlaylistStart + visiblePlaylistLimit);
   const songById = useMemo(() => new Map(songs.map((song) => [song.id, song])), [songs]);
+  const canPlaySelected = Boolean(selectedPlaylist?.items.some((item) => songById.has(item.songId)));
 
   useEffect(() => {
     if (!active) return;
@@ -139,12 +143,22 @@ export function PlaylistPage({
                   <span>{selectedPlaylist.name}</span>
                   <small>{selectedPlaylist.items.length} 首</small>
                 </div>
+                <button
+                  className="playlist-paper-play"
+                  type="button"
+                  disabled={!canPlaySelected}
+                  onClick={() => onPlayPlaylist(selectedPlaylist)}
+                >
+                  播放
+                </button>
                 <div className="playlist-paper-lines">
-                  {selectedPlaylist.items.slice(0, 8).map((item, index) => {
+                  {selectedPlaylist.items.slice(0, 8).map((item) => {
                     const song = songById.get(item.songId);
                     return (
                       <span className="playlist-paper-line" key={item.id}>
-                        <i>{String(index + 1).padStart(2, "0")}</i>
+                        <span className="playlist-paper-cover" aria-hidden="true">
+                          {song?.coverArt ? <img src={coverUrl(song)} alt="" loading="lazy" /> : null}
+                        </span>
                         <b>{song?.title || "未找到歌曲"}</b>
                       </span>
                     );

@@ -699,6 +699,17 @@ export function App() {
     if (index >= 0) setQueueIndex(index);
   }
 
+  function playPlaylist(playlist: Playlist) {
+    const songById = new Map(navidromeSongs.map((song) => [song.id, song]));
+    const nextTurntableSongs = playlist.items.map((item) => songById.get(item.songId)).filter(Boolean) as NavidromeSong[];
+    if (!nextTurntableSongs.length) return;
+    setTurntableSongs(nextTurntableSongs);
+    setQueue(nextTurntableSongs.map(navidromePlayerTrack));
+    setQueueIndex(0);
+    setActiveView("player");
+    setRoomView("table");
+  }
+
   function playPrevious() {
     setQueueIndex((current) => current > 0 ? current - 1 : current);
   }
@@ -879,6 +890,7 @@ export function App() {
         selectedPlaylistId={selectedPlaylistId}
         onSelectPlaylist={setSelectedPlaylistId}
         onCreatePlaylist={(name) => void createPlaylist(name)}
+        onPlayPlaylist={playPlaylist}
         onExitToRoom={exitToRoom}
       />
 
