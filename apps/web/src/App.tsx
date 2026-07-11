@@ -25,6 +25,7 @@ import {
   addPlaylistItem as addPlaylistItemApi,
   deleteDownloadJob,
   deleteNavidromeSong as deleteNavidromeSongApi,
+  deletePlaylist as deletePlaylistApi,
   getAuthStatus,
   getBilibiliCookieStatus,
   getDiagnostics,
@@ -43,6 +44,7 @@ import {
   retryDownloadJob,
   saveBilibiliCookie as saveBilibiliCookieApi,
   saveSettings as saveSettingsApi,
+  updatePlaylist as updatePlaylistApi,
   initializeAdmin as initializeAdminApi,
   syncUserNavidrome as syncUserNavidromeApi
 } from "./api/client";
@@ -699,13 +701,14 @@ export function App() {
     if (index >= 0) setQueueIndex(index);
   }
 
-  function playPlaylist(playlist: Playlist) {
+  function playPlaylist(playlist: Playlist, songId: string) {
     const songById = new Map(navidromeSongs.map((song) => [song.id, song]));
     const nextTurntableSongs = playlist.items.map((item) => songById.get(item.songId)).filter(Boolean) as NavidromeSong[];
-    if (!nextTurntableSongs.length) return;
+    const index = nextTurntableSongs.findIndex((song) => song.id === songId);
+    if (index < 0) return;
     setTurntableSongs(nextTurntableSongs);
     setQueue(nextTurntableSongs.map(navidromePlayerTrack));
-    setQueueIndex(0);
+    setQueueIndex(index);
     setActiveView("player");
     setRoomView("table");
   }
@@ -725,6 +728,29 @@ export function App() {
       .then((playlist) => {
         setPlaylists((current) => [...current, playlist]);
         setSelectedPlaylistId(playlist.id);
+      })
+      .catch(async (caught) => {
+        await handleAuthApiError(caught);
+      });
+  }
+
+  async function renamePlaylist(playlistId: string, name: string) {
+    if (frontendPreviewRef.current) return;
+
+    await updatePlaylistApi(playlistId, { name })
+      .then(updatePlaylistInState)
+      .catch(async (caught) => {
+        await handleAuthApiError(caught);
+      });
+  }
+
+  async function deletePlaylist(playlistId: string) {
+    if (frontendPreviewRef.current) return;
+
+    await deletePlaylistApi(playlistId)
+      .then((nextPlaylists) => {
+        setPlaylists(nextPlaylists);
+        setSelectedPlaylistId((current) => current === playlistId ? nextPlaylists[0]?.id || "" : current);
       })
       .catch(async (caught) => {
         await handleAuthApiError(caught);
@@ -890,7 +916,10 @@ export function App() {
         selectedPlaylistId={selectedPlaylistId}
         onSelectPlaylist={setSelectedPlaylistId}
         onCreatePlaylist={(name) => void createPlaylist(name)}
-        onPlayPlaylist={playPlaylist}
+        onRenamePlaylist={(playlistId, name) => void renamePlaylist(playlistId, name)}
+        onDeletePlaylist={(playlistId) => void deletePlaylist(playlistId)}
+        onPlaySong={playPlaylist}
+        onRemoveItem={(playlistId, itemId) => void removePlaylistItem(playlistId, itemId)}
         onExitToRoom={exitToRoom}
       />
 
