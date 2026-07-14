@@ -17,13 +17,13 @@ interface PlaylistPageProps {
   onRenamePlaylist: (playlistId: string, name: string) => void;
   onDeletePlaylist: (playlistId: string) => void;
   onPlaySong: (playlist: Playlist, songId: string) => void;
-  onRemoveItem: (playlistId: string, itemId: string) => void;
+  onRemoveSong: (playlistId: string, songId: string) => void;
   onExitToRoom: () => void;
 }
 
 const tabColors = ["rose", "ochre", "blue", "olive", "parchment"];
 const visiblePlaylistLimit = 5;
-const playlistItemLimit = 8;
+const songPageLimit = 8;
 
 export function PlaylistPage({
   active,
@@ -35,7 +35,7 @@ export function PlaylistPage({
   onRenamePlaylist,
   onDeletePlaylist,
   onPlaySong,
-  onRemoveItem,
+  onRemoveSong,
   onExitToRoom
 }: PlaylistPageProps) {
   const [showPlaylistIndex, setShowPlaylistIndex] = useState(false);
@@ -50,8 +50,8 @@ export function PlaylistPage({
     : 0;
   const visiblePlaylists = playlists.slice(visiblePlaylistStart, visiblePlaylistStart + visiblePlaylistLimit);
   const songById = useMemo(() => new Map(songs.map((song) => [song.id, song])), [songs]);
-  const songPageCount = Math.ceil((selectedPlaylist?.items.length || 0) / playlistItemLimit);
-  const visibleItems = selectedPlaylist?.items.slice(songPage * playlistItemLimit, (songPage + 1) * playlistItemLimit) || [];
+  const songPageCount = Math.ceil((selectedPlaylist?.songIds.length || 0) / songPageLimit);
+  const visibleSongIds = selectedPlaylist?.songIds.slice(songPage * songPageLimit, (songPage + 1) * songPageLimit) || [];
 
   useEffect(() => setSongPage(0), [selectedPlaylist?.id]);
 
@@ -118,7 +118,7 @@ export function PlaylistPage({
             <button
               aria-label={`选择歌单 ${playlist.name}`}
               aria-pressed={!showPlaylistIndex && playlist.id === selectedPlaylist?.id}
-              className={`playlist-tab playlist-tab-slot-${index} ${!showPlaylistIndex && playlist.id === selectedPlaylist?.id ? "active" : ""} ${playlist.color || tabColors[(visiblePlaylistStart + index) % tabColors.length]}`}
+              className={`playlist-tab playlist-tab-slot-${index} ${!showPlaylistIndex && playlist.id === selectedPlaylist?.id ? "active" : ""} ${tabColors[(visiblePlaylistStart + index) % tabColors.length]}`}
               key={playlist.id}
               style={{ zIndex: !showPlaylistIndex && playlist.id === selectedPlaylist?.id ? "var(--playlist-layer-tab-active)" : "var(--playlist-layer-tab-rest)" }}
               type="button"
@@ -144,53 +144,51 @@ export function PlaylistPage({
           </button>
           <img className="playlist-clip" src={clipAsset} alt="" draggable={false} />
           <div className="playlist-paper-content">
-            {showPlaylistIndex ? (
+            {!selectedPlaylist ? (
+              <div className="playlist-paper-empty">无歌单</div>
+            ) : showPlaylistIndex ? (
               <>
                 <div className="playlist-paper-title">
                   <span>歌单目录</span>
                   <small>{playlists.length} 张</small>
                 </div>
-                {playlists.length ? (
-                  <div className="playlist-paper-lines playlist-index-list">
-                    {playlists.map((playlist) => {
-                      const coverSong = songById.get(playlist.items.find((item) => songById.has(item.songId))?.songId || "");
-                      return (
-                        <div className="playlist-paper-entry" key={playlist.id}>
-                          <button
-                            className="playlist-paper-entry-main"
-                            type="button"
-                            onClick={() => selectPlaylist(playlist.id)}
-                          >
-                            <span className="playlist-paper-cover" aria-hidden="true">
-                              {coverSong?.coverArt ? <img src={coverUrl(coverSong)} alt="" loading="lazy" /> : null}
-                            </span>
-                            <span className="playlist-paper-entry-copy">
-                              <b className="playlist-paper-entry-title">{playlist.name}</b>
-                              <small>{playlist.items.length} 首</small>
-                            </span>
-                          </button>
-                          <button
-                            className="playlist-paper-action playlist-paper-entry-remove"
-                            type="button"
-                            aria-label={`删除歌单 ${playlist.name}`}
-                            title="删除歌单"
-                            onClick={() => {
-                              if (window.confirm(`确定删除歌单“${playlist.name}”吗？`)) {
-                                onDeletePlaylist(playlist.id);
-                              }
-                            }}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="playlist-paper-empty">还没有歌单</div>
-                )}
+                <div className="playlist-paper-lines playlist-index-list">
+                  {playlists.map((playlist) => {
+                    const coverSong = songById.get(playlist.songIds.find((songId) => songById.has(songId)) || "");
+                    return (
+                      <div className="playlist-paper-entry" key={playlist.id}>
+                        <button
+                          className="playlist-paper-entry-main"
+                          type="button"
+                          onClick={() => selectPlaylist(playlist.id)}
+                        >
+                          <span className="playlist-paper-cover" aria-hidden="true">
+                            {coverSong?.coverArt ? <img src={coverUrl(coverSong)} alt="" loading="lazy" /> : null}
+                          </span>
+                          <span className="playlist-paper-entry-copy">
+                            <b className="playlist-paper-entry-title">{playlist.name}</b>
+                            <small>{playlist.songIds.length} 首</small>
+                          </span>
+                        </button>
+                        <button
+                          className="playlist-paper-action playlist-paper-entry-remove"
+                          type="button"
+                          aria-label={`删除歌单 ${playlist.name}`}
+                          title="删除歌单"
+                          onClick={() => {
+                            if (window.confirm(`确定删除歌单“${playlist.name}”吗？`)) {
+                              onDeletePlaylist(playlist.id);
+                            }
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </>
-            ) : selectedPlaylist ? (
+            ) : (
               <>
                 <div className="playlist-paper-title">
                   <div className={`playlist-paper-title-field ${isEditing ? "is-editing" : ""}`}>
@@ -225,19 +223,19 @@ export function PlaylistPage({
                       </button>
                     ) : null}
                   </div>
-                  <small>{selectedPlaylist.items.length} 首</small>
+                  <small>{selectedPlaylist.songIds.length} 首</small>
                 </div>
                 <div className="playlist-paper-lines">
-                  {visibleItems.map((item) => {
-                    const song = songById.get(item.songId);
-                    const title = formatSheetTitle(song?.title);
+                  {visibleSongIds.map((songId) => {
+                    const song = songById.get(songId);
+                    const title = song?.title || "未找到歌曲";
                     return (
-                      <span className="playlist-paper-entry" key={item.id}>
+                      <span className="playlist-paper-entry" key={songId}>
                         <button
                           className="playlist-paper-entry-main"
                           type="button"
                           disabled={!song}
-                          onClick={() => onPlaySong(selectedPlaylist, item.songId)}
+                          onClick={() => onPlaySong(selectedPlaylist, songId)}
                         >
                           <span className="playlist-paper-cover" aria-hidden="true">
                             {song?.coverArt ? <img src={coverUrl(song)} alt="" loading="lazy" /> : null}
@@ -250,7 +248,7 @@ export function PlaylistPage({
                           className="playlist-paper-action playlist-paper-entry-remove"
                           type="button"
                           aria-label={`从歌单移除 ${title}`}
-                          onClick={() => onRemoveItem(selectedPlaylist.id, item.id)}
+                          onClick={() => onRemoveSong(selectedPlaylist.id, songId)}
                         >
                           ×
                         </button>
@@ -281,20 +279,10 @@ export function PlaylistPage({
                   </nav>
                 ) : null}
               </>
-            ) : (
-              <div className="playlist-paper-empty">新歌单</div>
             )}
           </div>
         </div>
       </section>
     </main>
   );
-}
-
-function formatSheetTitle(title?: string) {
-  if (!title) return "未找到歌曲";
-  return title
-    .replace(/\s*[-–—]\s*[“"「『].*$/, "")
-    .replace(/\s*歌词\S*版?/g, "")
-    .trim() || title;
 }

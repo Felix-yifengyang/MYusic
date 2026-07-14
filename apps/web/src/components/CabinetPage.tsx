@@ -31,7 +31,7 @@ interface CabinetPageProps {
   onPlay: (song: NavidromeSong) => void;
   onAddToPlaylist: (song: NavidromeSong, playlistId: string) => void;
   onCreatePlaylist: (name: string) => void;
-  onRemoveItem: (playlistId: string, itemId: string) => void;
+  onRemoveSong: (playlistId: string, songId: string) => void;
   onDeleteSong: (song: NavidromeSong) => void;
   onExitToRoom: () => void;
 }
@@ -44,7 +44,7 @@ export function CabinetPage({
   onPlay,
   onAddToPlaylist,
   onCreatePlaylist,
-  onRemoveItem,
+  onRemoveSong,
   onDeleteSong,
   onExitToRoom
 }: CabinetPageProps) {
@@ -141,8 +141,6 @@ export function CabinetPage({
     setRecordMenu(null);
     setModalSong(song);
     setPickedIds(playlists.flatMap((playlist) => hasSong(playlist, song.id) ? [playlist.id] : []));
-    setCreateFlag(false);
-    setNewName("");
     queueMicrotask(() => {
       if (!modalDialogRef.current?.open) modalDialogRef.current?.showModal();
     });
@@ -150,6 +148,9 @@ export function CabinetPage({
 
   function closePlaylistModal() {
     if (modalDialogRef.current?.open) modalDialogRef.current.close();
+  }
+
+  function resetPlaylistModal() {
     setModalSong(null);
     setPickedIds([]);
     setCreateFlag(false);
@@ -162,10 +163,8 @@ export function CabinetPage({
       if (pickedIds.includes(playlist.id) && !hasSong(playlist, modalSong.id)) {
         onAddToPlaylist(modalSong, playlist.id);
       }
-      if (!pickedIds.includes(playlist.id)) {
-        for (const item of playlist.items) {
-          if (item.songId === modalSong.id) onRemoveItem(playlist.id, item.id);
-        }
+      if (!pickedIds.includes(playlist.id) && hasSong(playlist, modalSong.id)) {
+        onRemoveSong(playlist.id, modalSong.id);
       }
     });
     closePlaylistModal();
@@ -285,12 +284,7 @@ export function CabinetPage({
         className="cabinet-playlist-modal"
         ref={modalDialogRef}
         aria-labelledby="cabinet-playlist-modal-title"
-        onClose={() => {
-          setModalSong(null);
-          setPickedIds([]);
-          setCreateFlag(false);
-          setNewName("");
-        }}
+        onClose={resetPlaylistModal}
       >
         {modalSong ? (
           <>
@@ -329,10 +323,10 @@ export function CabinetPage({
                   <form className="cabinet-playlist-create-form" onSubmit={submitNew}>
                     <input
                       aria-label="新建歌单名称"
-                      maxLength={20}
+                      maxLength={80}
                       value={newName}
                       onChange={(event) => setNewName(event.target.value)}
-                      placeholder="最多可输入20个字"
+                      placeholder="最多可输入80个字"
                     />
                     <button type="submit">新建</button>
                   </form>
@@ -368,5 +362,5 @@ export function CabinetPage({
 }
 
 function hasSong(playlist: Playlist, songId: string) {
-  return playlist.items.some((item) => item.songId === songId);
+  return playlist.songIds.includes(songId);
 }

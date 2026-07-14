@@ -124,11 +124,11 @@ export async function getPlaylists() {
   return getJson<Playlist[]>("/api/playlists");
 }
 
-export async function createPlaylist(name?: string, songId?: string) {
-  return postJson<Playlist>("/api/playlists", { name, songId });
+export async function createPlaylist(name: string) {
+  return postJson<Playlist>("/api/playlists", { name });
 }
 
-export async function updatePlaylist(id: string, body: { name?: string; color?: string }) {
+export async function updatePlaylist(id: string, body: { name?: string }) {
   return requestJson<Playlist>(`/api/playlists/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body
@@ -139,16 +139,12 @@ export async function deletePlaylist(id: string) {
   return requestJson<Playlist[]>(`/api/playlists/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
-export async function addPlaylistItem(id: string, songId: string) {
-  return postJson<Playlist>(`/api/playlists/${encodeURIComponent(id)}/items`, { songId });
+export async function addPlaylistSong(id: string, songId: string) {
+  return postJson<Playlist>(`/api/playlists/${encodeURIComponent(id)}/songs`, { songId });
 }
 
-export async function removePlaylistItem(id: string, itemId: string) {
-  return requestJson<Playlist>(`/api/playlists/${encodeURIComponent(id)}/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
-}
-
-export async function markPlaylistPlayed(id: string) {
-  return postJson<Playlist>(`/api/playlists/${encodeURIComponent(id)}/play`);
+export async function removePlaylistSong(id: string, songId: string) {
+  return requestJson<Playlist>(`/api/playlists/${encodeURIComponent(id)}/songs/${encodeURIComponent(songId)}`, { method: "DELETE" });
 }
 
 export async function chatWithAgent(messages: AgentChatMessage[]) {

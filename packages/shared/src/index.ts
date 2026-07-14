@@ -184,19 +184,10 @@ export interface NavidromeScanStatus {
   count?: number;
 }
 
-export interface PlaylistItem {
-  id: string;
-  songId: string;
-  addedAt: string;
-}
-
 export interface Playlist {
   id: string;
   userId?: string;
   name: string;
-  color?: string;
-  items: PlaylistItem[];
+  songIds: string[];
   createdAt: string;
-  updatedAt: string;
-  lastPlayedAt?: string;
 }

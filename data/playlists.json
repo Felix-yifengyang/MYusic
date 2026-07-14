@@ -2,31 +2,21 @@
   {
     "id": "e63d95c2-f1b1-49a5-81f2-cb4292350ba8",
     "name": "歌单 1",
-    "color": "rose",
-    "items": [
-      {
-        "id": "7fa60241-3772-4b6c-95ea-bfe494165e98",
-        "songId": "xqwMfhMTlYYG7aQJ0oGwZv",
-        "addedAt": "2026-07-08T13:47:11.346Z"
-      }
+    "songIds": [
+      "xqwMfhMTlYYG7aQJ0oGwZv"
     ],
-    "createdAt": "2026-07-08T13:13:43.537Z",
-    "updatedAt": "2026-07-08T13:47:11.346Z"
+    "createdAt": "2026-07-08T13:13:43.537Z"
   },
   {
     "id": "9ce08e9d-7e43-4352-b152-87c3c965b936",
     "name": "歌单 2",
-    "color": "ochre",
-    "items": [],
-    "createdAt": "2026-07-08T13:46:49.912Z",
-    "updatedAt": "2026-07-08T13:46:49.912Z"
+    "songIds": [],
+    "createdAt": "2026-07-08T13:46:49.912Z"
   },
   {
     "id": "465c11da-ecbe-4a9b-8676-ff7213a7a292",
     "name": "歌单 3",
-    "color": "blue",
-    "items": [],
-    "createdAt": "2026-07-08T13:47:06.572Z",
-    "updatedAt": "2026-07-08T13:47:06.572Z"
+    "songIds": [],
+    "createdAt": "2026-07-08T13:47:06.572Z"
   }
 ]

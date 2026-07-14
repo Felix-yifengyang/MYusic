@@ -11,8 +11,6 @@ export interface RegisterPlaylistRoutesOptions {
   persist: () => Promise<void>;
 }
 
-const TAB_COLORS = ["rose", "ochre", "blue", "olive", "parchment"];
-
 export function registerPlaylistRoutes(app: FastifyInstance, options: RegisterPlaylistRoutesOptions) {
   const { config, playlists } = options;
 
@@ -20,24 +18,17 @@ export function registerPlaylistRoutes(app: FastifyInstance, options: RegisterPl
     return userPlaylists(playlists, request.auth?.user.id);
   });
 
-  app.post<{ Body: { name?: string; color?: string; songId?: string } }>("/api/playlists", async (request, reply) => {
+  app.post<{ Body: { name?: string } }>("/api/playlists", async (request, reply) => {
     const userId = request.auth?.user.id;
     const now = new Date().toISOString();
     const name = normalizeName(request.body?.name) || nextPlaylistName(playlists, userId);
-    const songId = normalizeId(request.body?.songId);
-    if (songId && !(await canAccessSong(config, songId, request.auth?.user))) {
-      reply.code(404);
-      return { error: "Song not found." };
-    }
 
     const playlist: Playlist = {
       id: crypto.randomUUID(),
       userId,
       name,
-      color: normalizeColor(request.body?.color) || TAB_COLORS[userPlaylists(playlists, userId).length % TAB_COLORS.length],
-      items: songId ? [{ id: crypto.randomUUID(), songId, addedAt: now }] : [],
-      createdAt: now,
-      updatedAt: now
+      songIds: [],
+      createdAt: now
     };
     playlists.push(playlist);
     await options.persist();
@@ -45,7 +36,7 @@ export function registerPlaylistRoutes(app: FastifyInstance, options: RegisterPl
     return playlist;
   });
 
-  app.patch<{ Params: { id: string }; Body: { name?: string; color?: string } }>("/api/playlists/:id", async (request, reply) => {
+  app.patch<{ Params: { id: string }; Body: { name?: string } }>("/api/playlists/:id", async (request, reply) => {
     const playlist = findPlaylist(playlists, request.params.id, request.auth?.user.id);
     if (!playlist) {
       reply.code(404);
@@ -53,10 +44,7 @@ export function registerPlaylistRoutes(app: FastifyInstance, options: RegisterPl
     }
 
     const name = normalizeName(request.body?.name);
-    const color = normalizeColor(request.body?.color);
     if (name) playlist.name = name;
-    if (color) playlist.color = color;
-    touch(playlist);
     await options.persist();
     return playlist;
   });
@@ -73,7 +61,7 @@ export function registerPlaylistRoutes(app: FastifyInstance, options: RegisterPl
     return userPlaylists(playlists, request.auth?.user.id);
   });
 
-  app.post<{ Params: { id: string }; Body: { songId?: string } }>("/api/playlists/:id/items", async (request, reply) => {
+  app.post<{ Params: { id: string }; Body: { songId?: string } }>("/api/playlists/:id/songs", async (request, reply) => {
     const playlist = findPlaylist(playlists, request.params.id, request.auth?.user.id);
     if (!playlist) {
       reply.code(404);
@@ -91,85 +79,34 @@ export function registerPlaylistRoutes(app: FastifyInstance, options: RegisterPl
       return { error: "Song not found." };
     }
 
-    if (!playlist.items.some((item) => item.songId === songId)) {
-      playlist.items.push({
-        id: crypto.randomUUID(),
-        songId,
-        addedAt: new Date().toISOString()
-      });
-      touch(playlist);
+    if (!playlist.songIds.includes(songId)) {
+      playlist.songIds.push(songId);
       await options.persist();
     }
     return playlist;
   });
 
-  app.delete<{ Params: { id: string; itemId: string } }>("/api/playlists/:id/items/:itemId", async (request, reply) => {
+  app.delete<{ Params: { id: string; songId: string } }>("/api/playlists/:id/songs/:songId", async (request, reply) => {
     const playlist = findPlaylist(playlists, request.params.id, request.auth?.user.id);
     if (!playlist) {
       reply.code(404);
       return { error: "Playlist not found." };
     }
 
-    const nextItems = playlist.items.filter((item) => item.id !== request.params.itemId);
-    if (nextItems.length === playlist.items.length) {
+    const nextSongIds = playlist.songIds.filter((songId) => songId !== request.params.songId);
+    if (nextSongIds.length === playlist.songIds.length) {
       reply.code(404);
-      return { error: "Playlist item not found." };
+      return { error: "Playlist song not found." };
     }
 
-    playlist.items = nextItems;
-    touch(playlist);
-    await options.persist();
-    return playlist;
-  });
-
-  app.patch<{ Params: { id: string }; Body: { itemIds?: string[] } }>("/api/playlists/:id/items", async (request, reply) => {
-    const playlist = findPlaylist(playlists, request.params.id, request.auth?.user.id);
-    if (!playlist) {
-      reply.code(404);
-      return { error: "Playlist not found." };
-    }
-
-    const itemIds = Array.isArray(request.body?.itemIds) ? request.body.itemIds : [];
-    if (new Set(itemIds).size !== playlist.items.length) {
-      reply.code(400);
-      return { error: "itemIds must include every playlist item once." };
-    }
-
-    const byId = new Map(playlist.items.map((item) => [item.id, item]));
-    const ordered = itemIds.map((id) => byId.get(id)).filter(Boolean) as Playlist["items"];
-    if (ordered.length !== playlist.items.length) {
-      reply.code(400);
-      return { error: "itemIds must include every playlist item." };
-    }
-
-    playlist.items = ordered;
-    touch(playlist);
-    await options.persist();
-    return playlist;
-  });
-
-  app.post<{ Params: { id: string } }>("/api/playlists/:id/play", async (request, reply) => {
-    const playlist = findPlaylist(playlists, request.params.id, request.auth?.user.id);
-    if (!playlist) {
-      reply.code(404);
-      return { error: "Playlist not found." };
-    }
-
-    playlist.lastPlayedAt = new Date().toISOString();
-    touch(playlist);
+    playlist.songIds = nextSongIds;
     await options.persist();
     return playlist;
   });
 }
 
 function userPlaylists(playlists: Playlist[], userId?: string) {
-  return playlists
-    .filter((playlist) => belongsToUser(playlist, userId))
-    .slice()
-    .sort((left, right) => (
-      (right.lastPlayedAt || right.updatedAt || "").localeCompare(left.lastPlayedAt || left.updatedAt || "")
-      || left.name.localeCompare(right.name, "zh-CN", { numeric: true, sensitivity: "base" })
-    ));
+  return playlists.filter((playlist) => belongsToUser(playlist, userId));
 }
 
 function findPlaylist(playlists: Playlist[], id: string, userId?: string) {
@@ -184,21 +121,12 @@ function normalizeName(value: unknown) {
   return typeof value === "string" ? value.trim().slice(0, 80) : "";
 }
 
-function normalizeColor(value: unknown) {
-  const color = typeof value === "string" ? value.trim() : "";
-  return TAB_COLORS.includes(color) ? color : "";
-}
-
 function normalizeId(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
 function nextPlaylistName(playlists: Playlist[], userId?: string) {
-  return `歌单 ${userPlaylists(playlists, userId).length + 1}`;
-}
-
-function touch(playlist: Playlist) {
-  playlist.updatedAt = new Date().toISOString();
+  return `歌单 ${playlists.filter((playlist) => belongsToUser(playlist, userId)).length + 1}`;
 }
 
 async function canAccessSong(config: ApiConfig, songId: string, user?: AuthUser) {

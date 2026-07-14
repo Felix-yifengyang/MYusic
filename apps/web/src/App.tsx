@@ -22,7 +22,7 @@ import {
   createPlaylist as createPlaylistApi,
   createDownload,
   createUser as createUserApi,
-  addPlaylistItem as addPlaylistItemApi,
+  addPlaylistSong as addPlaylistSongApi,
   deleteDownloadJob,
   deleteNavidromeSong as deleteNavidromeSongApi,
   deletePlaylist as deletePlaylistApi,
@@ -40,7 +40,7 @@ import {
   logout as logoutApi,
   logoutAllDevices as logoutAllDevicesApi,
   rematchIngestion as rematchIngestionApi,
-  removePlaylistItem as removePlaylistItemApi,
+  removePlaylistSong as removePlaylistSongApi,
   retryDownloadJob,
   saveBilibiliCookie as saveBilibiliCookieApi,
   saveSettings as saveSettingsApi,
@@ -117,7 +117,6 @@ export function App() {
   const [rematchingIngestionId, setRematchingIngestionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const activeViewRef = useRef<AppView>("player");
-  const roomViewRef = useRef<RoomView>("room");
   const authStatusRef = useRef<AuthStatus | null>(null);
   const frontendPreviewRef = useRef(false);
   const nowPlaying = queueIndex >= 0 ? queue[queueIndex] : null;
@@ -127,10 +126,6 @@ export function App() {
   useEffect(() => {
     activeViewRef.current = activeView;
   }, [activeView]);
-
-  useEffect(() => {
-    roomViewRef.current = roomView;
-  }, [roomView]);
 
   useEffect(() => {
     authStatusRef.current = authStatus;
@@ -152,7 +147,6 @@ export function App() {
       if (admin && activeViewRef.current === "settings") void loadBilibiliCookieStatus();
       if (activeViewRef.current === "player") void loadNavidromeSongs();
       if (activeViewRef.current === "ingestions") void loadIngestions();
-      if (roomViewRef.current === "playlists") void loadPlaylists();
     };
 
     window.addEventListener("focus", onFocus);
@@ -184,7 +178,6 @@ export function App() {
   useEffect(() => {
     if (!authStatus || (authStatus.enabled && !authStatus.authenticated)) return;
     if (roomView === "cabinet" || roomView === "playlists" || roomView === "table") void loadNavidromeSongs();
-    if (roomView === "playlists") void loadPlaylists();
   }, [roomView, authStatus]);
 
   useEffect(() => {
@@ -434,17 +427,12 @@ export function App() {
       return;
     }
 
-    await getPlaylists()
-      .then((nextPlaylists) => {
-        setPlaylists(nextPlaylists);
-        setSelectedPlaylistId((current) => {
-          if (current && nextPlaylists.some((playlist) => playlist.id === current)) return current;
-          return nextPlaylists[0]?.id || "";
-        });
-      })
-      .catch(async (caught) => {
-        await handleAuthApiError(caught);
-      });
+    const nextPlaylists = await getPlaylists();
+    setPlaylists(nextPlaylists);
+    setSelectedPlaylistId((current) => {
+      if (current && nextPlaylists.some((playlist) => playlist.id === current)) return current;
+      return nextPlaylists[0]?.id || "";
+    });
   }
 
   async function submitDownload(event: FormEvent) {
@@ -703,7 +691,7 @@ export function App() {
 
   function playPlaylist(playlist: Playlist, songId: string) {
     const songById = new Map(navidromeSongs.map((song) => [song.id, song]));
-    const nextTurntableSongs = playlist.items.map((item) => songById.get(item.songId)).filter(Boolean) as NavidromeSong[];
+    const nextTurntableSongs = playlist.songIds.map((songId) => songById.get(songId)).filter(Boolean) as NavidromeSong[];
     const index = nextTurntableSongs.findIndex((song) => song.id === songId);
     if (index < 0) return;
     setTurntableSongs(nextTurntableSongs);
@@ -724,60 +712,37 @@ export function App() {
   async function createPlaylist(name: string) {
     if (frontendPreviewRef.current) return;
 
-    await createPlaylistApi(name || undefined)
-      .then((playlist) => {
-        setPlaylists((current) => [...current, playlist]);
-        setSelectedPlaylistId(playlist.id);
-      })
-      .catch(async (caught) => {
-        await handleAuthApiError(caught);
-      });
+    const playlist = await createPlaylistApi(name);
+    setPlaylists((current) => [...current, playlist]);
+    setSelectedPlaylistId(playlist.id);
   }
 
   async function renamePlaylist(playlistId: string, name: string) {
     if (frontendPreviewRef.current) return;
 
-    await updatePlaylistApi(playlistId, { name })
-      .then(updatePlaylistInState)
-      .catch(async (caught) => {
-        await handleAuthApiError(caught);
-      });
+    updatePlaylistInState(await updatePlaylistApi(playlistId, { name }));
   }
 
   async function deletePlaylist(playlistId: string) {
     if (frontendPreviewRef.current) return;
 
-    await deletePlaylistApi(playlistId)
-      .then((nextPlaylists) => {
-        setPlaylists(nextPlaylists);
-        setSelectedPlaylistId((current) => current === playlistId ? nextPlaylists[0]?.id || "" : current);
-      })
-      .catch(async (caught) => {
-        await handleAuthApiError(caught);
-      });
+    const nextPlaylists = await deletePlaylistApi(playlistId);
+    setPlaylists(nextPlaylists);
+    setSelectedPlaylistId((current) => current === playlistId ? nextPlaylists[0]?.id || "" : current);
   }
 
   async function addSongToPlaylist(song: NavidromeSong, playlistId: string) {
     if (frontendPreviewRef.current) return;
 
-    await addPlaylistItemApi(playlistId, song.id)
-      .then((playlist) => {
-        updatePlaylistInState(playlist);
-        setSelectedPlaylistId(playlist.id);
-      })
-      .catch(async (caught) => {
-        await handleAuthApiError(caught);
-      });
+    const playlist = await addPlaylistSongApi(playlistId, song.id);
+    updatePlaylistInState(playlist);
+    setSelectedPlaylistId(playlist.id);
   }
 
-  async function removePlaylistItem(playlistId: string, itemId: string) {
+  async function removePlaylistSong(playlistId: string, songId: string) {
     if (frontendPreviewRef.current) return;
 
-    await removePlaylistItemApi(playlistId, itemId)
-      .then(updatePlaylistInState)
-      .catch(async (caught) => {
-        await handleAuthApiError(caught);
-      });
+    updatePlaylistInState(await removePlaylistSongApi(playlistId, songId));
   }
 
   async function deleteNavidromeSong(song: NavidromeSong) {
@@ -902,10 +867,10 @@ export function App() {
         playlists={playlists}
         currentTrackKey={nowPlaying?.key || ""}
         onPlay={playFromCabinet}
-        onAddToPlaylist={(song, playlistId) => void addSongToPlaylist(song, playlistId)}
-        onCreatePlaylist={(name) => void createPlaylist(name)}
-        onRemoveItem={(playlistId, itemId) => void removePlaylistItem(playlistId, itemId)}
-        onDeleteSong={(song) => void deleteNavidromeSong(song)}
+        onAddToPlaylist={addSongToPlaylist}
+        onCreatePlaylist={createPlaylist}
+        onRemoveSong={removePlaylistSong}
+        onDeleteSong={deleteNavidromeSong}
         onExitToRoom={exitToRoom}
       />
 
@@ -915,11 +880,11 @@ export function App() {
         songs={navidromeSongs}
         selectedPlaylistId={selectedPlaylistId}
         onSelectPlaylist={setSelectedPlaylistId}
-        onCreatePlaylist={(name) => void createPlaylist(name)}
-        onRenamePlaylist={(playlistId, name) => void renamePlaylist(playlistId, name)}
-        onDeletePlaylist={(playlistId) => void deletePlaylist(playlistId)}
+        onCreatePlaylist={createPlaylist}
+        onRenamePlaylist={renamePlaylist}
+        onDeletePlaylist={deletePlaylist}
         onPlaySong={playPlaylist}
-        onRemoveItem={(playlistId, itemId) => void removePlaylistItem(playlistId, itemId)}
+        onRemoveSong={removePlaylistSong}
         onExitToRoom={exitToRoom}
       />
 

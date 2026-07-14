@@ -90,7 +90,7 @@ export async function createApiServer(options: CreateApiServerOptions) {
   registerPlaylistRoutes(app, {
     config,
     playlists,
-    persist
+    persist: () => repository.savePlaylists(playlists)
   });
   registerIngestionRoutes(app, {
     config,
