@@ -498,13 +498,13 @@ export function TurntablePage({
                   />
                 )}
               </div>
-              <section className="volume-console" aria-label="闊抽噺鎺у埗">
+              <section className="volume-console" aria-label="音量控制">
                 <div className="volume-console-face" aria-hidden="true">
                   <span className="volume-track-asset" />
                   <span className="volume-thumb-asset" />
                 </div>
                 <input
-                  aria-label="闊抽噺"
+                  aria-label="音量"
                   max="100"
                   min="0"
                   onChange={(event) => changeVolume(event.target.value)}
